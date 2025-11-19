@@ -8,18 +8,20 @@
  "field_order": [
   "interviewer_email",
   "check_availability",
+  "organizer_email",
   "column_break_cvny",
   "interview_date",
+  "interview_type",
   "available_slots_section",
   "available_slots",
   "schedule_interview_section",
   "event_title",
   "attendees",
+  "check_available_room",
+  "room_email",
   "column_break_qwyn",
   "start_time",
   "end_time",
-  "check_available_room",
-  "room_email",
   "meeting_room"
  ],
  "fields": [
@@ -96,12 +98,25 @@
   {
    "fieldname": "column_break_cvny",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "Online",
+   "fieldname": "interview_type",
+   "fieldtype": "Select",
+   "label": "Interview type",
+   "options": "\nOnline\nOffline"
+  },
+  {
+   "fieldname": "organizer_email",
+   "fieldtype": "Link",
+   "label": "Organizer Email",
+   "options": "Organizer Email"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-25 04:18:36.368875",
+ "modified": "2025-11-18 17:14:21.290492",
  "modified_by": "Administrator",
  "module": "Ms Calendar",
  "name": "Schedule interview",

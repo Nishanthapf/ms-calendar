@@ -1,35 +1,26 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "prompt",
- "creation": "2025-09-19 12:45:33.865257",
+ "creation": "2025-11-19 13:59:16.015884",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "interviewer_name",
-  "team"
+  "email_template_name"
  ],
  "fields": [
   {
-   "fieldname": "interviewer_name",
+   "fieldname": "email_template_name",
    "fieldtype": "Data",
-   "label": "Interviewer Name"
-  },
-  {
-   "fieldname": "team",
-   "fieldtype": "Link",
-   "label": "Team",
-   "options": "Organizer Email"
+   "label": "Email Template Name"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-19 20:33:25.235245",
+ "modified": "2025-11-19 17:16:21.620044",
  "modified_by": "Administrator",
  "module": "Ms Calendar",
- "name": "Interviewer Email List",
- "naming_rule": "Set by user",
+ "name": "Email Content for Scheduling",
  "owner": "Administrator",
  "permissions": [
   {
@@ -46,6 +37,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": []

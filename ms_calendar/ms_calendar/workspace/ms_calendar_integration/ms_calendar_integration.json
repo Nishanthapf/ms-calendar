@@ -1,7 +1,7 @@
 {
  "app": "Ms Calendar",
  "charts": [],
- "content": "[{\"id\":\"T3rojOYXWp\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">MS Calendar Integration</span>\",\"col\":12}},{\"id\":\"b4SBGhhF85\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"MS Graph Credentials\",\"col\":3}},{\"id\":\"iyjGROSiv7\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Schedule interview\",\"col\":3}},{\"id\":\"baP8f86sdE\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Interviewer Email List\",\"col\":3}}]",
+ "content": "[{\"id\":\"T3rojOYXWp\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">MS Calendar Integration</span>\",\"col\":12}},{\"id\":\"b4SBGhhF85\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"MS Graph Credentials\",\"col\":3}},{\"id\":\"iyjGROSiv7\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Schedule interview\",\"col\":3}},{\"id\":\"baP8f86sdE\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Interviewer Email List\",\"col\":3}},{\"id\":\"tf7tmnZScl\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Organizer Email\",\"col\":3}}]",
  "creation": "2025-09-17 15:26:32.774334",
  "custom_blocks": [],
  "docstatus": 0,
@@ -15,7 +15,7 @@
  "label": "MS Calendar Integration",
  "link_type": "DocType",
  "links": [],
- "modified": "2025-09-25 04:01:42.665768",
+ "modified": "2025-11-17 16:26:14.643952",
  "modified_by": "Administrator",
  "module": "Ms Calendar",
  "name": "MS Calendar Integration",
@@ -32,6 +32,14 @@
    "doc_view": "List",
    "label": "Interviewer Email List",
    "link_to": "Interviewer Email List",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Organizer Email",
+   "link_to": "Organizer Email",
    "stats_filter": "[]",
    "type": "DocType"
   },

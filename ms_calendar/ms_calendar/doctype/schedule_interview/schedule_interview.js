@@ -45,7 +45,8 @@ frappe.ui.form.on('Schedule interview', {
         // if (frm.doc.resume_attachment) {
         //     attachments.push(frm.doc.resume_attachment);
         // }
-
+        if(frm.doc.interview_type=="Online"){
+            console.log("event created ")
         frappe.call({
             method: "ms_calendar.api.msgraph.create_interview_event",
             args: {
@@ -77,6 +78,8 @@ frappe.ui.form.on('Schedule interview', {
                 console.error("Calendar Event Error:", err);
             }
         });
+        }else{
+        }
     },
 
     interview_date: function(frm) {
