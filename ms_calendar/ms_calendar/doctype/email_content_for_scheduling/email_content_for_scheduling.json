@@ -5,19 +5,25 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "email_template_name"
+  "email_template_name",
+  "email_content"
  ],
  "fields": [
   {
    "fieldname": "email_template_name",
    "fieldtype": "Data",
    "label": "Email Template Name"
+  },
+  {
+   "fieldname": "email_content",
+   "fieldtype": "Text",
+   "label": "Email Content"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-19 17:16:21.620044",
+ "modified": "2025-11-20 01:19:07.351787",
  "modified_by": "Administrator",
  "module": "Ms Calendar",
  "name": "Email Content for Scheduling",

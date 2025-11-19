@@ -39,13 +39,16 @@ frappe.ui.form.on('Schedule interview', {
         // }
 
         // From single attach fields
-        if (frm.doc.custom_attachment) {
-            attachments.push(frm.doc.custom_attachment);
+        if (frm.doc.candidate_cv__resume) {
+            attachments.push(frm.doc.candidate_cv__resume);
+            attachments.push('/files/Individual Profile Data Import.xlsx');
+
         }
         // if (frm.doc.resume_attachment) {
         //     attachments.push(frm.doc.resume_attachment);
         // }
-        if(frm.doc.interview_type=="Online"){
+        console.log(attachments);
+        console.log(frm.doc.organizer_email,"organizer_email");
             console.log("event created ")
         frappe.call({
             method: "ms_calendar.api.msgraph.create_interview_event",
@@ -56,6 +59,8 @@ frappe.ui.form.on('Schedule interview', {
                 interviewer_emails: interviewerEmails,
                 interviewee_email: frm.doc.attendees,
                 room_emails: frm.doc.room_email || "",
+                is_online:frm.doc.interview_type,
+                Organizer_email:frm.doc.organizer_email,
                 attachment_paths: attachments  
             },
             freeze: true,
@@ -78,8 +83,6 @@ frappe.ui.form.on('Schedule interview', {
                 console.error("Calendar Event Error:", err);
             }
         });
-        }else{
-        }
     },
 
     interview_date: function(frm) {
