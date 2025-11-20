@@ -592,6 +592,9 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 #         "is_online": is_online,
 #         "join_url": join_url
 #     }
+
+
+
 # import frappe
 # import requests
 # import base64
@@ -599,7 +602,7 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 # import ast
 # import time
 # from datetime import datetime
-
+# from ms_calendar.api.email_data_helper import get_salary_details 
 
 # @frappe.whitelist()
 # def create_interview_event(event_title,
@@ -635,7 +638,6 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 #         ["feedback_url", "email_content_interviewee", "email_content_interviewer"]
 #     )
 
-#     # Default interviewer template
 #     default_interviewer_template = """
 # <p>Hi {Interviewer_name},</p>
 
@@ -655,7 +657,6 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 # Azim Premji Foundation</p>
 # """
 
-#     # Default candidate template
 #     default_interviewee_template = """
 # <p>Hi {Applicants_name},</p>
 
@@ -664,6 +665,8 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 # <p><b>Date:</b> {start_str}<br>
 # <b>End:</b> {end_str}<br>
 # <b>Interview Panel:</b> {InterviewersName}</p>
+
+# Teams Meeting Link : {meting_link}
 
 # {meeting_link_section}
 
@@ -676,13 +679,12 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 
 #     if Template:
 #         feedback_url, email_interviewee_template, email_interviewer_template = Template
-
 #         email_interviewer_template = email_interviewer_template or default_interviewer_template
 #         email_interviewee_template = email_interviewee_template or default_interviewee_template
 #     else:
 #         feedback_url = ""
-#         email_interviewee_template = default_interviewee_template
 #         email_interviewer_template = default_interviewer_template
+#         email_interviewee_template = default_interviewee_template
 
 #     # ----------------------------------------
 #     # GRAPH TOKEN
@@ -728,10 +730,9 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 #     end_str = end_dt.strftime("%I:%M %p, %d %b %Y")
 
 #     # ----------------------------------------
-#     # Load Attachments (<3MB)
+#     # Attachments
 #     # ----------------------------------------
 #     final_files = []
-
 #     if attachment_paths:
 #         try:
 #             attachment_list = ast.literal_eval(attachment_paths)
@@ -741,27 +742,17 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 #         attachment_list = []
 
 #     for web_path in attachment_list:
-#         if not web_path:
-#             continue
-
 #         rel = web_path.replace("/files/", "")
 #         file_path = frappe.get_site_path("public", "files", rel)
 
-#         if not os.path.isfile(file_path):
-#             frappe.log_error("File not found: " + file_path)
-#             continue
-
-#         if os.path.getsize(file_path) > 3 * 1024 * 1024:
-#             frappe.throw(f"File '{os.path.basename(file_path)}' is too large. Must be <3MB.")
-
-#         with open(file_path, "rb") as f:
-#             final_files.append((os.path.basename(file_path), base64.b64encode(f.read()).decode()))
+#         if os.path.isfile(file_path):
+#             if os.path.getsize(file_path) <= 3 * 1024 * 1024:
+#                 with open(file_path, "rb") as f:
+#                     final_files.append((os.path.basename(file_path), base64.b64encode(f.read()).decode()))
 
 #     # ----------------------------------------
-#     # INITIAL EVENT BODY (NO LINK YET)
+#     # INITIAL EVENT BODY
 #     # ----------------------------------------
-#     join_url = ""
-
 #     event_body_html = (
 #         email_interviewer_template
 #             .replace("{Interviewer_name}", InterviewersName)
@@ -773,26 +764,23 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 #     )
 
 #     # ----------------------------------------
-#     # CREATE DRAFT EVENT
+#     # CREATE EVENT (NOT DRAFT)
 #     # ----------------------------------------
 #     create_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/events"
 
 #     draft_payload = {
 #         "subject": event_title,
-#         "isDraft": True,
 #         "isOnlineMeeting": True if is_online == 1 else False,
+#         "onlineMeetingProvider": "teamsForBusiness" if is_online == 1 else None,
 #         "showAs": "busy",
 #         "start": {"dateTime": start_datetime, "timeZone": "Asia/Kolkata"},
 #         "end": {"dateTime": end_datetime, "timeZone": "Asia/Kolkata"},
 #         "body": {"contentType": "HTML", "content": event_body_html}
 #     }
 
-#     if is_online == 1:
-#         draft_payload["onlineMeetingProvider"] = "teamsForBusiness"
-
-#     d_res = requests.post(create_url, headers=headers, json=draft_payload)
-#     d_res.raise_for_status()
-#     event_id = d_res.json()["id"]
+#     res = requests.post(create_url, headers=headers, json=draft_payload)
+#     res.raise_for_status()
+#     event_id = res.json()["id"]
 
 #     # ----------------------------------------
 #     # ATTACH FILES
@@ -807,42 +795,49 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 #                 "@odata.type": "#microsoft.graph.fileAttachment",
 #                 "name": fname,
 #                 "contentBytes": fb64
-#             }).raise_for_status()
+#             }
+#         ).raise_for_status()
 
 #     # ----------------------------------------
-#     # SAFE MEETING LINK FETCH (RETRY)
+#     # SAFE TEAMS LINK RETRY (with debug)
 #     # ----------------------------------------
 #     event_fetch_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/events/{event_id}"
+#     join_url = ""
 
-#     for attempt in range(3):
-#         resp = requests.get(event_fetch_url, headers=headers)
-
+#     for attempt in range(5):
+#         data = requests.get(event_fetch_url, headers=headers)
 #         try:
-#             ev_json = resp.json()
+#             json_data = data.json()
 #         except:
-#             ev_json = None
+#             json_data = None
 
-#         if ev_json and isinstance(ev_json, dict):
-#             online_meeting = ev_json.get("onlineMeeting")
-#             if online_meeting and isinstance(online_meeting, dict):
-#                 join_url = online_meeting.get("joinUrl", "")
-#                 if join_url:
-#                     break
+#         print(f"DEBUG FETCH {attempt+1} →", json_data)
+
+#         if json_data and "onlineMeeting" in json_data and json_data["onlineMeeting"]:
+#             join_url = json_data["onlineMeeting"].get("joinUrl", "")
+#             print("DEBUG JOIN URL FOUND:", join_url)
+
+#             if join_url:
+#                 break
 
 #         time.sleep(1)
 
+#     print("DEBUG FINAL JOIN URL:", join_url)
+
 #     join_url = join_url or ""
 
-#     # Build meeting link for templates
+#     # ----------------------------------------
+#     # MEETING LINK HTML
+#     # ----------------------------------------
 #     meeting_link_section = ""
 #     if is_online == 1 and join_url:
 #         meeting_link_section = (
 #             f"<p><b>Join Teams Meeting:</b> "
-#             f"<a href='{join_url}' target='_blank'>Click Here</a></p>"
+#             f"<a href='{join_url}' target='_blank'>Click here</a></p>"
 #         )
 
 #     # ----------------------------------------
-#     # FINAL EVENT BODY
+#     # FINAL EVENT BODY FOR INTERVIEWER
 #     # ----------------------------------------
 #     final_event_body = (
 #         email_interviewer_template
@@ -852,43 +847,42 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 #             .replace("{end_str}", end_str)
 #             .replace("{feedback_url}", feedback_url)
 #             .replace("{meeting_link_section}", meeting_link_section)
-#             .replace("{join_url}", join_url)
 #     )
 
 #     # ----------------------------------------
-#     # PATCH EVENT
+#     # PATCH FINAL EVENT
 #     # ----------------------------------------
-#     patch_payload = {
-#         "attendees": attendees,
-#         "body": {"contentType": "HTML", "content": final_event_body},
-#         "showAs": "busy"
-#     }
-
-#     requests.patch(event_fetch_url, headers=headers, json=patch_payload).raise_for_status()
-
-#     # SEND EVENT
-#     ev2 = requests.get(event_fetch_url, headers=headers).json()
-#     if ev2.get("isDraft", False):
-#         requests.post(event_fetch_url + "/send", headers=headers)
+#     requests.patch(
+#         event_fetch_url,
+#         headers=headers,
+#         json={
+#             "attendees": attendees,
+#             "body": {"contentType": "HTML", "content": final_event_body},
+#             "showAs": "busy"
+#         }
+#     ).raise_for_status()
 
 #     # ----------------------------------------
-#     # CANDIDATE EMAIL
+#     # CANDIDATE EMAIL (NOW WITH JOIN LINK)
 #     # ----------------------------------------
+#     meeting_link_candidate = ""
+#     if is_online == 1 and join_url:
+#         meeting_link_candidate = (
+#             f"<p><b>Teams Meeting Link:</b> "
+#             f"<a href='{join_url}' target='_blank'>Click here to join</a></p>"
+#         )
+
+#     print("DEBUG CANDIDATE MEETING LINK HTML:", meeting_link_candidate)
+
 #     email_interviewee_formatted = (
 #         email_interviewee_template
 #             .replace("{Applicants_name}", Applicants_name)
 #             .replace("{start_str}", start_str)
 #             .replace("{end_str}", end_str)
 #             .replace("{InterviewersName}", InterviewersName)
-#             .replace("{feedback_url}", feedback_url)
-#             .replace("{meeting_link_section}", meeting_link_section)
-#             .replace("{join_url}", join_url)
+#             .replace("{meeting_link_section}", meeting_link_candidate)
+#             .replace("{meting_link}", join_url)
 #     )
-
-#     # ----------------------------------------
-#     # INTERVIEWER EMAIL = SAME AS EVENT BODY
-#     # ----------------------------------------
-#     email_interviewer_formatted = final_event_body
 
 #     # ----------------------------------------
 #     # SEND EMAILS
@@ -899,12 +893,6 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 #         message=email_interviewee_formatted
 #     )
 
-#     frappe.sendmail(
-#         recipients=interviewer_list,
-#         subject=f"Interview Details - {event_title}",
-#         message=email_interviewer_formatted
-#     )
-
 #     frappe.msgprint("✅ Event created successfully. Outlook invite sent.")
 
 #     return {
@@ -913,8 +901,6 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 #         "join_url": join_url
 #     }
 
-
-
 import frappe
 import requests
 import base64
@@ -922,7 +908,7 @@ import os
 import ast
 import time
 from datetime import datetime
-
+from ms_calendar.api.email_data_helper import get_salary_details 
 
 @frappe.whitelist()
 def create_interview_event(event_title,
@@ -937,10 +923,11 @@ def create_interview_event(event_title,
                            Interviewers_namesarray,
                            InterviewersName,
                            Applicants_name,
+                           application_id,
                            attachment_paths=None):
 
     # ----------------------------------------
-    # Convert is_online → 0 or 1
+    # Convert is_online → int
     # ----------------------------------------
     try:
         is_online = int(is_online)
@@ -950,7 +937,7 @@ def create_interview_event(event_title,
     Organizer_email = Organizer_email.strip()
 
     # ----------------------------------------
-    # Load Template from Doctype OR use default
+    # Load Template from Doctype OR fallback
     # ----------------------------------------
     Template = frappe.db.get_value(
         "Email Content for Scheduling",
@@ -998,13 +985,27 @@ Azim Premji Foundation</p>
 """
 
     if Template:
-        feedback_url, email_interviewee_template, email_interviewer_template = Template
+        _feedback_url, email_interviewee_template, email_interviewer_template = Template
         email_interviewer_template = email_interviewer_template or default_interviewer_template
         email_interviewee_template = email_interviewee_template or default_interviewee_template
     else:
-        feedback_url = ""
         email_interviewer_template = default_interviewer_template
         email_interviewee_template = default_interviewee_template
+
+    # ----------------------------------------
+    # FEEDBACK URL BASED ON ROUND (FIXED)
+    # ----------------------------------------
+    round_no = str(Interview_round).lower().strip()
+
+    if "1" in round_no:
+        form_key = "one"
+    else:
+        form_key = "two"
+
+    feedback_url = (
+        f"https://careers.frappe.cloud/feedback-form-{form_key}/new"
+        f"?app_id={application_id}&applicant_name={Applicants_name}"
+    )
 
     # ----------------------------------------
     # GRAPH TOKEN
@@ -1027,7 +1028,7 @@ Azim Premji Foundation</p>
     }
 
     # ----------------------------------------
-    # ATTENDEES
+    # ATTENDEES (rooms + interviewers)
     # ----------------------------------------
     interviewer_list = [i.strip() for i in interviewer_emails.split(",") if i.strip()]
     room_list = [r.strip() for r in room_emails.split(",") if r.strip()]
@@ -1050,7 +1051,7 @@ Azim Premji Foundation</p>
     end_str = end_dt.strftime("%I:%M %p, %d %b %Y")
 
     # ----------------------------------------
-    # Attachments
+    # READ ATTACHMENTS
     # ----------------------------------------
     final_files = []
     if attachment_paths:
@@ -1084,7 +1085,7 @@ Azim Premji Foundation</p>
     )
 
     # ----------------------------------------
-    # CREATE EVENT (NOT DRAFT)
+    # CREATE EVENT IN OUTLOOK
     # ----------------------------------------
     create_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/events"
 
@@ -1119,13 +1120,14 @@ Azim Premji Foundation</p>
         ).raise_for_status()
 
     # ----------------------------------------
-    # SAFE TEAMS LINK RETRY (with debug)
+    # RETRY SAFE FETCH FOR TEAMS JOIN URL
     # ----------------------------------------
     event_fetch_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/events/{event_id}"
     join_url = ""
 
     for attempt in range(5):
         data = requests.get(event_fetch_url, headers=headers)
+
         try:
             json_data = data.json()
         except:
@@ -1135,14 +1137,10 @@ Azim Premji Foundation</p>
 
         if json_data and "onlineMeeting" in json_data and json_data["onlineMeeting"]:
             join_url = json_data["onlineMeeting"].get("joinUrl", "")
-            print("DEBUG JOIN URL FOUND:", join_url)
-
             if join_url:
                 break
 
         time.sleep(1)
-
-    print("DEBUG FINAL JOIN URL:", join_url)
 
     join_url = join_url or ""
 
@@ -1157,7 +1155,7 @@ Azim Premji Foundation</p>
         )
 
     # ----------------------------------------
-    # FINAL EVENT BODY FOR INTERVIEWER
+    # FINAL PATCH WITH ATTENDEES + LINK
     # ----------------------------------------
     final_event_body = (
         email_interviewer_template
@@ -1169,9 +1167,6 @@ Azim Premji Foundation</p>
             .replace("{meeting_link_section}", meeting_link_section)
     )
 
-    # ----------------------------------------
-    # PATCH FINAL EVENT
-    # ----------------------------------------
     requests.patch(
         event_fetch_url,
         headers=headers,
@@ -1183,7 +1178,7 @@ Azim Premji Foundation</p>
     ).raise_for_status()
 
     # ----------------------------------------
-    # CANDIDATE EMAIL (NOW WITH JOIN LINK)
+    # EMAIL TO CANDIDATE
     # ----------------------------------------
     meeting_link_candidate = ""
     if is_online == 1 and join_url:
@@ -1191,8 +1186,6 @@ Azim Premji Foundation</p>
             f"<p><b>Teams Meeting Link:</b> "
             f"<a href='{join_url}' target='_blank'>Click here to join</a></p>"
         )
-
-    print("DEBUG CANDIDATE MEETING LINK HTML:", meeting_link_candidate)
 
     email_interviewee_formatted = (
         email_interviewee_template
@@ -1205,7 +1198,7 @@ Azim Premji Foundation</p>
     )
 
     # ----------------------------------------
-    # SEND EMAILS
+    # SEND EMAIL TO CANDIDATE
     # ----------------------------------------
     frappe.sendmail(
         recipients=[interviewee_email],

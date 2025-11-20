@@ -4,7 +4,6 @@
  "autoname": "format:INVID{###}",
  "creation": "2025-09-17 00:42:39.754086",
  "doctype": "DocType",
- "custom": 1,
  "engine": "InnoDB",
  "field_order": [
   "applicants_name",
@@ -14,7 +13,6 @@
   "column_break_cvny",
   "interview_date",
   "interviewer_email",
-  "interviewers_name",
   "check_availability",
   "interview_type",
   "available_slots_section",
@@ -23,11 +21,11 @@
   "event_title",
   "attendees",
   "meeting_room",
-  "room_email",
   "column_break_qwyn",
   "start_time",
   "end_time",
-  "check_available_room"
+  "check_available_room",
+  "room_email"
  ],
  "fields": [
   {
@@ -125,30 +123,19 @@
   {
    "default": "Shortlist - Round 1",
    "fieldname": "interview_round",
-   "fieldtype": "Select",
-   "label": "Interview round",
-   "options": "\nShortlist - Round 1\nShortlist - Round 2"
-  },
-  {
-   "fieldname": "application_id",
    "fieldtype": "Data",
-   "label": "Application ID"
+   "label": "Interview Round"
   },
   {
    "fieldname": "applicants_name",
    "fieldtype": "Data",
    "label": "Applicant's name"
-  },
-  {
-   "fieldname": "interviewers_name",
-   "fieldtype": "Data",
-   "label": "Interviewer's Name"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-20 05:35:07.405009",
+ "modified": "2025-11-20 15:29:30.248825",
  "modified_by": "Administrator",
  "module": "Ms Calendar",
  "name": "Schedule interview",
