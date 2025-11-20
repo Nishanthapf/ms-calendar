@@ -5,6 +5,7 @@
  "creation": "2025-09-17 00:42:39.754086",
  "doctype": "DocType",
  "engine": "InnoDB",
+ "custom":1,
  "field_order": [
   "applicants_name",
   "candidate_cv__resume",
