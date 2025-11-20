@@ -7,7 +7,6 @@
  "custom": 1,
  "engine": "InnoDB",
  "field_order": [
-  "application_id",
   "applicants_name",
   "candidate_cv__resume",
   "interview_round",
