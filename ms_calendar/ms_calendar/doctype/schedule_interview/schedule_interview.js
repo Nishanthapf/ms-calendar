@@ -3,88 +3,102 @@ frappe.ui.form.on('Schedule interview', {
         frm.toggle_display('available_slots_section', false);
     },
 
-  after_save: function(frm) {
-        if (
-            !frm.doc.interviewer_email ||
-            !frm.doc.attendees ||
-            !frm.doc.interview_date ||
-            !frm.doc.start_time ||
-            !frm.doc.end_time
-        ) {
-            frappe.msgprint(__('Please fill Interviewer Email, Interviewee Email, Date, Start Time and End Time.'));
-            return;
-        }
 
-        const startDateTime = moment(frm.doc.interview_date + " " + frm.doc.start_time)
-            .format("YYYY-MM-DDTHH:mm:ss");
-        const endDateTime = moment(frm.doc.interview_date + " " + frm.doc.end_time)
-            .format("YYYY-MM-DDTHH:mm:ss");
+ async after_save(frm) {
 
-        // Collect interviewer emails (child table)
-        const interviewerEmails = (frm.doc.interviewer_email || [])
-            .map(row => row.interviewer_email)
-            .filter(email => !!email)
-            .join(",");
+    if (
+        !frm.doc.interviewer_email ||
+        !frm.doc.attendees ||
+        !frm.doc.interview_date ||
+        !frm.doc.start_time ||
+        !frm.doc.end_time
+    ) {
+        frappe.msgprint(__('Please fill Interviewer Email, Interviewee Email, Date, Start Time and End Time.'));
+        return;
+    }
 
-        // Collect attachments from different fields
-        let attachments = [];
+    const startDateTime = moment(`${frm.doc.interview_date} ${frm.doc.start_time}`)
+        .format("YYYY-MM-DDTHH:mm:ss");
 
-        // From child table
-        // if (frm.doc.attachments_table && frm.doc.attachments_table.length > 0) {
-        //     attachments = attachments.concat(
-        //         frm.doc.attachments_table
-        //             .map(row => row.file_url)
-        //             .filter(url => !!url)
-        //     );
-        // }
+    const endDateTime = moment(`${frm.doc.interview_date} ${frm.doc.end_time}`)
+        .format("YYYY-MM-DDTHH:mm:ss");
 
-        // From single attach fields
-        if (frm.doc.candidate_cv__resume) {
-            attachments.push(frm.doc.candidate_cv__resume);
-            attachments.push('/files/Individual Profile Data Import.xlsx');
+    // 1️⃣ Get interviewer emails
+    const interviewerEmailsArr = (frm.doc.interviewer_email || [])
+        .map(row => row.interviewer_email)
+        .filter(email => !!email);
 
-        }
-        // if (frm.doc.resume_attachment) {
-        //     attachments.push(frm.doc.resume_attachment);
-        // }
-        console.log(attachments);
-        console.log(frm.doc.organizer_email,"organizer_email");
-            console.log("event created ")
-        frappe.call({
-            method: "ms_calendar.api.msgraph.create_interview_event",
-            args: {
-                event_title: frm.doc.event_title || "Interview",
-                start_datetime: startDateTime,
-                end_datetime: endDateTime,
-                interviewer_emails: interviewerEmails,
-                interviewee_email: frm.doc.attendees,
-                room_emails: frm.doc.room_email || "",
-                is_online:frm.doc.interview_type,
-                Organizer_email:frm.doc.organizer_email,
-                attachment_paths: attachments  
-            },
-            freeze: true,
-            freeze_message: __("Creating calendar event..."),
-            callback: function(r) {
-                if (r.message) {
-                    frappe.msgprint({
-                        title: __("Success"),
-                        message: __("Interview scheduled successfully! Event ID: ") + r.message.event_id,
-                        indicator: "green"
-                    });
-                }
-            },
-            error: function(err) {
-                frappe.msgprint({
-                    title: __("Error"),
-                    message: __("Failed to create calendar event. Please check the console."),
-                    indicator: "red"
-                });
-                console.error("Calendar Event Error:", err);
+    const interviewerEmailsString = interviewerEmailsArr.join(",");
+
+    // 2️⃣ Fetch interviewer names (SAFE)
+    async function get_interviewer_names(emailArray) {
+        let names = [];
+
+        for (let email of emailArray) {
+            let r = await frappe.db.get_value(
+                "Interviewer Email List",
+                email,    // PRIMARY KEY = name
+                "interviewer_name"
+            );
+
+            if (r && r.message && r.message.interviewer_name) {
+                names.push(r.message.interviewer_name);
+            } else {
+                names.push(email);
             }
-        });
-    },
+        }
 
+        return names;
+    }
+
+    let interviewerNamesArray = await get_interviewer_names(interviewerEmailsArr);
+    let interviewerNamesString = interviewerNamesArray.join(", ");
+
+    // 3️⃣ Attachments
+    let attachments = [];
+    if (frm.doc.candidate_cv__resume) {
+        attachments.push(frm.doc.candidate_cv__resume);
+    }
+
+    // 4️⃣ Call backend API
+    frappe.call({
+        method: "ms_calendar.api.msgraph.create_interview_event",
+        args: {
+            event_title: frm.doc.event_title || "Interview",
+            start_datetime: startDateTime,
+            end_datetime: endDateTime,
+            interviewer_emails: interviewerEmailsString,
+            interviewee_email: frm.doc.attendees,
+            room_emails: frm.doc.room_email || "",
+            is_online: frm.doc.interview_type,
+            Organizer_email: frm.doc.organizer_email,
+            Interview_round: frm.doc.interview_round,
+            Interviewers_namesarray: interviewerNamesArray.join(","),
+            InterviewersName: interviewerNamesString,
+            Applicants_name: frm.doc.applicants_name,
+            attachment_paths: attachments  
+        },
+        freeze: true,
+        freeze_message: __("Creating calendar event..."),
+        callback: function(r) {
+            if (r.message) {
+                frappe.msgprint({
+                    title: __("Success"),
+                    message: __("Interview scheduled successfully! Event ID: ") + r.message.master_event_id,
+                    indicator: "green"
+                });
+            }
+        },
+        error: function(err) {
+            frappe.msgprint({
+                title: __("Error"),
+                message: __("Failed to create calendar event. See console."),
+                indicator: "red"
+            });
+            console.error("Calendar Event Error:", err);
+        }
+    });
+},
     interview_date: function(frm) {
         const today = moment().startOf('day');
         const interviewDate = moment(frm.doc.interview_date, "YYYY-MM-DD");

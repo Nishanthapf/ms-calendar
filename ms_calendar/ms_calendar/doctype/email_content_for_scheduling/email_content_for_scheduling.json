@@ -1,12 +1,17 @@
 {
  "actions": [],
- "allow_rename": 1,
+ "autoname": "format:EMC{##}",
  "creation": "2025-11-19 13:59:16.015884",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "email_template_name",
-  "email_content"
+  "feedback_url",
+  "column_break_ckgr",
+  "interview_round",
+  "section_break_ghlv",
+  "email_content_interviewee",
+  "email_content_interviewer"
  ],
  "fields": [
   {
@@ -15,18 +20,43 @@
    "label": "Email Template Name"
   },
   {
-   "fieldname": "email_content",
-   "fieldtype": "Text",
-   "label": "Email Content"
+   "fieldname": "interview_round",
+   "fieldtype": "Select",
+   "label": "Interview round",
+   "options": "\nShortlist - Round 1\nShortlist - Round 2"
+  },
+  {
+   "fieldname": "feedback_url",
+   "fieldtype": "Data",
+   "label": "Feedback Form URL For This Round"
+  },
+  {
+   "fieldname": "email_content_interviewer",
+   "fieldtype": "HTML Editor",
+   "label": "Email Content For Interviewer"
+  },
+  {
+   "fieldname": "email_content_interviewee",
+   "fieldtype": "HTML Editor",
+   "label": "Email Content For Interviewee"
+  },
+  {
+   "fieldname": "column_break_ckgr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_ghlv",
+   "fieldtype": "Section Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-20 01:19:07.351787",
+ "modified": "2025-11-20 03:51:54.647804",
  "modified_by": "Administrator",
  "module": "Ms Calendar",
  "name": "Email Content for Scheduling",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

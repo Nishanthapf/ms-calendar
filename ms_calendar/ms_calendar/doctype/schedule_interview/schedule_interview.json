@@ -6,19 +6,22 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "interviewer_email",
-  "check_availability",
+  "application_id",
+  "applicants_name",
+  "candidate_cv__resume",
+  "interview_round",
   "organizer_email",
   "column_break_cvny",
   "interview_date",
+  "interviewer_email",
+  "interviewers_name",
+  "check_availability",
   "interview_type",
-  "interview_round",
   "available_slots_section",
   "available_slots",
   "schedule_interview_section",
   "event_title",
   "attendees",
-  "candidate_cv__resume",
   "meeting_room",
   "room_email",
   "column_break_qwyn",
@@ -96,8 +99,7 @@
   {
    "fieldname": "meeting_room",
    "fieldtype": "Data",
-   "label": "Selected Meeting Rooms / Venue",
-   "read_only": 1
+   "label": "Selected Meeting Rooms / Venue"
   },
   {
    "fieldname": "column_break_cvny",
@@ -112,7 +114,6 @@
   {
    "fieldname": "organizer_email",
    "fieldtype": "Link",
-   "hidden": 1,
    "label": "Organizer Email",
    "options": "Organizer Email"
   },
@@ -122,15 +123,32 @@
    "label": "Candidate CV / Resume"
   },
   {
+   "default": "Shortlist - Round 1",
    "fieldname": "interview_round",
+   "fieldtype": "Select",
+   "label": "Interview round",
+   "options": "\nShortlist - Round 1\nShortlist - Round 2"
+  },
+  {
+   "fieldname": "application_id",
    "fieldtype": "Data",
-   "label": "Interview round"
+   "label": "Application ID"
+  },
+  {
+   "fieldname": "applicants_name",
+   "fieldtype": "Data",
+   "label": "Applicant's name"
+  },
+  {
+   "fieldname": "interviewers_name",
+   "fieldtype": "Data",
+   "label": "Interviewer's Name"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-20 02:56:15.394326",
+ "modified": "2025-11-20 05:35:07.405009",
  "modified_by": "Administrator",
  "module": "Ms Calendar",
  "name": "Schedule interview",
