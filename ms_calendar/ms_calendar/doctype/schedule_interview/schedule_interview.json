@@ -4,6 +4,7 @@
  "autoname": "format:INVID{###}",
  "creation": "2025-09-17 00:42:39.754086",
  "doctype": "DocType",
+ "custom": 1,
  "engine": "InnoDB",
  "field_order": [
   "application_id",
