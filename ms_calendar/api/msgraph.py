@@ -1202,8 +1202,6 @@ Azim Premji Foundation</p>
         meeting_html = (
             f"<p><b>Join Teams Meeting:</b> "
             f"<a href='{join_web_url}' target='_blank'>Join Now</a><br>"
-            f"<b>Meeting ID:</b> {join_meeting_id}<br>"
-            f"<b>Passcode:</b> {join_passcode}</p>"
         )
     else:
         meeting_html = "<p><b>Mode:</b> Offline Interview</p>"
