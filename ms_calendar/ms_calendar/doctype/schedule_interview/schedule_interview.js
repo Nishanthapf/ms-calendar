@@ -73,7 +73,6 @@ frappe.ui.form.on('Schedule interview', {
             is_online: frm.doc.interview_type,
             Organizer_email: frm.doc.organizer_email,
             Interview_round: frm.doc.interview_round,
-            Interviewers_namesarray: interviewerNamesArray.join(","),
             InterviewersName: interviewerNamesString,
             Applicants_name: frm.doc.applicants_name,
             application_id:frm.doc.application_id,
@@ -684,7 +683,7 @@ frappe.ui.form.on('Schedule interview', {
                 } else {
                     frm.get_field('available_slots').$wrapper.html(`
                         <div class="alert alert-danger d-flex align-items-center" role="alert">
-                            <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Danger:">
+                            <svg class="bi shrink-0 me-2" width="24" height="24" role="img" aria-label="Danger:">
                                 <use xlink:href="#exclamation-triangle-fill"/>
                             </svg>
                             <div>An error occurred while fetching availability.</div>
