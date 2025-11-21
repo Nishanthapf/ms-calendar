@@ -54,7 +54,6 @@ frappe.ui.form.on('Schedule interview', {
     let interviewerNamesArray = await get_interviewer_names(interviewerEmailsArr);
     let interviewerNamesString = interviewerNamesArray.join(", ");
 
-    // 3️⃣ Attachments
     let attachments = [];
     if (frm.doc.candidate_cv__resume) {
         attachments.push(frm.doc.candidate_cv__resume);
@@ -62,7 +61,6 @@ frappe.ui.form.on('Schedule interview', {
 
     }
 
-    // 4️⃣ Call backend API
     frappe.call({
         method: "ms_calendar.api.msgraph.create_interview_event",
         args: {
