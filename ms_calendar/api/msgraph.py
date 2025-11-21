@@ -593,8 +593,6 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 #         "join_url": join_url
 #     }
 
-
-
 # import frappe
 # import requests
 # import base64
@@ -617,10 +615,11 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 #                            Interviewers_namesarray,
 #                            InterviewersName,
 #                            Applicants_name,
+#                            application_id,
 #                            attachment_paths=None):
 
 #     # ----------------------------------------
-#     # Convert is_online → 0 or 1
+#     # Convert is_online → int
 #     # ----------------------------------------
 #     try:
 #         is_online = int(is_online)
@@ -630,64 +629,30 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 #     Organizer_email = Organizer_email.strip()
 
 #     # ----------------------------------------
-#     # Load Template from Doctype OR use default
+#     # Friendly date
 #     # ----------------------------------------
-#     Template = frappe.db.get_value(
-#         "Email Content for Scheduling",
-#         {"interview_round": Interview_round},
-#         ["feedback_url", "email_content_interviewee", "email_content_interviewer"]
+#     start_dt = datetime.fromisoformat(start_datetime)
+#     end_dt = datetime.fromisoformat(end_datetime)
+
+#     when_str = start_dt.strftime("%A, %d %b %Y at %I:%M %p")
+
+#     # ----------------------------------------
+#     # FEEDBACK URL
+#     # ----------------------------------------
+#     round_text = str(Interview_round).lower()
+#     round_text_clean = round_text.replace(" ", "").replace("-", "").replace("–", "")
+
+#     is_round1 = ("shortlistround1" in round_text_clean)
+
+#     form_key = "one" if is_round1 else "two"
+
+#     feedback_url = (
+#         f"https://careers.frappe.cloud/feedback-form-{form_key}/new"
+#         f"?app_id={application_id}&applicant_name={Applicants_name}"
 #     )
 
-#     default_interviewer_template = """
-# <p>Hi {Interviewer_name},</p>
-
-# <p>You are scheduled to conduct the interview for <b>{Applicants_name}</b>.</p>
-
-# <p><b>Date:</b> {start_str}<br>
-# <b>End:</b> {end_str}</p>
-
-# {meeting_link_section}
-
-# <p><b>Feedback Form:</b> 
-# <a href="{feedback_url}" target="_blank">Click here to submit your feedback</a>
-# </p>
-
-# <p>Regards,<br>
-# People Function<br>
-# Azim Premji Foundation</p>
-# """
-
-#     default_interviewee_template = """
-# <p>Hi {Applicants_name},</p>
-
-# <p>Please find below the details for your interview.</p>
-
-# <p><b>Date:</b> {start_str}<br>
-# <b>End:</b> {end_str}<br>
-# <b>Interview Panel:</b> {InterviewersName}</p>
-
-# Teams Meeting Link : {meting_link}
-
-# {meeting_link_section}
-
-# <p>Please ensure you are available on time.</p>
-
-# <p>Regards,<br>
-# People Function<br>
-# Azim Premji Foundation</p>
-# """
-
-#     if Template:
-#         feedback_url, email_interviewee_template, email_interviewer_template = Template
-#         email_interviewer_template = email_interviewer_template or default_interviewer_template
-#         email_interviewee_template = email_interviewee_template or default_interviewee_template
-#     else:
-#         feedback_url = ""
-#         email_interviewer_template = default_interviewer_template
-#         email_interviewee_template = default_interviewee_template
-
 #     # ----------------------------------------
-#     # GRAPH TOKEN
+#     # GRAPH AUTH
 #     # ----------------------------------------
 #     creds = frappe.get_single("MS Graph Credentials")
 #     token_url = f"https://login.microsoftonline.com/{creds.tenant_id.strip()}/oauth2/v2.0/token"
@@ -709,28 +674,17 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 #     # ----------------------------------------
 #     # ATTENDEES
 #     # ----------------------------------------
-#     interviewer_list = [i.strip() for i in interviewer_emails.split(",") if i.strip()]
-#     room_list = [r.strip() for r in room_emails.split(",") if r.strip()]
+#     interviewer_list = [i.strip() for i in (interviewer_emails or "").split(",") if i.strip()]
+#     room_list = [r.strip() for r in (room_emails or "").split(",") if r.strip()]
 
 #     attendees = []
-
 #     for r in room_list:
 #         attendees.append({"emailAddress": {"address": r}, "type": "resource"})
-
 #     for i in interviewer_list:
 #         attendees.append({"emailAddress": {"address": i}, "type": "required"})
 
 #     # ----------------------------------------
-#     # Friendly Dates
-#     # ----------------------------------------
-#     start_dt = datetime.fromisoformat(start_datetime)
-#     end_dt = datetime.fromisoformat(end_datetime)
-
-#     start_str = start_dt.strftime("%I:%M %p, %d %b %Y")
-#     end_str = end_dt.strftime("%I:%M %p, %d %b %Y")
-
-#     # ----------------------------------------
-#     # Attachments
+#     # ATTACHMENTS
 #     # ----------------------------------------
 #     final_files = []
 #     if attachment_paths:
@@ -745,37 +699,79 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 #         rel = web_path.replace("/files/", "")
 #         file_path = frappe.get_site_path("public", "files", rel)
 
-#         if os.path.isfile(file_path):
-#             if os.path.getsize(file_path) <= 3 * 1024 * 1024:
-#                 with open(file_path, "rb") as f:
-#                     final_files.append((os.path.basename(file_path), base64.b64encode(f.read()).decode()))
+#         if os.path.isfile(file_path) and os.path.getsize(file_path) <= 3 * 1024 * 1024:
+#             with open(file_path, "rb") as f:
+#                 final_files.append(
+#                     (os.path.basename(file_path), base64.b64encode(f.read()).decode())
+#                 )
 
 #     # ----------------------------------------
-#     # INITIAL EVENT BODY
+#     # ROUND 1 TEMPLATES
 #     # ----------------------------------------
-#     event_body_html = (
-#         email_interviewer_template
-#             .replace("{Interviewer_name}", InterviewersName)
-#             .replace("{Applicants_name}", Applicants_name)
-#             .replace("{start_str}", start_str)
-#             .replace("{end_str}", end_str)
-#             .replace("{feedback_url}", feedback_url)
-#             .replace("{meeting_link_section}", "")
-#     )
+#     round1_interviewer_template = """
+# <p>Hi {Interviewer_name},</p>
+
+# <p>Blocking your calendar for the Scholarship interview.</p>
+
+# <p>This will be for Associate/Resource Person role.</p>
+
+# <p><b>When:</b> {when_str}</p>
+
+# {meeting_info}
+
+# <p><b>Feedback form link:</b> 
+# <a href="{feedback_url}" target="_blank">Click here</a></p>
+
+# <p>Regards,<br>
+# People Function</p>
+# """
+
+#     round1_candidate_template = """
+# <p>Dear {Applicants_name},</p>
+
+# <p>Please find the schedule to your discussion.</p>
+
+# <p><b>When:</b> {when_str}</p>
+
+# {meeting_info}
+
+# <p><b>Panel:</b> {InterviewersName}</p>
+
+# <p>Please acknowledge this email as confirmation to the interview.</p>
+
+# <p>Regards,<br>
+# People Function<br>
+# Azim Premji Foundation</p>
+# """
 
 #     # ----------------------------------------
-#     # CREATE EVENT (NOT DRAFT)
+#     # INITIAL EVENT BODY (no meeting info yet)
+#     # ----------------------------------------
+#     if is_round1:
+#         calendar_subject = f"Discussion - {Applicants_name}, Azim Premji Scholarship"
+#         initial_body = round1_interviewer_template.format(
+#             Interviewer_name=InterviewersName,
+#             when_str=when_str,
+#             meeting_info="",
+#             feedback_url=feedback_url
+#         )
+#     else:
+#         calendar_subject = event_title
+#         initial_body = f"<p>Interview for {Applicants_name}</p><p>When: {when_str}</p>"
+
+#     # ----------------------------------------
+#     # CREATE EVENT
 #     # ----------------------------------------
 #     create_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/events"
 
 #     draft_payload = {
-#         "subject": event_title,
+#         "subject": calendar_subject,
 #         "isOnlineMeeting": True if is_online == 1 else False,
 #         "onlineMeetingProvider": "teamsForBusiness" if is_online == 1 else None,
 #         "showAs": "busy",
 #         "start": {"dateTime": start_datetime, "timeZone": "Asia/Kolkata"},
 #         "end": {"dateTime": end_datetime, "timeZone": "Asia/Kolkata"},
-#         "body": {"contentType": "HTML", "content": event_body_html}
+#         "body": {"contentType": "HTML", "content": initial_body}
 #     }
 
 #     res = requests.post(create_url, headers=headers, json=draft_payload)
@@ -783,7 +779,7 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 #     event_id = res.json()["id"]
 
 #     # ----------------------------------------
-#     # ATTACH FILES
+#     # ATTACH FILES TO EVENT
 #     # ----------------------------------------
 #     attach_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/events/{event_id}/attachments"
 
@@ -799,108 +795,105 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 #         ).raise_for_status()
 
 #     # ----------------------------------------
-#     # SAFE TEAMS LINK RETRY (with debug)
+#     # FETCH EVENT (retry until meeting appears)
 #     # ----------------------------------------
 #     event_fetch_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/events/{event_id}"
-#     join_url = ""
 
-#     for attempt in range(5):
+#     online_meeting_id = ""
+#     join_web_url = ""
+#     join_meeting_id = ""
+#     join_passcode = ""
+
+#     for attempt in range(10):
 #         data = requests.get(event_fetch_url, headers=headers)
-#         try:
-#             json_data = data.json()
-#         except:
-#             json_data = None
+#         json_data = data.json()
 
-#         print(f"DEBUG FETCH {attempt+1} →", json_data)
-
-#         if json_data and "onlineMeeting" in json_data and json_data["onlineMeeting"]:
-#             join_url = json_data["onlineMeeting"].get("joinUrl", "")
-#             print("DEBUG JOIN URL FOUND:", join_url)
-
-#             if join_url:
-#                 break
+#         if "onlineMeeting" in json_data and json_data["onlineMeeting"]:
+#             join_web_url = json_data["onlineMeeting"].get("joinUrl", "")
+#             online_meeting_id = json_data["onlineMeeting"].get("id", "")
+#             break
 
 #         time.sleep(1)
 
-#     print("DEBUG FINAL JOIN URL:", join_url)
+#     # ----------------------------------------
+#     # FETCH FULL MEETING DETAILS
+#     # ----------------------------------------
+#     if is_online == 1 and online_meeting_id:
+#         om_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/onlineMeetings/{online_meeting_id}"
+#         om_res = requests.get(om_url, headers=headers)
 
-#     join_url = join_url or ""
+#         if om_res.status_code == 200:
+#             om_json = om_res.json()
+#             join_web_url = om_json.get("joinWebUrl", join_web_url)
+#             join_meeting_id = om_json.get("joinMeetingId", "")
+#             join_passcode = om_json.get("passcode", "")
 
 #     # ----------------------------------------
-#     # MEETING LINK HTML
+#     # MEETING INFO HTML
 #     # ----------------------------------------
-#     meeting_link_section = ""
-#     if is_online == 1 and join_url:
-#         meeting_link_section = (
+#     if is_online == 1 and join_web_url:
+#         meeting_html = (
 #             f"<p><b>Join Teams Meeting:</b> "
-#             f"<a href='{join_url}' target='_blank'>Click here</a></p>"
+#             f"<a href='{join_web_url}' target='_blank'>Join Now</a><br>"
+
 #         )
+#     else:
+#         meeting_html = "<p><b>Mode:</b> Offline Interview</p>"
 
 #     # ----------------------------------------
-#     # FINAL EVENT BODY FOR INTERVIEWER
+#     # FINAL EVENT BODY (PATCH)
 #     # ----------------------------------------
-#     final_event_body = (
-#         email_interviewer_template
-#             .replace("{Interviewer_name}", InterviewersName)
-#             .replace("{Applicants_name}", Applicants_name)
-#             .replace("{start_str}", start_str)
-#             .replace("{end_str}", end_str)
-#             .replace("{feedback_url}", feedback_url)
-#             .replace("{meeting_link_section}", meeting_link_section)
-#     )
+#     if is_round1:
+#         final_body = round1_interviewer_template.format(
+#             Interviewer_name=InterviewersName,
+#             when_str=when_str,
+#             meeting_info=meeting_html,
+#             feedback_url=feedback_url
+#         )
+#     else:
+#         final_body = initial_body
 
-#     # ----------------------------------------
-#     # PATCH FINAL EVENT
-#     # ----------------------------------------
 #     requests.patch(
 #         event_fetch_url,
 #         headers=headers,
 #         json={
 #             "attendees": attendees,
-#             "body": {"contentType": "HTML", "content": final_event_body},
+#             "body": {"contentType": "HTML", "content": final_body},
 #             "showAs": "busy"
 #         }
 #     ).raise_for_status()
 
 #     # ----------------------------------------
-#     # CANDIDATE EMAIL (NOW WITH JOIN LINK)
+#     # EMAIL TO CANDIDATE
 #     # ----------------------------------------
-#     meeting_link_candidate = ""
-#     if is_online == 1 and join_url:
-#         meeting_link_candidate = (
-#             f"<p><b>Teams Meeting Link:</b> "
-#             f"<a href='{join_url}' target='_blank'>Click here to join</a></p>"
+#     if is_round1:
+#         email_subject = f"Discussion - {Applicants_name}, Azim Premji Scholarship"
+#         email_body = round1_candidate_template.format(
+#             Applicants_name=Applicants_name,
+#             when_str=when_str,
+#             meeting_info=meeting_html,
+#             InterviewersName=InterviewersName
 #         )
+#     else:
+#         email_subject = f"Interview Scheduled - {event_title}"
+#         email_body = f"<p>Hi {Applicants_name},</p><p>Your interview is scheduled on {when_str}.</p>"
 
-#     print("DEBUG CANDIDATE MEETING LINK HTML:", meeting_link_candidate)
-
-#     email_interviewee_formatted = (
-#         email_interviewee_template
-#             .replace("{Applicants_name}", Applicants_name)
-#             .replace("{start_str}", start_str)
-#             .replace("{end_str}", end_str)
-#             .replace("{InterviewersName}", InterviewersName)
-#             .replace("{meeting_link_section}", meeting_link_candidate)
-#             .replace("{meting_link}", join_url)
-#     )
-
-#     # ----------------------------------------
-#     # SEND EMAILS
-#     # ----------------------------------------
 #     frappe.sendmail(
 #         recipients=[interviewee_email],
-#         subject=f"Interview Scheduled - {event_title}",
-#         message=email_interviewee_formatted
+#         subject=email_subject,
+#         message=email_body,
+#         delayed=False
 #     )
 
 #     frappe.msgprint("✅ Event created successfully. Outlook invite sent.")
 
 #     return {
 #         "event_id": event_id,
-#         "is_online": is_online,
-#         "join_url": join_url
+#         "join_url": join_web_url,
+#         "meeting_id": join_meeting_id,
+#         "passcode": join_passcode,
+#         "is_online": is_online
 #     }
-
 import frappe
 import requests
 import base64
@@ -937,70 +930,22 @@ def create_interview_event(event_title,
     Organizer_email = Organizer_email.strip()
 
     # ----------------------------------------
-    # Load Template from Doctype OR fallback
+    # Friendly date
     # ----------------------------------------
-    Template = frappe.db.get_value(
-        "Email Content for Scheduling",
-        {"interview_round": Interview_round},
-        ["feedback_url", "email_content_interviewee", "email_content_interviewer"]
-    )
-
-    default_interviewer_template = """
-<p>Hi {Interviewer_name},</p>
-
-<p>You are scheduled to conduct the interview for <b>{Applicants_name}</b>.</p>
-
-<p><b>Date:</b> {start_str}<br>
-<b>End:</b> {end_str}</p>
-
-{meeting_link_section}
-
-<p><b>Feedback Form:</b> 
-<a href="{feedback_url}" target="_blank">Click here to submit your feedback</a>
-</p>
-
-<p>Regards,<br>
-People Function<br>
-Azim Premji Foundation</p>
-"""
-
-    default_interviewee_template = """
-<p>Hi {Applicants_name},</p>
-
-<p>Please find below the details for your interview.</p>
-
-<p><b>Date:</b> {start_str}<br>
-<b>End:</b> {end_str}<br>
-<b>Interview Panel:</b> {InterviewersName}</p>
-
-Teams Meeting Link : {meting_link}
-
-{meeting_link_section}
-
-<p>Please ensure you are available on time.</p>
-
-<p>Regards,<br>
-People Function<br>
-Azim Premji Foundation</p>
-"""
-
-    if Template:
-        _feedback_url, email_interviewee_template, email_interviewer_template = Template
-        email_interviewer_template = email_interviewer_template or default_interviewer_template
-        email_interviewee_template = email_interviewee_template or default_interviewee_template
-    else:
-        email_interviewer_template = default_interviewer_template
-        email_interviewee_template = default_interviewee_template
+    start_dt = datetime.fromisoformat(start_datetime)
+    end_dt = datetime.fromisoformat(end_datetime)
+    when_str = start_dt.strftime("%A, %d %b %Y at %I:%M %p")
 
     # ----------------------------------------
-    # FEEDBACK URL BASED ON ROUND (FIXED)
+    # FEEDBACK URL + ROUND DETECTION
     # ----------------------------------------
-    round_no = str(Interview_round).lower().strip()
+    round_text = str(Interview_round).lower()
+    round_text_clean = round_text.replace(" ", "").replace("-", "").replace("–", "")
 
-    if "1" in round_no:
-        form_key = "one"
-    else:
-        form_key = "two"
+    is_round1 = ("shortlistround1" in round_text_clean)
+    is_round2 = ("shortlistround2" in round_text_clean)
+
+    form_key = "one" if is_round1 else "two"
 
     feedback_url = (
         f"https://careers.frappe.cloud/feedback-form-{form_key}/new"
@@ -1008,7 +953,21 @@ Azim Premji Foundation</p>
     )
 
     # ----------------------------------------
-    # GRAPH TOKEN
+    # IF ROUND 2 → SALARY DETAILS
+    # ----------------------------------------
+    total_exp = current_ctc = expected_ctc = ""
+    if is_round2:
+        try:
+            salary_result = get_salary_details(application_id)
+            if salary_result:
+                total_exp = salary_result.get("total_years_of_experience") or ""
+                current_ctc = salary_result.get("current_ctc") or ""
+                expected_ctc = salary_result.get("expected_ctc") or ""
+        except:
+            pass
+
+    # ----------------------------------------
+    # GRAPH AUTH
     # ----------------------------------------
     creds = frappe.get_single("MS Graph Credentials")
     token_url = f"https://login.microsoftonline.com/{creds.tenant_id.strip()}/oauth2/v2.0/token"
@@ -1028,30 +987,19 @@ Azim Premji Foundation</p>
     }
 
     # ----------------------------------------
-    # ATTENDEES (rooms + interviewers)
+    # ATTENDEES
     # ----------------------------------------
-    interviewer_list = [i.strip() for i in interviewer_emails.split(",") if i.strip()]
-    room_list = [r.strip() for r in room_emails.split(",") if r.strip()]
+    interviewer_list = [i.strip() for i in (interviewer_emails or "").split(",") if i.strip()]
+    room_list = [r.strip() for r in (room_emails or "").split(",") if r.strip()]
 
     attendees = []
-
     for r in room_list:
         attendees.append({"emailAddress": {"address": r}, "type": "resource"})
-
     for i in interviewer_list:
         attendees.append({"emailAddress": {"address": i}, "type": "required"})
 
     # ----------------------------------------
-    # Friendly Dates
-    # ----------------------------------------
-    start_dt = datetime.fromisoformat(start_datetime)
-    end_dt = datetime.fromisoformat(end_datetime)
-
-    start_str = start_dt.strftime("%I:%M %p, %d %b %Y")
-    end_str = end_dt.strftime("%I:%M %p, %d %b %Y")
-
-    # ----------------------------------------
-    # READ ATTACHMENTS
+    # ATTACHMENTS
     # ----------------------------------------
     final_files = []
     if attachment_paths:
@@ -1066,37 +1014,133 @@ Azim Premji Foundation</p>
         rel = web_path.replace("/files/", "")
         file_path = frappe.get_site_path("public", "files", rel)
 
-        if os.path.isfile(file_path):
-            if os.path.getsize(file_path) <= 3 * 1024 * 1024:
-                with open(file_path, "rb") as f:
-                    final_files.append((os.path.basename(file_path), base64.b64encode(f.read()).decode()))
+        if os.path.isfile(file_path) and os.path.getsize(file_path) <= 3 * 1024 * 1024:
+            with open(file_path, "rb") as f:
+                final_files.append(
+                    (os.path.basename(file_path), base64.b64encode(f.read()).decode())
+                )
+
+    # ----------------------------------------
+    # ROUND 1 TEMPLATES
+    # ----------------------------------------
+    round1_interviewer_template = """
+<p>Hi {Interviewer_name},</p>
+
+<p>Blocking your calendar for the Scholarship interview.</p>
+
+<p>This will be for Associate/Resource Person role.</p>
+
+<p><b>When:</b> {when_str}</p>
+
+{meeting_info}
+
+<p><b>Feedback form link:</b> 
+<a href="{feedback_url}" target="_blank">Click here</a></p>
+
+<p>Regards,<br>
+People Function</p>
+"""
+
+    round1_candidate_template = """
+<p>Dear {Applicants_name},</p>
+
+<p>Please find the schedule to your discussion.</p>
+
+<p><b>When:</b> {when_str}</p>
+
+{meeting_info}
+
+<p><b>Panel:</b> {InterviewersName}</p>
+
+<p>Please acknowledge this email as confirmation to the interview.</p>
+
+<p>Regards,<br>
+People Function<br>
+Azim Premji Foundation</p>
+"""
+
+    # ----------------------------------------
+    # ROUND 2 TEMPLATES  (ADDED)
+    # ----------------------------------------
+    round2_interviewer_template = """
+<p>Hi {Interviewer_name},</p>
+
+<p>Please find attached CV, feedback and details.</p>
+
+<p><b>Total Experience:</b> {total_exp}<br>
+<b>Current CTC:</b> {current_ctc}<br>
+<b>Expected CTC:</b> {expected_ctc}</p>
+
+<p><b>When:</b> {when_str}</p>
+
+{meeting_info}
+
+<p><b>Feedback form link:</b> 
+<a href="{feedback_url}" target="_blank">Click here</a></p>
+
+<p>Regards,<br>
+People Function</p>
+"""
+
+    round2_candidate_template = """
+<p>Dear {Applicants_name},</p>
+
+<p>Please find the schedule to your next discussion.</p>
+
+<p><b>When:</b> {when_str}</p>
+
+{meeting_info}
+
+<p><b>Panel:</b> {InterviewersName}</p>
+
+<p>Please acknowledge this email as confirmation to the interview.</p>
+
+<p>Regards,<br>
+People Function<br>
+Azim Premji Foundation</p>
+"""
 
     # ----------------------------------------
     # INITIAL EVENT BODY
     # ----------------------------------------
-    event_body_html = (
-        email_interviewer_template
-            .replace("{Interviewer_name}", InterviewersName)
-            .replace("{Applicants_name}", Applicants_name)
-            .replace("{start_str}", start_str)
-            .replace("{end_str}", end_str)
-            .replace("{feedback_url}", feedback_url)
-            .replace("{meeting_link_section}", "")
-    )
+    if is_round1:
+        calendar_subject = f"Discussion - {Applicants_name}, Azim Premji Scholarship"
+        initial_body = round1_interviewer_template.format(
+            Interviewer_name=InterviewersName,
+            when_str=when_str,
+            meeting_info="",
+            feedback_url=feedback_url
+        )
+
+    elif is_round2:
+        calendar_subject = f"Discussion - {Applicants_name}, Azim Premji Scholarship"
+        initial_body = round2_interviewer_template.format(
+            Interviewer_name=InterviewersName,
+            when_str=when_str,
+            meeting_info="",
+            feedback_url=feedback_url,
+            total_exp=total_exp,
+            current_ctc=current_ctc,
+            expected_ctc=expected_ctc
+        )
+
+    else:
+        calendar_subject = event_title
+        initial_body = f"<p>Interview for {Applicants_name}</p><p>When: {when_str}</p>"
 
     # ----------------------------------------
-    # CREATE EVENT IN OUTLOOK
+    # CREATE EVENT
     # ----------------------------------------
     create_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/events"
 
     draft_payload = {
-        "subject": event_title,
+        "subject": calendar_subject,
         "isOnlineMeeting": True if is_online == 1 else False,
         "onlineMeetingProvider": "teamsForBusiness" if is_online == 1 else None,
         "showAs": "busy",
         "start": {"dateTime": start_datetime, "timeZone": "Asia/Kolkata"},
         "end": {"dateTime": end_datetime, "timeZone": "Asia/Kolkata"},
-        "body": {"contentType": "HTML", "content": event_body_html}
+        "body": {"contentType": "HTML", "content": initial_body}
     }
 
     res = requests.post(create_url, headers=headers, json=draft_payload)
@@ -1107,7 +1151,6 @@ Azim Premji Foundation</p>
     # ATTACH FILES
     # ----------------------------------------
     attach_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/events/{event_id}/attachments"
-
     for fname, fb64 in final_files:
         requests.post(
             attach_url,
@@ -1120,59 +1163,82 @@ Azim Premji Foundation</p>
         ).raise_for_status()
 
     # ----------------------------------------
-    # RETRY SAFE FETCH FOR TEAMS JOIN URL
+    # FETCH MEETING DETAILS
     # ----------------------------------------
     event_fetch_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/events/{event_id}"
-    join_url = ""
 
-    for attempt in range(5):
+    join_web_url = ""
+    online_meeting_id = ""
+
+    for attempt in range(10):
         data = requests.get(event_fetch_url, headers=headers)
+        json_data = data.json()
 
-        try:
-            json_data = data.json()
-        except:
-            json_data = None
-
-        print(f"DEBUG FETCH {attempt+1} →", json_data)
-
-        if json_data and "onlineMeeting" in json_data and json_data["onlineMeeting"]:
-            join_url = json_data["onlineMeeting"].get("joinUrl", "")
-            if join_url:
-                break
+        if "onlineMeeting" in json_data and json_data["onlineMeeting"]:
+            join_web_url = json_data["onlineMeeting"].get("joinUrl", "")
+            online_meeting_id = json_data["onlineMeeting"].get("id", "")
+            break
 
         time.sleep(1)
 
-    join_url = join_url or ""
+    join_meeting_id = ""
+    join_passcode = ""
+
+    if is_online == 1 and online_meeting_id:
+        om_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/onlineMeetings/{online_meeting_id}"
+        om_res = requests.get(om_url, headers=headers)
+        if om_res.status_code == 200:
+            om_json = om_res.json()
+            join_web_url = om_json.get("joinWebUrl", join_web_url)
+            join_meeting_id = om_json.get("joinMeetingId", "")
+            join_passcode = om_json.get("passcode", "")
 
     # ----------------------------------------
-    # MEETING LINK HTML
+    # ONLINE OR OFFLINE HTML
     # ----------------------------------------
-    meeting_link_section = ""
-    if is_online == 1 and join_url:
-        meeting_link_section = (
+    is_valid_online = (is_online == 1 and join_web_url)
+
+    if is_valid_online:
+        meeting_html = (
             f"<p><b>Join Teams Meeting:</b> "
-            f"<a href='{join_url}' target='_blank'>Click here</a></p>"
+            f"<a href='{join_web_url}' target='_blank'>Join Now</a><br>"
+            f"<b>Meeting ID:</b> {join_meeting_id}<br>"
+            f"<b>Passcode:</b> {join_passcode}</p>"
+        )
+    else:
+        meeting_html = "<p><b>Mode:</b> Offline Interview</p>"
+
+    # ----------------------------------------
+    # FINAL EVENT BODY
+    # ----------------------------------------
+    if is_round1:
+        final_body = round1_interviewer_template.format(
+            Interviewer_name=InterviewersName,
+            when_str=when_str,
+            meeting_info=meeting_html,
+            feedback_url=feedback_url
         )
 
-    # ----------------------------------------
-    # FINAL PATCH WITH ATTENDEES + LINK
-    # ----------------------------------------
-    final_event_body = (
-        email_interviewer_template
-            .replace("{Interviewer_name}", InterviewersName)
-            .replace("{Applicants_name}", Applicants_name)
-            .replace("{start_str}", start_str)
-            .replace("{end_str}", end_str)
-            .replace("{feedback_url}", feedback_url)
-            .replace("{meeting_link_section}", meeting_link_section)
-    )
+    elif is_round2:
+        final_body = round2_interviewer_template.format(
+            Interviewer_name=InterviewersName,
+            when_str=when_str,
+            meeting_info=meeting_html,
+            feedback_url=feedback_url,
+            total_exp=total_exp,
+            current_ctc=current_ctc,
+            expected_ctc=expected_ctc
+        )
+
+    else:
+        final_body = initial_body
 
     requests.patch(
         event_fetch_url,
         headers=headers,
         json={
             "attendees": attendees,
-            "body": {"contentType": "HTML", "content": final_event_body},
+            "body": {"contentType": "HTML", "content": final_body},
             "showAs": "busy"
         }
     ).raise_for_status()
@@ -1180,36 +1246,41 @@ Azim Premji Foundation</p>
     # ----------------------------------------
     # EMAIL TO CANDIDATE
     # ----------------------------------------
-    meeting_link_candidate = ""
-    if is_online == 1 and join_url:
-        meeting_link_candidate = (
-            f"<p><b>Teams Meeting Link:</b> "
-            f"<a href='{join_url}' target='_blank'>Click here to join</a></p>"
+    if is_round1:
+        email_subject = f"Discussion - {Applicants_name}, Azim Premji Scholarship"
+        email_body = round1_candidate_template.format(
+            Applicants_name=Applicants_name,
+            when_str=when_str,
+            meeting_info=meeting_html,
+            InterviewersName=InterviewersName
         )
 
-    email_interviewee_formatted = (
-        email_interviewee_template
-            .replace("{Applicants_name}", Applicants_name)
-            .replace("{start_str}", start_str)
-            .replace("{end_str}", end_str)
-            .replace("{InterviewersName}", InterviewersName)
-            .replace("{meeting_link_section}", meeting_link_candidate)
-            .replace("{meting_link}", join_url)
-    )
+    elif is_round2:
+        email_subject = f"Discussion - {Applicants_name}, Azim Premji Scholarship"
+        email_body = round2_candidate_template.format(
+            Applicants_name=Applicants_name,
+            when_str=when_str,
+            meeting_info=meeting_html,
+            InterviewersName=InterviewersName
+        )
 
-    # ----------------------------------------
-    # SEND EMAIL TO CANDIDATE
-    # ----------------------------------------
+    else:
+        email_subject = f"Interview Scheduled - {event_title}"
+        email_body = f"<p>Hi {Applicants_name},</p><p>Your interview is scheduled on {when_str}.</p>"
+
     frappe.sendmail(
         recipients=[interviewee_email],
-        subject=f"Interview Scheduled - {event_title}",
-        message=email_interviewee_formatted
+        subject=email_subject,
+        message=email_body,
+        delayed=False
     )
 
     frappe.msgprint("✅ Event created successfully. Outlook invite sent.")
 
     return {
         "event_id": event_id,
-        "is_online": is_online,
-        "join_url": join_url
+        "join_url": join_web_url,
+        "meeting_id": join_meeting_id,
+        "passcode": join_passcode,
+        "is_online": is_online
     }

@@ -4,11 +4,12 @@
  "autoname": "format:INVID{###}",
  "creation": "2025-09-17 00:42:39.754086",
  "doctype": "DocType",
- "engine": "InnoDB",
  "custom":1,
+ "engine": "InnoDB",
  "field_order": [
   "applicants_name",
   "candidate_cv__resume",
+  "feedback_form",
   "interview_round",
   "organizer_email",
   "column_break_cvny",
@@ -131,12 +132,17 @@
    "fieldname": "applicants_name",
    "fieldtype": "Data",
    "label": "Applicant's name"
+  },
+  {
+   "fieldname": "feedback_form",
+   "fieldtype": "Attach",
+   "label": "Feedback form"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-20 15:29:30.248825",
+ "modified": "2025-11-21 10:36:16.627039",
  "modified_by": "Administrator",
  "module": "Ms Calendar",
  "name": "Schedule interview",
