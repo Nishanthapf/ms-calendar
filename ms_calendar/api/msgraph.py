@@ -1111,6 +1111,7 @@ Azim Premji Foundation</p>
 
     frappe.sendmail(
         recipients=[interviewee_email],
+        sender=Organizer_email,
         subject=email_subject,
         message=email_body,
         delayed=False
