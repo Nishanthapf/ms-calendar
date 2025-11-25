@@ -292,7 +292,7 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
             "schedules": batch,
             "startTime": {"dateTime": start_utc.isoformat(), "timeZone": "UTC"},
             "endTime": {"dateTime": end_utc.isoformat(), "timeZone": "UTC"},
-            "availabilityViewInterval": 30
+            "availabilityViewInterval": 5
         }
 
         resp = requests.post(
