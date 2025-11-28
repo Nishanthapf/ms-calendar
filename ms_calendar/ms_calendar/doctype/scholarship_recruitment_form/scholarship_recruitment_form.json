@@ -1,0 +1,296 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "APSRF-.####",
+ "creation": "2025-11-28 22:07:10.875507",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "application_status",
+  "role",
+  "section_break_bmsy",
+  "full_name_as_per_aadhar",
+  "gender",
+  "email",
+  "phone_number",
+  "column_break_fvoe",
+  "total_years_of_experience",
+  "current_ctc",
+  "expected_ctc",
+  "feedback_one_pdf",
+  "folder_path",
+  "education_tab",
+  "highest_level_of_education",
+  "year_completion",
+  "relocation",
+  "total_experience",
+  "if_no_experience_years",
+  "comfortable_tasks",
+  "spreadsheet",
+  "basic_formula",
+  "functions",
+  "pivot_charts",
+  "language",
+  "english",
+  "religional_languages",
+  "state_of_residence",
+  "srt_mail",
+  "resume_section",
+  "resume__cv",
+  "test_results_tab",
+  "total_score",
+  "score_percentile",
+  "insert_record"
+ ],
+ "fields": [
+  {
+   "default": "New Applicant",
+   "fieldname": "application_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Application Status",
+   "options": "\nNew Applicant\nApplication Reject\nTest Process\nTest Reject\nRecruiter Round\nRecruiter Reject\nRound One\nRound Two\nReject - Round 1\nReject - Round 2\nDocument Collection\nOffer"
+  },
+  {
+   "fieldname": "role",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Role",
+   "options": "\nAssociate\nResource Person\nTo be Decided"
+  },
+  {
+   "fieldname": "section_break_bmsy",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "full_name_as_per_aadhar",
+   "fieldtype": "Data",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Full Name as per Aadhar",
+   "reqd": 1
+  },
+  {
+   "fieldname": "gender",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Gender",
+   "options": "\nMale\nFemale\nOthers",
+   "reqd": 1
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Email (Personal Email Address Only)",
+   "options": "Email",
+   "reqd": 1
+  },
+  {
+   "fieldname": "phone_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Phone Number (without +91 or 0)",
+   "options": "Phone",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_fvoe",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_years_of_experience",
+   "fieldtype": "Data",
+   "label": "Total Years of Experience"
+  },
+  {
+   "fieldname": "current_ctc",
+   "fieldtype": "Data",
+   "label": "Current CTC"
+  },
+  {
+   "fieldname": "expected_ctc",
+   "fieldtype": "Data",
+   "label": "Expected CTC"
+  },
+  {
+   "fieldname": "feedback_one_pdf",
+   "fieldtype": "Attach",
+   "label": "Feedback One PDF"
+  },
+  {
+   "fieldname": "folder_path",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Drive Folder",
+   "read_only": 1
+  },
+  {
+   "fieldname": "education_tab",
+   "fieldtype": "Tab Break",
+   "label": "Education"
+  },
+  {
+   "fieldname": "highest_level_of_education",
+   "fieldtype": "Select",
+   "label": "Highest level of education",
+   "options": "\nDiploma/Vocational course\nBachelors\nMasters\nMphil/PhD/Others",
+   "reqd": 1
+  },
+  {
+   "fieldname": "year_completion",
+   "fieldtype": "Select",
+   "label": "Year of completion of your highest level of education",
+   "options": "\nStill pursuing\n2020-2025\nEarlier than 2020",
+   "reqd": 1
+  },
+  {
+   "fieldname": "relocation",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Are you open to relocating to Kalaburgi for this role?",
+   "options": "\nYes\nNo"
+  },
+  {
+   "fieldname": "total_experience",
+   "fieldtype": "Select",
+   "label": "Is your total work experience between 2-5 years?",
+   "options": "\nYes\nNo"
+  },
+  {
+   "depends_on": "eval: doc.total_experience == \"No\";",
+   "fieldname": "if_no_experience_years",
+   "fieldtype": "Float",
+   "label": "If No, then specify your total experience",
+   "mandatory_depends_on": "eval: doc.total_experience == \"No\";",
+   "non_negative": 1,
+   "precision": "1"
+  },
+  {
+   "fieldname": "comfortable_tasks",
+   "fieldtype": "Heading",
+   "label": "<h5>Which of the following tasks are you comfortable performing in Microsoft Excel?</h5>"
+  },
+  {
+   "default": "0",
+   "fieldname": "spreadsheet",
+   "fieldtype": "Check",
+   "label": "Creating and Performing Spreadsheets"
+  },
+  {
+   "default": "0",
+   "fieldname": "basic_formula",
+   "fieldtype": "Check",
+   "label": "Using Basic Formulas (SUM, AVERAGE, COUNT)"
+  },
+  {
+   "default": "0",
+   "fieldname": "functions",
+   "fieldtype": "Check",
+   "label": "Using functions like VLOOKUP, IF, INDEX/MATCH"
+  },
+  {
+   "default": "0",
+   "fieldname": "pivot_charts",
+   "fieldtype": "Check",
+   "label": "Creating Pivot tables and Charts"
+  },
+  {
+   "fieldname": "language",
+   "fieldtype": "Heading",
+   "label": "<h5>Please select the language(s) you are proficient in</h5>"
+  },
+  {
+   "default": "0",
+   "fieldname": "english",
+   "fieldtype": "Check",
+   "label": "English"
+  },
+  {
+   "default": "0",
+   "fieldname": "religional_languages",
+   "fieldtype": "Check",
+   "label": "Religional languages"
+  },
+  {
+   "fieldname": "state_of_residence",
+   "fieldtype": "Select",
+   "label": "State of Residence",
+   "options": "\nAndhra Pradesh\nArunachal Pradesh\nAssam\nBihar\nChhattisgarh\nGoa\nGujarat\nHaryana\nHimachal Pradesh\nJharkhand\nKarnataka\nKerala\nMadhya Pradesh\nMaharashtra\nManipur\nMeghalaya\nMizoram\nNagaland\nOdisha\nPunjab\nRajasthan\nSikkim\nTamil Nadu\nTelangana\nTripura\nUttar Pradesh\nUttarakhand\nWest Bengal"
+  },
+  {
+   "default": "recruitment.scholarship@azimpremjifoundation.org",
+   "fieldname": "srt_mail",
+   "fieldtype": "Data",
+   "label": "SRT Mail",
+   "options": "Email"
+  },
+  {
+   "fieldname": "resume_section",
+   "fieldtype": "Section Break",
+   "label": "Resume"
+  },
+  {
+   "fieldname": "resume__cv",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "label": "Resume / CV"
+  },
+  {
+   "fieldname": "test_results_tab",
+   "fieldtype": "Tab Break",
+   "label": "Test Results"
+  },
+  {
+   "fieldname": "total_score",
+   "fieldtype": "Data",
+   "label": "Total Score of the Candidate"
+  },
+  {
+   "fieldname": "score_percentile",
+   "fieldtype": "Data",
+   "label": "Score Percentile of the Candidate"
+  },
+  {
+   "fieldname": "insert_record",
+   "fieldtype": "Button",
+   "label": "Insert Record"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-11-28 22:08:51.321005",
+ "modified_by": "Administrator",
+ "module": "Ms Calendar",
+ "name": "Scholarship Recruitment Form",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "search_fields": "full_name_as_per_aadhar",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "track_seen": 1,
+ "track_views": 1
+}

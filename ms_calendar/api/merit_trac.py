@@ -16,6 +16,7 @@ def test_result_api():
                 headers = {k.lower(): v for k, v in (frappe.request.headers or {}).items()}
                 val = headers.get(name.lower())
                 if val:
+                    
                     return val
             except Exception:
                 pass
