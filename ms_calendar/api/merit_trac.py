@@ -174,61 +174,61 @@
 #                 # </body>
 #                 # </html>
 #                 # """
-#                 pass_email_html = f"""
-#                         <!doctype html>
-#                         <html lang="en">
-#                         <head>
-#                         <meta charset="UTF-8">
-#                         <meta name="viewport" content="width=device-width,initial-scale=1">
-#                         </head>
+                # pass_email_html = f"""
+                #         <!doctype html>
+                #         <html lang="en">
+                #         <head>
+                #         <meta charset="UTF-8">
+                #         <meta name="viewport" content="width=device-width,initial-scale=1">
+                #         </head>
 
-#                         <body style="margin:0; padding:0; font-family:Arial, Helvetica, sans-serif; background:#ffffff; color:#000;">
+                #         <body style="margin:0; padding:0; font-family:Arial, Helvetica, sans-serif; background:#ffffff; color:#000;">
 
-#                         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:20px;">
-#                             <tr>
-#                             <td style="text-align:left;">
-#                                 <p>Dear <strong>{applicant_name}</strong>,</p>
+                #         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:20px;">
+                #             <tr>
+                #             <td style="text-align:left;">
+                #                 <p>Dear <strong>{applicant_name}</strong>,</p>
 
-#                                 <p>
-#                                 You have cleared the online test, and we request you to upload your updated CV (PDF or Word) for the next steps.
-#                                 </p>
+                #                 <p>
+                #                 You have cleared the online test, and we request you to upload your updated CV (PDF or Word) for the next steps.
+                #                 </p>
 
-#                                 <p>Please click the button below to upload your CV:</p>
+                #                 <p>Please click the button below to upload your CV:</p>
 
-#                                 <p style="margin:20px 0;">
-#                                 <a href="https://careers.frappe.cloud/cv-submission/new?app_id={candidate_id}&applicant_name={applicant_name}"
-#                                     style="background:#0078D4; color:#ffffff; padding:8px 14px; text-decoration:none; border-radius:4px; font-weight:500; font-size:14px; display:inline-block;">
-#                                     Upload your CV
-#                                 </a>
-#                                 </p>
+                #                 <p style="margin:20px 0;">
+                #                 <a href="https://careers.frappe.cloud/cv-submission/new?app_id={candidate_id}&applicant_name={applicant_name}"
+                #                     style="background:#0078D4; color:#ffffff; padding:8px 14px; text-decoration:none; border-radius:4px; font-weight:500; font-size:14px; display:inline-block;">
+                #                     Upload your CV
+                #                 </a>
+                #                 </p>
 
-#                                 <p>
-#                                 <strong>Accepted formats:</strong> .pdf, .doc, .docx<br>
-#                                 <strong>Maximum size:</strong> 5 MB
-#                                 </p>
+                #                 <p>
+                #                 <strong>Accepted formats:</strong> .pdf, .doc, .docx<br>
+                #                 <strong>Maximum size:</strong> 5 MB
+                #                 </p>
 
-#                                 <p>Our team will reach out to you soon.</p>
+                #                 <p>Our team will reach out to you soon.</p>
 
-#                                 <p>
-#                                 Regards,<br>
-#                                 <strong>People Function</strong><br>
-#                                 Azim Premji Foundation
-#                                 </p>
+                #                 <p>
+                #                 Regards,<br>
+                #                 <strong>People Function</strong><br>
+                #                 Azim Premji Foundation
+                #                 </p>
 
-#                                 <p style="font-size:13px; margin-top:28px;">
-#                                 If the button doesn't work, use the link below:<br>
-#                                 <a href="https://careers.frappe.cloud/cv-submission/new?app_id={candidate_id}&applicant_name={applicant_name}">
-#                                     https://careers.frappe.cloud/cv-submission/new?app_id={candidate_id}&applicant_name={applicant_name}
-#                                 </a>
-#                                 </p>
+                #                 <p style="font-size:13px; margin-top:28px;">
+                #                 If the button doesn't work, use the link below:<br>
+                #                 <a href="https://careers.frappe.cloud/cv-submission/new?app_id={candidate_id}&applicant_name={applicant_name}">
+                #                     https://careers.frappe.cloud/cv-submission/new?app_id={candidate_id}&applicant_name={applicant_name}
+                #                 </a>
+                #                 </p>
 
-#                             </td>
-#                             </tr>
-#                         </table>
+                #             </td>
+                #             </tr>
+                #         </table>
 
-#                         </body>
-#                         </html>
-#                         """
+                #         </body>
+                #         </html>
+                #         """
 
 
 #                 # fail_email_html = f"""
@@ -342,7 +342,7 @@ from datetime import datetime, timedelta
 def test_result_api():
     try:
         # ------------------------------------------------------------
-        # 1️⃣ API KEY VALIDATION
+        # 1️⃣ API KEY VALIDATION (robust)
         # ------------------------------------------------------------
         def get_request_header(name):
             try:
@@ -351,13 +351,11 @@ def test_result_api():
                     return headers[name.lower()]
             except Exception:
                 pass
-
             env_key = "HTTP_" + name.upper().replace("-", "_")
             return frappe.request.environ.get(env_key)
 
         api_key = get_request_header("Patner-key")
         EXPECTED_KEY = "ToNnhB5chOh23fWz"
-
         if not api_key or api_key != EXPECTED_KEY:
             frappe.local.response.http_status_code = 401
             return {
@@ -381,20 +379,23 @@ def test_result_api():
             return {"status": "error", "http_status": 400, "message": "Invalid JSON body"}
 
         # ------------------------------------------------------------
-        # 3️⃣ EXPECT A SINGLE JSON OBJECT (NOT ARRAY)
+        # 3️⃣ Accept either top-level object or {"data": {...}}
         # ------------------------------------------------------------
-        item = payload.get("data")
-
-        if not item or not isinstance(item, dict):
+        if isinstance(payload, dict) and "data" in payload and isinstance(payload.get("data"), dict):
+            item = payload.get("data")
+        elif isinstance(payload, dict) and payload.get("candidateId"):
+            # support callers that send object directly (no "data" wrapper)
+            item = payload
+        else:
             frappe.local.response.http_status_code = 400
             return {
                 "status": "error",
                 "http_status": 400,
-                "message": "'data' must be a JSON object"
+                "message": "Request must be a JSON object with candidateId (either top-level or inside 'data')"
             }
 
         # ------------------------------------------------------------
-        # 4️⃣ EXTRACT FIELDS
+        # 4️⃣ field extractor + datetime helper
         # ------------------------------------------------------------
         def fix_datetime(dt):
             if not dt:
@@ -419,14 +420,10 @@ def test_result_api():
 
         if not candidate_id:
             frappe.local.response.http_status_code = 400
-            return {
-                "status": "error",
-                "http_status": 400,
-                "message": "candidateId missing"
-            }
+            return {"status": "error", "http_status": 400, "message": "candidateId missing"}
 
         # ------------------------------------------------------------
-        # 5️⃣ INSERT INTO MeritTrac Test Result
+        # 5️⃣ INSERT MeritTrac Test Result
         # ------------------------------------------------------------
         test_doc = frappe.get_doc({
             "doctype": "MeritTrac Test Result",
@@ -443,16 +440,16 @@ def test_result_api():
             "updated_at": updated_at,
             "created_at": created_at
         })
-
         test_doc.insert(ignore_permissions=True)
 
         # ------------------------------------------------------------
         # 6️⃣ UPDATE SCHOLARSHIP RECRUITMENT FORM
         # ------------------------------------------------------------
+        # Request full_name_as_per_aadhar too (fall back to applicant_name)
         srf = frappe.db.get_value(
             "Scholarship Recruitment Form",
             {"name": candidate_id},
-            ["name", "applicant_name", "email", "srt_mail"],
+            ["name", "applicant_name", "full_name_as_per_aadhar", "email", "srt_mail"],
             as_dict=True
         )
 
@@ -461,93 +458,135 @@ def test_result_api():
             frappe.local.response.http_status_code = 200
             return {
                 "status": 200,
+                "http_status": 200,
                 "message": "Data inserted (No SRF found for candidate)",
                 "data": []
             }
 
+        # determine pass/fail
         try:
             passed = (percentage is not None and float(percentage) >= 50)
         except:
             passed = False
-
         status = "Recruiter Round" if passed else "Recruiter Reject"
 
-        srf_doc = frappe.get_doc("Scholarship Recruitment Form", srf.name)
+        # update SRF doc
+        srf_name = srf.get("name")
+        srf_doc = frappe.get_doc("Scholarship Recruitment Form", srf_name)
         srf_doc.application_status = status
         srf_doc.save(ignore_permissions=True)
 
-        applicant_name  = srf.applicant_name or "Applicant"
-        applicant_email = srf.email
+        # applicant details (prefer full_name_as_per_aadhar)
+        applicant_name = srf.get("full_name_as_per_aadhar") or  "Applicant"
+        applicant_email = srf.get("email")
 
-        SenderEmail = srf.srt_mail or "noreply@azimpremjifoundation.org"
+        # sender: safe lookup, fallback to a single fixed sender
+        SenderEmail = srf.get("srt_mail") if srf.get("srt_mail") else "tech4socialsector@azimpremjifoundation.org"
 
         # ------------------------------------------------------------
         # 7️⃣ EMAIL TEMPLATES
         # ------------------------------------------------------------
-
         pass_email_html = f"""
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-</head>
+     <!doctype html>
+                        <html lang="en">
+                        <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width,initial-scale=1">
+                        </head>
 
-<body style="margin:0; padding:0; font-family:Arial, Helvetica, sans-serif; background:#ffffff; color:#000;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:20px;">
-<tr><td>
+                        <body style="margin:0; padding:0; font-family:Arial, Helvetica, sans-serif; background:#ffffff; color:#000;">
 
-<p>Dear <strong>{applicant_name}</strong>,</p>
-<p>You have cleared the online test, and we request you to upload your updated CV (PDF or Word) for the next steps.</p>
+                        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:20px;">
+                            <tr>
+                            <td style="text-align:left;">
+                                <p>Dear <strong>{applicant_name}</strong>,</p>
 
-<p style="margin:20px 0;">
-  <a href="https://careers.frappe.cloud/cv-submission/new?app_id={candidate_id}&applicant_name={applicant_name}"
-     style="background:#0078D4;color:#fff;padding:8px 14px;text-decoration:none;border-radius:4px;font-weight:500;display:inline-block;">
-     Upload your CV
-  </a>
-</p>
+                                <p>
+                                You have cleared the online test, and we request you to upload your updated CV (PDF or Word) for the next steps.
+                                </p>
 
-<p><strong>Accepted formats:</strong> .pdf, .doc, .docx<br>
-<strong>Maximum size:</strong> 5 MB</p>
+                                <p>Please click the button below to upload your CV:</p>
 
-<p>Regards,<br>
-<strong>People Function</strong><br>
-Azim Premji Foundation</p>
+                                <p style="margin:20px 0;">
+                                <a href="https://careers.frappe.cloud/cv-submission/new?app_id={candidate_id}&applicant_name={applicant_name}"
+                                    style="background:#0078D4; color:#ffffff; padding:8px 14px; text-decoration:none; border-radius:4px; font-weight:500; font-size:14px; display:inline-block;">
+                                    Upload your CV
+                                </a>
+                                </p>
 
-</td></tr></table>
-</body>
-</html>
+                                <p>
+                                <strong>Accepted formats:</strong> .pdf, .doc, .docx<br>
+                                <strong>Maximum size:</strong> 5 MB
+                                </p>
+
+                                <p>Our team will reach out to you soon.</p>
+
+                                <p>
+                                Regards,<br>
+                                <strong>People Function</strong><br>
+                                Azim Premji Foundation
+                                </p>
+
+                                <p style="font-size:13px; margin-top:28px;">
+                                If the button doesn't work, use the link below:<br>
+                                <a href="https://careers.frappe.cloud/cv-submission/new?app_id={candidate_id}&applicant_name={applicant_name}">
+                                    https://careers.frappe.cloud/cv-submission/new?app_id={candidate_id}&applicant_name={applicant_name}
+                                </a>
+                                </p>
+
+                            </td>
+                            </tr>
+                        </table>
+
+                        </body>
+                        </html>
 """
 
         fail_email_html = f"""
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
+ <!DOCTYPE html>
+                    <html>
+                    <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    </head>
 
-<body style="margin:0;padding:20px;font-family:'Segoe UI';color:#333;">
-<p style="font-size:16px;">Dear {applicant_name},</p>
+                    <body style="margin:0; padding:20px; background:#ffffff; font-family:'Segoe UI', sans-serif; color:#333; line-height:1.6;">
 
-<p style="font-size:16px;">Thank you for your interest in the Azim Premji Scholarship Initiative. We appreciate the time and effort you invested.</p>
+                    <p style="font-size:16px; margin:0 0 20px 0;">
+                    Dear {applicant_name},
+                    </p>
 
-<p style="font-size:16px;">After careful consideration, we are unable to take your application forward at this time.</p>
+                    <p style="font-size:16px; margin:0 0 20px 0;">
+                    Thank you for your interest in the opportunities with the Azim Premji Scholarship Initiative.
+                    We appreciate the time and effort you have invested in exploring an opportunity with us.
+                    </p>
 
-<p style="font-size:16px;">We thank you again and wish you the very best.</p>
+                    <p style="font-size:16px; margin:0 0 20px 0;">
+                    After careful consideration of your candidature, unfortunately, we will not be able to
+                    take your application forward at this point of time.
+                    </p>
 
-<p style="font-size:16px;">Regards,<br>People Function<br>Azim Premji Foundation</p>
-</body>
-</html>
+                    <p style="font-size:16px; margin:0 0 25px 0;">
+                    We would like to thank you for your time, and we wish you the very best!
+                    </p>
+
+                    <p style="font-size:16px; margin:0 0 40px 0;">
+                    Regards,<br>
+                    People Function<br>
+                    Azim Premji Foundation
+                    </p>
+
+                    </body>
+                    </html>
 """
 
         # ------------------------------------------------------------
-        # 8️⃣ SEND EMAIL (PASS = NOW / FAIL = AFTER 3 DAYS)
+        # 8️⃣ SEND EMAILS (PASS immediate / FAIL after 3 days)
         # ------------------------------------------------------------
         if applicant_email:
             try:
                 if passed:
-                    # SEND NOW
+                    # send now
                     frappe.sendmail(
                         sender=SenderEmail,
                         recipients=[applicant_email],
@@ -558,21 +597,27 @@ Azim Premji Foundation</p>
                         reference_name=candidate_id
                     )
                 else:
-                    # SEND AFTER 3 DAYS
-                    send_time = datetime.now() + timedelta(days=3)
+                    # schedule after 3 days
+                 send_time = datetime.now() + timedelta(days=3)
+                # STEP 1 — Queue the email (instead of sending immediately)
+                frappe.sendmail(
+                    sender=SenderEmail,
+                    recipients=[applicant_email],
+                    subject=f"Azim Premji Scholarship – Your Application, {applicant_name}",
+                    message=fail_email_html,
+                    delayed=True  # MUST be True to get into Email Queue
+                )
 
-                    frappe.enqueue(
-                        "frappe.sendmail",
-                        queue="default",
-                        enqueue_at=send_time,
-                        sender=SenderEmail,
-                        recipients=[applicant_email],
-                        subject=f"Azim Premji Scholarship – Your Application, {applicant_name}",
-                        message=fail_email_html,
-                        delayed=False,
-                        reference_doctype="Scholarship Recruitment Form",
-                        reference_name=candidate_id
-                    )
+                # STEP 2 — Schedule Email Queue processor
+
+                frappe.enqueue(
+                    "frappe.email.doctype.email_queue.email_queue.send",
+                    queue="default",
+                    enqueue_at=send_time
+                )
+
+
+
             except Exception as mail_exc:
                 frappe.log_error(f"Mail error: {mail_exc}", "MERIT_TRAC_MAIL_ERROR")
 
@@ -584,11 +629,12 @@ Azim Premji Foundation</p>
         frappe.local.response.http_status_code = 200
         return {
             "status": 200,
+            "http_status": 200,
             "message": "Data inserted, SRF updated, email processed",
-            "data": []
+            "data": [SenderEmail]
         }
 
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "MERIT_TRAC_API_ERROR")
         frappe.local.response.http_status_code = 500
-        return {"status": 500, "message": str(e)}
+        return {"status": 500, "http_status": 500, "message": str(e)}
