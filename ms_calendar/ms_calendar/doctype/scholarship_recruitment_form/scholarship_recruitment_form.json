@@ -4,6 +4,7 @@
  "autoname": "APSRF-.####",
  "creation": "2025-11-28 22:07:10.875507",
  "doctype": "DocType",
+ "custom": 1,
  "engine": "InnoDB",
  "field_order": [
   "application_status",
