@@ -468,7 +468,7 @@ def test_result_api():
             passed = (percentage is not None and float(percentage) >= 50)
         except:
             passed = False
-        status = "Recruiter Round" if passed else "Recruiter Reject"
+        status = "Recruiter Round" if passed else "Test Reject"
 
         # update SRF doc
         srf_name = srf.get("name")
