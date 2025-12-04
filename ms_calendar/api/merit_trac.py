@@ -581,7 +581,7 @@ def test_result_api():
 """
 
         # ------------------------------------------------------------
-        # 8️⃣ SEND EMAILS (PASS immediate / FAIL after 3 days)
+        # 8️⃣ SEND EMAILS (PASS immediate / FAIL immediate )
         # ------------------------------------------------------------
         if applicant_email:
             try:
@@ -597,27 +597,17 @@ def test_result_api():
                         reference_name=candidate_id
                     )
                 else:
-                    # schedule after 3 days
-                 send_time = datetime.now() + timedelta(days=3)
-                # STEP 1 — Queue the email (instead of sending immediately)
-                frappe.sendmail(
-                    sender=SenderEmail,
-                    recipients=[applicant_email],
-                    subject=f"Azim Premji Scholarship – Your Application, {applicant_name}",
-                    message=fail_email_html,
-                    delayed=True  # MUST be True to get into Email Queue
-                )
-
-                # STEP 2 — Schedule Email Queue processor
-
-                frappe.enqueue(
-                    "frappe.email.doctype.email_queue.email_queue.send",
-                    queue="default",
-                    enqueue_at=send_time
-                )
-
-
-
+                   # Send FAIL email immediately
+                    frappe.sendmail(
+                        sender=SenderEmail,
+                        recipients=[applicant_email],
+                        subject=f"Azim Premji Scholarship – Your Application, {applicant_name}",
+                        message=fail_email_html,
+                        delayed=False,
+                        reference_doctype="Scholarship Recruitment Form",
+                        reference_name=candidate_id
+                    )
+                  
             except Exception as mail_exc:
                 frappe.log_error(f"Mail error: {mail_exc}", "MERIT_TRAC_MAIL_ERROR")
 
