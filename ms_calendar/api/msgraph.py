@@ -469,7 +469,7 @@ def create_interview_event(event_title,
     # ROUND 1 TEMPLATES
     # ----------------------------------------
     round1_interviewer_template = """
-<p>Hi {Interviewer_name},</p>
+<p>Dear {Interviewer_name},</p>
 
 <p>Blocking your calendar for the Scholarship interview.</p>
 
