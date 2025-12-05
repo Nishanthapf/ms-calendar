@@ -508,7 +508,7 @@ Azim Premji Foundation</p>
     # ROUND 2 TEMPLATES
     # ----------------------------------------
     round2_interviewer_template = """
-<p>Hi {Interviewer_name},</p>
+<p>Dear {Interviewer_name},</p>
 
 <p>Please find attached CV, feedback and details.</p>
 
