@@ -442,11 +442,11 @@ def create_interview_event(event_title,
         attendees.append({"emailAddress": {"address": r}, "type": "resource"})
     for i in interviewer_list:
         attendees.append({"emailAddress": {"address": i}, "type": "required"})
-
     # ----------------------------------------
-    # ATTACHMENTS
+    # ATTACHMENTS (PUBLIC + PRIVATE FIXED)
     # ----------------------------------------
     final_files = []
+
     if attachment_paths:
         try:
             attachment_list = ast.literal_eval(attachment_paths)
@@ -456,14 +456,37 @@ def create_interview_event(event_title,
         attachment_list = []
 
     for web_path in attachment_list:
-        rel = web_path.replace("/files/", "")
-        file_path = frappe.get_site_path("public", "files", rel)
+        file_doc = frappe.get_all(
+            "File",
+            filters={"file_url": web_path},
+            fields=["file_url", "file_name", "is_private"]
+        )
 
-        if os.path.isfile(file_path) and os.path.getsize(file_path) <= 3 * 1024 * 1024:
-            with open(file_path, "rb") as f:
-                final_files.append(
-                    (os.path.basename(file_path), base64.b64encode(f.read()).decode())
-                )
+        if not file_doc:
+            frappe.log_error(f"File Doc not found: {web_path}", "Interview Event File Error")
+            continue
+
+        file_doc = file_doc[0]
+        file_name = file_doc.file_name
+
+        if file_doc.is_private:
+            file_path = frappe.get_site_path("private", "files", file_name)
+        else:
+            file_path = frappe.get_site_path("public", "files", file_name)
+
+        if not os.path.isfile(file_path):
+            frappe.log_error(f"File missing on disk: {file_path}", "Interview Event File Error")
+            continue
+
+        if os.path.getsize(file_path) > 3 * 1024 * 1024:
+            frappe.log_error(f"File too large: {file_name}", "Interview Event File Error")
+            continue
+
+        with open(file_path, "rb") as f:
+            file_content = base64.b64encode(f.read()).decode()
+
+        final_files.append((file_name, file_content))
+
 
     # ----------------------------------------
     # ROUND 1 TEMPLATES
