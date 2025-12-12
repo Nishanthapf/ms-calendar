@@ -349,6 +349,7 @@ def create_interview_event(event_title,
                            Interview_round,
                            InterviewersName,
                            Applicants_name,
+                           Applicants_Role,
                            application_id,
                            attachment_paths=None):
 
@@ -486,8 +487,6 @@ def create_interview_event(event_title,
             file_content = base64.b64encode(f.read()).decode()
 
         final_files.append((file_name, file_content))
-
-
     # ----------------------------------------
     # ROUND 1 TEMPLATES
     # ----------------------------------------
@@ -496,7 +495,7 @@ def create_interview_event(event_title,
 
 <p>Blocking your calendar for the Scholarship interview.</p>
 
-<p>This will be for Associate/Resource Person role.</p>
+<p>This will be for {Applicants_Role} Person role.</p>
 
 <p><b>When:</b> {when_str}</p>
 
