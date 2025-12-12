@@ -495,7 +495,7 @@ def create_interview_event(event_title,
 
 <p>Blocking your calendar for the Scholarship interview.</p>
 
-<p>This will be for {Applicants_Role} Person role.</p>
+<p>This will be for <b>{Applicants_Role}</b> role.</p>
 
 <p><b>When:</b> {when_str}</p>
 
@@ -531,6 +531,9 @@ Azim Premji Foundation</p>
     # ----------------------------------------
     round2_interviewer_template = """
 <p>Dear {Interviewer_name},</p>
+
+<p>Blocking your calendar for the Scholarship interview.</p>
+<p>This will be for <b>{Applicants_Role}</b> role.</p>
 
 <p>Please find attached CV, feedback and details.</p>
 
@@ -571,16 +574,24 @@ Azim Premji Foundation</p>
     # INITIAL EVENT BODY
     # ----------------------------------------
     if is_round1:
-        calendar_subject = f"Discussion - {Applicants_name}, Azim Premji Scholarship"
+        calendar_subject = f"Discussion With - {Applicants_name} ({Applicants_Role} Role), Azim Premji Scholarship"
+        # initial_body = round1_interviewer_template.format(
+        #     Interviewer_name=InterviewersName,
+        #     when_str=when_str,
+        #     meeting_info="",
+        #     feedback_url=feedback_url
+        # )
         initial_body = round1_interviewer_template.format(
             Interviewer_name=InterviewersName,
+            Applicants_Role=Applicants_Role,     # ← ADD THIS LINE
             when_str=when_str,
             meeting_info="",
             feedback_url=feedback_url
         )
 
+
     elif is_round2:
-        calendar_subject = f"Discussion - {Applicants_name}, Azim Premji Scholarship"
+        calendar_subject = f"Discussion With- {Applicants_name} ({Applicants_Role} Role), Azim Premji Scholarship"
         initial_body = round2_interviewer_template.format(
             Interviewer_name=InterviewersName,
             when_str=when_str,
@@ -717,12 +728,20 @@ Azim Premji Foundation</p>
     # FINAL EVENT BODY
     # ----------------------------------------
     if is_round1:
+        # final_body = round1_interviewer_template.format(
+        #     Interviewer_name=InterviewersName,
+        #     when_str=when_str,
+        #     meeting_info=meeting_html,
+        #     feedback_url=feedback_url
+        # )
         final_body = round1_interviewer_template.format(
             Interviewer_name=InterviewersName,
+            Applicants_Role=Applicants_Role,     # ← ADD THIS LINE
             when_str=when_str,
             meeting_info=meeting_html,
             feedback_url=feedback_url
         )
+
 
     elif is_round2:
         final_body = round2_interviewer_template.format(
@@ -752,7 +771,7 @@ Azim Premji Foundation</p>
     # EMAIL TO CANDIDATE
     # ----------------------------------------
     if is_round1:
-        email_subject = f"Discussion - {Applicants_name}, Azim Premji Scholarship"
+        email_subject = f"Discussion With - {Applicants_name} ({Applicants_Role} Role), Azim Premji Scholarship"
         email_body = round1_candidate_template.format(
             Applicants_name=Applicants_name,
             when_str=when_str,
@@ -761,7 +780,7 @@ Azim Premji Foundation</p>
         )
 
     elif is_round2:
-        email_subject = f"Discussion - {Applicants_name}, Azim Premji Scholarship"
+        email_subject =f"Discussion With - {Applicants_name} ({Applicants_Role} Role), Azim Premji Scholarship"
         email_body = round2_candidate_template.format(
             Applicants_name=Applicants_name,
             when_str=when_str,

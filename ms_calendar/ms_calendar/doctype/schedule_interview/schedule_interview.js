@@ -75,6 +75,7 @@ frappe.ui.form.on('Schedule interview', {
             Interview_round: frm.doc.interview_round,
             InterviewersName: interviewerNamesString,
             Applicants_name: frm.doc.applicants_name,
+            Applicants_Role: frm.doc.role,
             application_id:"APF-001",
             attachment_paths: attachments  
         },
