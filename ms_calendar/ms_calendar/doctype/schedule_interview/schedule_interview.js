@@ -50,6 +50,7 @@ frappe.ui.form.on('Schedule interview', {
 
         return names;
     }
+    
 
     let interviewerNamesArray = await get_interviewer_names(interviewerEmailsArr);
     let interviewerNamesString = interviewerNamesArray.join(", ");

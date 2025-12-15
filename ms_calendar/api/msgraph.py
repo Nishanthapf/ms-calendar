@@ -728,12 +728,6 @@ Azim Premji Foundation</p>
     # FINAL EVENT BODY
     # ----------------------------------------
     if is_round1:
-        # final_body = round1_interviewer_template.format(
-        #     Interviewer_name=InterviewersName,
-        #     when_str=when_str,
-        #     meeting_info=meeting_html,
-        #     feedback_url=feedback_url
-        # )
         final_body = round1_interviewer_template.format(
             Interviewer_name=InterviewersName,
             Applicants_Role=Applicants_Role,     # ← ADD THIS LINE
