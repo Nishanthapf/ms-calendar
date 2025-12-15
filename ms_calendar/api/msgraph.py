@@ -583,7 +583,7 @@ Azim Premji Foundation</p>
         # )
         initial_body = round1_interviewer_template.format(
             Interviewer_name=InterviewersName,
-            Applicants_Role=Applicants_Role,     # ← ADD THIS LINE
+            Applicants_Role=Applicants_Role,     
             when_str=when_str,
             meeting_info="",
             feedback_url=feedback_url
@@ -594,6 +594,7 @@ Azim Premji Foundation</p>
         calendar_subject = f"Discussion With- {Applicants_name} ({Applicants_Role} Role), Azim Premji Scholarship"
         initial_body = round2_interviewer_template.format(
             Interviewer_name=InterviewersName,
+            Applicants_Role=Applicants_Role,    
             when_str=when_str,
             meeting_info="",
             feedback_url=feedback_url,
@@ -741,6 +742,7 @@ Azim Premji Foundation</p>
         final_body = round2_interviewer_template.format(
             Interviewer_name=InterviewersName,
             when_str=when_str,
+            Applicants_Role=Applicants_Role,     # ← ADD THIS LINE
             meeting_info=meeting_html,
             feedback_url=feedback_url,
             total_exp=total_exp,
