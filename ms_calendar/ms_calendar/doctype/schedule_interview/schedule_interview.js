@@ -63,7 +63,8 @@ frappe.ui.form.on('Schedule interview', {
     }
 
     frappe.call({
-        method: "ms_calendar.api.msgraph.create_interview_event",
+        // method: "ms_calendar.api.msgraph.create_interview_event",
+        method: "ms_calendar.api.ms_philanthropy.create_interview_event",
         args: {
             event_title: frm.doc.event_title || "Interview",
             start_datetime: startDateTime,
@@ -77,16 +78,17 @@ frappe.ui.form.on('Schedule interview', {
             InterviewersName: interviewerNamesString,
             Applicants_name: frm.doc.applicants_name,
             Applicants_Role: frm.doc.role,
-            application_id:"APF-001",
+            application_id:"APPRF-0012",
             attachment_paths: attachments  
         },
         freeze: true,
         freeze_message: __("Creating calendar event..."),
         callback: function(r) {
             if (r.message) {
+                console.log(r.message)
                 frappe.msgprint({
                     title: __("Success"),
-                    message: __("Interview scheduled successfully! Event ID: ") + r.message.master_event_id,
+                    message: __("Interview scheduled successfully! Event ID: ") + r.message.join_passcode,
                     indicator: "green"
                 });
             }
@@ -100,6 +102,8 @@ frappe.ui.form.on('Schedule interview', {
             console.error("Calendar Event Error:", err);
         }
     });
+
+
 },
     interview_date: function(frm) {
         const today = moment().startOf('day');
