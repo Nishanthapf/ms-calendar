@@ -195,51 +195,77 @@ def create_interview_event(
             f"https://careers.frappe.cloud/philanthrophy-feedback-form/new"
             f"?app_id={application_id}&applicant_name={Applicants_name}&role={Applicants_Role}"
         )
+    # Show this only if meeting_room has a value
+    meeting_room_html = (
+        f'<p style="margin:6px 0;"><strong>Meeting room:</strong> {meeting_room}</p>'
+        if meeting_room
+        else ""
+    )
+
     interviewer_body = f"""
     <p>Hi {InterviewersName},</p>
 
     <p>Kindly find the details of the interview scheduled:</p>
 
-    <table cellpadding="6">
-    <tr><td><b>Applicant name:</b></td><td>{Applicants_name}</td></tr>
-    <tr><td><b>Role:</b></td><td>{Applicants_Role}</td></tr>
-    <tr><td><b>Date:</b></td><td>{interview_date}</td></tr>
-    <tr><td><b>Time:</b></td><td>{start_time} – {end_time}</td></tr>
-    <tr><td><b>Mode:</b></td><td>{mode_label}</td></tr>
-    <tr><td><b>Meeting room:</b></td><td>{meeting_room}</td></tr>
-    </table>
+    <div style="
+    border:1px solid #e3e3e3;
+    border-radius:10px;
+    padding:14px;
+    background:#f9fafb;
+    display:inline-block;
+    max-width:100%;
+    ">
+    <p style="margin:6px 0;"><strong>Applicant name:</strong> {Applicants_name}</p>
+    <p style="margin:6px 0;"><strong>Role:</strong> {Applicants_Role}</p>
+    <p style="margin:6px 0;"><strong>Date:</strong> {interview_date}</p>
+    <p style="margin:6px 0;"><strong>Time:</strong> {start_time} – {end_time}</p>
+    <p style="margin:6px 0;"><strong>Mode:</strong> {mode_label}</p>
+    {meeting_room_html}
+    </div>
 
     {meeting_html}
 
-    <p><b>Feedback form:</b>
+    <p><strong>Feedback form:</strong>
     <a href="{feedback_url}" target="_blank">Click here</a></p>
-    <p>Kindly reach out to us if you have any questions</p>
+
+    <p>Kindly reach out to us if you have any questions.</p>
 
     <p>Regards,<br>
     People Function<br>
     Azim Premji Foundation</p>
     """
+
 
     candidate_body = f"""
     <p>Hi {Applicants_name},</p>
 
     <p>Kindly find the details of the interview scheduled:</p>
 
-    <table cellpadding="6">
-    <tr><td><b>Role:</b></td><td>{Applicants_Role}</td></tr>
-    <tr><td><b>Date:</b></td><td>{interview_date}</td></tr>
-    <tr><td><b>Time:</b></td><td>{start_time} – {end_time}</td></tr>
-    <tr><td><b>Mode:</b></td><td>{mode_label}</td></tr>
-    <tr><td><b>Meeting room:</b></td><td>{meeting_room}</td></tr>
-    </table>
+    <div style="
+    border:1px solid #e3e3e3;
+    border-radius:10px;
+    padding:14px;
+    background:#f9fafb;
+    display:inline-block;
+    max-width:100%;
+    ">
+    <p style="margin:6px 0;"><strong>Role:</strong> {Applicants_Role}</p>
+    <p style="margin:6px 0;"><strong>Date:</strong> {interview_date}</p>
+    <p style="margin:6px 0;"><strong>Time:</strong> {start_time} – {end_time}</p>
+    <p style="margin:6px 0;"><strong>Mode:</strong> {mode_label}</p>
+    {meeting_room_html}
+    </div>
 
     {meeting_html}
-    <p>Kindly reach out to us if you have any questions</p>
+
+    <p>Kindly reach out to us if you have any questions.</p>
 
     <p>Regards,<br>
     People Function<br>
     Azim Premji Foundation</p>
     """
+
+
 
     # -------- UPDATE EVENT BODY & ATTENDEES (Outlook will notify interviewers) --------
     interviewer_list = [i.strip() for i in (interviewer_emails or "").split(",") if i.strip()]
