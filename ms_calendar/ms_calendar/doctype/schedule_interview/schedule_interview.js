@@ -79,7 +79,11 @@ frappe.ui.form.on('Schedule interview', {
             Applicants_name: frm.doc.applicants_name,
             Applicants_Role: frm.doc.role,
             application_id:"APPRF-0012",
-            attachment_paths: attachments  
+            Map_location:"https://maps.app.goo.gl/1CupXg5SnRZNYksWA",
+            Comments_for_interviewer:"Hi Admin This is for Testing",
+            Location_adress:"SJP 1 Azim Permji foundation",
+            attachment_paths: attachments 
+             
         },
         freeze: true,
         freeze_message: __("Creating calendar event..."),

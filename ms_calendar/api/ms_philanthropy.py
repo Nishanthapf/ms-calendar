@@ -1,7 +1,8 @@
 import frappe
 import os, ast, base64, time, re, requests
 from datetime import datetime
-
+from frappe.utils import get_url
+from urllib.parse import quote
 
 @frappe.whitelist()
 def create_interview_event(
@@ -16,6 +17,9 @@ def create_interview_event(
     Applicants_name,
     Applicants_Role,
     application_id,
+    Map_location,
+    Comments_for_interviewer,
+    Location_adress,
     attachment_paths=None
 ):
 
@@ -30,12 +34,12 @@ def create_interview_event(
     start_dt = datetime.fromisoformat(start_datetime)
     end_dt   = datetime.fromisoformat(end_datetime)
 
-    interview_date = start_dt.strftime("%d %b %Y")
+    interview_date = start_dt.strftime("%m/%d/%Y")
     interview_time = start_dt.strftime("%I:%M %p")
     # Format (example: 10:30 AM)
     start_time = start_dt.strftime("%I:%M %p")
     end_time   = end_dt.strftime("%I:%M %p")
-    mode_label   = "Teams Meeting" if is_online == 1 else "Offline"
+    mode_label   = "Teams Meeting" if is_online == 1 else "In-Person"
     meeting_room = ", ".join([r.strip() for r in (room_emails or "").split(",") if r.strip()])
 
     # -------- GRAPH AUTH --------
@@ -139,7 +143,7 @@ def create_interview_event(
         <b>Passcode:</b> {join_passcode}</p>
         """
     else:
-        meeting_html = "<p><b>Mode:</b> Offline interview</p>"
+        meeting_html = ""
 
     # -------- ATTACH FILES --------
     attachment_files = []
@@ -201,7 +205,22 @@ def create_interview_event(
         if meeting_room
         else ""
     )
+    Map_location_html = (
+        f'<p style="margin:6px 0;"><strong>Venue:</strong> {Location_adress}</p>'
+        f'<p style="margin:6px 0;"><strong>Google Map Link:</strong>'
+        f'<a href="{Map_location}" target="_blank">Click here</a></p>'
+    )
+    map_html = Map_location_html if is_online == 0 else ""
+    note_html = (
+    f'<p><strong>For your information:</strong> {Comments_for_interviewer}</p>'
 
+    if Comments_for_interviewer
+    else ""
+)
+    file_path = frappe.get_site_path("public", "files", "APF logo.png")
+
+    with open(file_path, "rb") as f:
+        logo_base64 = base64.b64encode(f.read()).decode("utf-8")
     interviewer_body = f"""
     <p>Hi {InterviewersName},</p>
 
@@ -224,15 +243,19 @@ def create_interview_event(
     </div>
 
     {meeting_html}
-
     <p><strong>Feedback form:</strong>
     <a href="{feedback_url}" target="_blank">Click here</a></p>
-
-    <p>Kindly reach out to us if you have any questions.</p>
+   
+    {note_html}
 
     <p>Regards,<br>
     People Function<br>
     Azim Premji Foundation</p>
+    <p style="margin:12px 0;">
+    <img src="{logo_base64}"
+         alt="Azim Premji Foundation"
+         style="height:48px; width:auto; display:block; margin-top:6px;">
+</p>
     """
 
 
@@ -253,9 +276,8 @@ def create_interview_event(
     <p style="margin:6px 0;"><strong>Date:</strong> {interview_date}</p>
     <p style="margin:6px 0;"><strong>Time:</strong> {start_time} – {end_time}</p>
     <p style="margin:6px 0;"><strong>Mode:</strong> {mode_label}</p>
-    {meeting_room_html}
+    {map_html}
     </div>
-
     {meeting_html}
 
     <p>Kindly reach out to us if you have any questions.</p>
@@ -263,6 +285,10 @@ def create_interview_event(
     <p>Regards,<br>
     People Function<br>
     Azim Premji Foundation</p>
+     <img src="{logo_base64}"
+         alt="Azim Premji Foundation"
+         style="height:48px; width:auto; display:block; margin-top:6px;">
+</p>
     """
 
 
