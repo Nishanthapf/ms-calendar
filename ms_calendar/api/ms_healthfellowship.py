@@ -20,7 +20,6 @@ def create_interview_event(
     Organizer_email,
     InterviewersName,
     Applicants_name,
-    Applicants_Role,
     application_id,
     Comments_for_interviewer,
     attachment_paths=None
@@ -246,7 +245,6 @@ def create_interview_event(
     <p>Kindly find the details of the interview scheduled:</p>
     <div style="border:1px solid #e3e3e3;border-radius:10px;padding:14px;background:#f9fafb;">
     <p><strong>Applicant name:</strong> {Applicants_name}</p>
-    <p><strong>Role:</strong> {Applicants_Role}</p>
     <p><strong>Date:</strong> {interview_date}</p>
     <p><strong>Time:</strong> {start_time} – {end_time}</p>
     <p><strong>Mode:</strong> {mode_label}</p>
@@ -264,7 +262,6 @@ def create_interview_event(
     <p>Hi {Applicants_name},</p>
     <p>Kindly find the details of the interview scheduled:</p>
     <div style="border:1px solid #e3e3e3;border-radius:10px;padding:14px;background:#f9fafb;">
-    <p><strong>Role:</strong> {Applicants_Role}</p>
     <p><strong>Date:</strong> {interview_date}</p>
     <p><strong>Time:</strong> {start_time} – {end_time}</p>
     <p><strong>Mode:</strong> {mode_label}</p>
