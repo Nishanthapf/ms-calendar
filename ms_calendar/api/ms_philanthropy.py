@@ -528,7 +528,7 @@ def create_interview_event(
         )
 
     # -------- LOGO --------
-    file_path = frappe.get_site_path("public", "files", "apf.png")
+    file_path = frappe.get_site_path("public", "files", "apf email.png")
     with open(file_path, "rb") as f:
         logo_base64 = base64.b64encode(f.read()).decode("utf-8")
 
