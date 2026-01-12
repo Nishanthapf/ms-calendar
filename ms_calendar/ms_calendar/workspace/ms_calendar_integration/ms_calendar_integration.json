@@ -1,7 +1,7 @@
 {
  "app": "Ms Calendar",
  "charts": [],
- "content": "[{\"id\":\"T3rojOYXWp\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">MS Calendar Integration</span>\",\"col\":12}},{\"id\":\"b4SBGhhF85\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"MS Graph Credentials\",\"col\":3}},{\"id\":\"iyjGROSiv7\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Schedule interview\",\"col\":3}},{\"id\":\"baP8f86sdE\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Interviewer Email List\",\"col\":3}},{\"id\":\"tf7tmnZScl\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Organizer Email\",\"col\":3}},{\"id\":\"AydJb3Rl0-\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Email Content for Scheduling\",\"col\":3}},{\"id\":\"3Gnkj7yoyy\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"MeritTrac Test Result\",\"col\":3}},{\"id\":\"FGVAMhx91B\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Scholarship Recruitment Form\",\"col\":3}}]",
+ "content": "[{\"id\":\"T3rojOYXWp\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">MS Calendar Integration</span>\",\"col\":12}},{\"id\":\"b4SBGhhF85\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"MS Graph Credentials\",\"col\":3}},{\"id\":\"iyjGROSiv7\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Schedule interview\",\"col\":3}},{\"id\":\"baP8f86sdE\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Interviewer Email List\",\"col\":3}},{\"id\":\"tf7tmnZScl\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Organizer Email\",\"col\":3}},{\"id\":\"AydJb3Rl0-\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Email Content for Scheduling\",\"col\":3}},{\"id\":\"3Gnkj7yoyy\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"MeritTrac Test Result\",\"col\":3}},{\"id\":\"FGVAMhx91B\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Scholarship Recruitment Form\",\"col\":3}},{\"id\":\"5LgmYblutr\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Openings Details\",\"col\":3}}]",
  "creation": "2025-09-17 15:26:32.774334",
  "custom_blocks": [],
  "docstatus": 0,
@@ -15,7 +15,7 @@
  "label": "MS Calendar Integration",
  "link_type": "DocType",
  "links": [],
- "modified": "2025-11-28 18:18:42.092888",
+ "modified": "2026-01-07 16:34:18.992303",
  "modified_by": "Administrator",
  "module": "Ms Calendar",
  "name": "MS Calendar Integration",
@@ -48,6 +48,14 @@
    "doc_view": "List",
    "label": "MeritTrac Test Result",
    "link_to": "MeritTrac Test Result",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Job Openings Details",
+   "link_to": "Job Openings Details",
    "stats_filter": "[]",
    "type": "DocType"
   },
