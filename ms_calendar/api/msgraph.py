@@ -351,6 +351,10 @@ def create_interview_event(event_title,
                            Applicants_name,
                            Applicants_Role,
                            application_id,
+                           Map_location,
+                           address,
+                           commands_to_candidate,
+                           commands_to_interviewer,
                            attachment_paths=None):
 
     import re
@@ -397,7 +401,21 @@ def create_interview_event(event_title,
         f"https://careers.frappe.cloud/feedback-form-{form_key}/new"
         f"?app_id={application_id}&applicant_name={Applicants_name}"
     )
+    Map_location_html = (
+        f'<p style="margin:6px 0;"><strong>Venue:</strong> {address}</p>'
+        f'<p style="margin:6px 0;"><strong>Google Map Link:</strong>'
+        f'<a href="{Map_location}" target="_blank">Click here</a></p>'
+    )
+    map_html = Map_location_html if is_online == 0 else ""
 
+    note_to_candidate_html = (
+        f'<p><strong>For your information:</strong> {commands_to_candidate}</p>'
+        if commands_to_candidate else ""
+    )
+    note_to_interviewer_html = (
+        f'<p><strong>For your information:</strong> {commands_to_interviewer}</p>'
+        if commands_to_interviewer else ""
+    )
     # ----------------------------------------
     # ROUND 2 → SALARY DETAILS
     # ----------------------------------------
@@ -499,8 +517,8 @@ def create_interview_event(event_title,
 
 <p><b>When:</b> {when_str}</p>
 
-{meeting_info}
-
+{meeting_info}<br>
+{Note_to_interviewer_html}
 <p><b>Feedback form link:</b> 
 <a href="{feedback_url}" target="_blank">Click here</a></p>
 
@@ -518,7 +536,7 @@ People Function</p>
 {meeting_info}
 
 <p><b>Panel:</b> {InterviewersName}</p>
-
+{Note_to_candidate_html}
 <p>Please acknowledge this email as confirmation to the interview.</p>
 
 <p>Regards,<br>
@@ -542,9 +560,8 @@ Azim Premji Foundation</p>
 <b>Expected CTC:</b> {expected_ctc}</p>
 
 <p><b>When:</b> {when_str}</p>
-
-{meeting_info}
-
+{meeting_info}<br>
+{Note_to_interviewer_html}
 <p><b>Feedback form link:</b> 
 <a href="{feedback_url}" target="_blank">Click here</a></p>
 
@@ -560,7 +577,8 @@ People Function</p>
 <p><b>When:</b> {when_str}</p>
 
 {meeting_info}
-
+{map_html}<br>
+{Note_to_candidate_html}
 <p><b>Panel:</b> {InterviewersName}</p>
 
 <p>Please acknowledge this email as confirmation to the interview.</p>
@@ -586,7 +604,11 @@ Azim Premji Foundation</p>
             Applicants_Role=Applicants_Role,     
             when_str=when_str,
             meeting_info="",
-            feedback_url=feedback_url
+            feedback_url=feedback_url,
+            map_html=map_html,
+            note_to_candidate_html=note_to_candidate_html,
+            note_to_interviewer_html=note_to_interviewer_html
+
         )
 
 
@@ -600,7 +622,10 @@ Azim Premji Foundation</p>
             feedback_url=feedback_url,
             total_exp=total_exp,
             current_ctc=current_ctc,
-            expected_ctc=expected_ctc
+            expected_ctc=expected_ctc,
+            Map_html=map_html,
+            Note_to_candidate_html=note_to_candidate_html,
+            Note_to_interviewer_html=note_to_interviewer_html
         )
 
     else:
