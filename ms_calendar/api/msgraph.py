@@ -351,10 +351,10 @@ def create_interview_event(event_title,
                            Applicants_name,
                            Applicants_Role,
                            application_id,
-                           Map_location,
-                           address,
-                           commands_to_candidate,
-                           commands_to_interviewer,
+                           Map_location=None,
+                           address=None,
+                           commands_to_candidate=None,
+                           commands_to_interviewer=None,
                            attachment_paths=None):
 
     import re
@@ -375,6 +375,10 @@ def create_interview_event(event_title,
         is_online = 0
 
     Organizer_email = Organizer_email.strip()
+    Map_location = Map_location or ""
+    address = address or ""
+    commands_to_candidate = commands_to_candidate or ""
+    commands_to_interviewer = commands_to_interviewer or ""
 
     # ----------------------------------------
     # Friendly date
@@ -401,12 +405,18 @@ def create_interview_event(event_title,
         f"https://careers.frappe.cloud/feedback-form-{form_key}/new"
         f"?app_id={application_id}&applicant_name={Applicants_name}"
     )
-    Map_location_html = (
-        f'<p style="margin:6px 0;"><strong>Venue:</strong> {address}</p>'
-        f'<p style="margin:6px 0;"><strong>Google Map Link:</strong>'
-        f'<a href="{Map_location}" target="_blank">Click here</a></p>'
-    )
-    map_html = Map_location_html if is_online == 0 else ""
+    if is_online == 0 and (address or Map_location):
+        Map_location_html = ""
+        if address:
+            Map_location_html += f'<p style="margin:6px 0;"><strong>Venue:</strong> {address}</p>'
+        if Map_location:
+            Map_location_html += (
+                f'<p style="margin:6px 0;"><strong>Google Map Link:</strong> '
+                f'<a href="{Map_location}" target="_blank">Click here</a></p>'
+            )
+        map_html = Map_location_html
+    else:
+        map_html = ""
 
     note_to_candidate_html = (
         f'<p><strong>For your information:</strong> {commands_to_candidate}</p>'
@@ -605,8 +615,6 @@ Azim Premji Foundation</p>
             when_str=when_str,
             meeting_info="",
             feedback_url=feedback_url,
-            Map_html=map_html,
-            Note_to_candidate_html=note_to_candidate_html,
             Note_to_interviewer_html=note_to_interviewer_html
 
         )
@@ -623,8 +631,6 @@ Azim Premji Foundation</p>
             total_exp=total_exp,
             current_ctc=current_ctc,
             expected_ctc=expected_ctc,
-            Map_html=map_html,
-            Note_to_candidate_html=note_to_candidate_html,
             Note_to_interviewer_html=note_to_interviewer_html
         )
 
@@ -759,7 +765,8 @@ Azim Premji Foundation</p>
             Applicants_Role=Applicants_Role,     # ← ADD THIS LINE
             when_str=when_str,
             meeting_info=meeting_html,
-            feedback_url=feedback_url
+            feedback_url=feedback_url,
+            Note_to_interviewer_html=note_to_interviewer_html
         )
 
 
@@ -772,7 +779,8 @@ Azim Premji Foundation</p>
             feedback_url=feedback_url,
             total_exp=total_exp,
             current_ctc=current_ctc,
-            expected_ctc=expected_ctc
+            expected_ctc=expected_ctc,
+            Note_to_interviewer_html=note_to_interviewer_html
         )
 
     else:
@@ -797,7 +805,9 @@ Azim Premji Foundation</p>
             Applicants_name=Applicants_name,
             when_str=when_str,
             meeting_info=meeting_html,
-            InterviewersName=InterviewersName
+            InterviewersName=InterviewersName,
+            Map_html=map_html,
+            Note_to_candidate_html=note_to_candidate_html,
         )
 
     elif is_round2:
@@ -806,7 +816,9 @@ Azim Premji Foundation</p>
             Applicants_name=Applicants_name,
             when_str=when_str,
             meeting_info=meeting_html,
-            InterviewersName=InterviewersName
+            InterviewersName=InterviewersName,
+            Map_html=map_html,
+            Note_to_candidate_html=note_to_candidate_html,
         )
 
     else:
