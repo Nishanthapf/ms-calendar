@@ -534,7 +534,7 @@ People Function</p>
 <p><b>When:</b> {when_str}</p>
 
 {meeting_info}
-
+{Map_html}
 <p><b>Panel:</b> {InterviewersName}</p>
 {Note_to_candidate_html}
 <p>Please acknowledge this email as confirmation to the interview.</p>
@@ -577,7 +577,7 @@ People Function</p>
 <p><b>When:</b> {when_str}</p>
 
 {meeting_info}
-{map_html}<br>
+{Map_html}<br>
 {Note_to_candidate_html}
 <p><b>Panel:</b> {InterviewersName}</p>
 
@@ -605,9 +605,9 @@ Azim Premji Foundation</p>
             when_str=when_str,
             meeting_info="",
             feedback_url=feedback_url,
-            map_html=map_html,
-            note_to_candidate_html=note_to_candidate_html,
-            note_to_interviewer_html=note_to_interviewer_html
+            Map_html=map_html,
+            Note_to_candidate_html=note_to_candidate_html,
+            Note_to_interviewer_html=note_to_interviewer_html
 
         )
 
