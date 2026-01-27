@@ -223,9 +223,9 @@ def create_interview_event(
         f"?app_id={application_id}&applicant_name={Applicants_name}"
     )
     # -------- FEEDBACK URL BASED ON ROUND --------
-    if interview_Round == "Shortlist - R1":
+    if interview_Round == "Shortlist - CV":
         feedback_url = feedback_url1
-    elif interview_Round == "Shortlist - R2":
+    elif interview_Round == "Shortlist - R1":
         feedback_url = feedback_url2
     else:
         feedback_url =""
