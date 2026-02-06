@@ -8,6 +8,43 @@ import frappe
 import requests
 
 
+def format_interviewers_names(names_string):
+    """
+    Format interviewer names:
+    - 2 names: Ram & Mercy
+    - 3+ names: Ram, Mercy & Maha
+    """
+    if not names_string:
+        return ""
+    
+    names = [n.strip() for n in names_string.split(",") if n.strip()]
+    
+    if len(names) == 0:
+        return ""
+    elif len(names) == 1:
+        return names[0]
+    elif len(names) == 2:
+        return f"{names[0]} & {names[1]}"
+    else:
+        # 3 or more: comma-separated except last one with &
+        return ", ".join(names[:-1]) + f" & {names[-1]}"
+
+
+def format_date_with_suffix(dt):
+    """
+    Format date as: 27th Jan 2026
+    """
+    day = dt.day
+    
+    # Determine suffix
+    if 10 <= day % 100 <= 20:
+        suffix = 'th'
+    else:
+        suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
+    
+    return dt.strftime(f"%d{suffix} %b %Y").lstrip('0')
+
+
 @frappe.whitelist()
 def create_interview_event(
     start_datetime,
@@ -35,10 +72,18 @@ def create_interview_event(
     start_dt = datetime.fromisoformat(start_datetime)
     end_dt   = datetime.fromisoformat(end_datetime)
 
+    # Format for interviewer email (old format)
     interview_date = start_dt.strftime("%d/%m/%Y")
+    
+    # Format for candidate email (new format: 27th Jan 2026)
+    candidate_interview_date = format_date_with_suffix(start_dt)
+    
     start_time = start_dt.strftime("%I:%M %p")
     end_time   = end_dt.strftime("%I:%M %p")
     mode_label = "Teams Meeting" if is_online == 1 else "In-Person"
+    
+    # Format interviewer names for both emails
+    formatted_interviewers = format_interviewers_names(InterviewersName)
 
     # -------- GRAPH AUTH --------
     creds = frappe.get_single("MS Graph Credentials")
@@ -241,7 +286,7 @@ def create_interview_event(
     )
 
     interviewer_body = f"""
-    <p>Hi {InterviewersName},</p>
+    <p>Hi {formatted_interviewers},</p>
     <p>Kindly find the details of the interview scheduled:</p>
     <div style="border:1px solid #e3e3e3;border-radius:10px;padding:14px;background:#f9fafb;">
     <p><strong>Applicant name:</strong> {Applicants_name}</p>
@@ -260,9 +305,10 @@ def create_interview_event(
 
     candidate_body = f"""
     <p>Hi {Applicants_name},</p>
+    <p>Thank you for your interest in the Health Equity Fellowship. Your interview has been scheduled with {formatted_interviewers}.</p>
     <p>Kindly find the details of the interview scheduled:</p>
     <div style="border:1px solid #e3e3e3;border-radius:10px;padding:14px;background:#f9fafb;">
-    <p><strong>Date:</strong> {interview_date}</p>
+    <p><strong>Date:</strong> {candidate_interview_date}</p>
     <p><strong>Time:</strong> {start_time} – {end_time}</p>
     <p><strong>Mode:</strong> {mode_label}</p>
     </div>
