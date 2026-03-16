@@ -115,7 +115,7 @@ def test_result_api():
         srf = frappe.db.get_value(
             "Scholarship Recruitment Form",
             {"name": candidate_id},
-            ["name", "applicant_name", "full_name_as_per_aadhar", "email", "srt_mail"],
+            ["name","full_name_as_per_aadhar", "email", "srt_mail"],
             as_dict=True
         )
 
@@ -131,10 +131,10 @@ def test_result_api():
 
         # determine pass/fail
         try:
-            passed = (percentage is not None and float(percentage) >= 50)
+            passed = (percentage is not None and float(percentage) >=        50)
         except:
             passed = False
-        status = "Recruiter Round" if passed else "Test Reject"
+        status = "Round One" if passed else "Test Reject"
 
         # update SRF doc
         srf_name = srf.get("name")
@@ -152,98 +152,43 @@ def test_result_api():
         # ------------------------------------------------------------
         # 7️⃣ EMAIL TEMPLATES
         # ------------------------------------------------------------
-        pass_email_html = f"""
-     <!doctype html>
-                        <html lang="en">
+
+        fail_email_html = f"""
+                        <!DOCTYPE html>
+                        <html>
                         <head>
                         <meta charset="UTF-8">
-                        <meta name="viewport" content="width=device-width,initial-scale=1">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
                         </head>
 
-                        <body style="margin:0; padding:0; font-family:Arial, Helvetica, sans-serif; background:#ffffff; color:#000;">
+                        <body style="margin:0; padding:20px; background:#ffffff; font-family:'Segoe UI', sans-serif; color:#333; line-height:1.6;">
 
-                        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:20px;">
-                            <tr>
-                            <td style="text-align:left;">
-                                <p>Dear <strong>{applicant_name}</strong>,</p>
+                        <p style="font-size:16px; margin:0 0 20px 0;">
+                        Dear {applicant_name},
+                        </p>
 
-                                <p>
-                                You have cleared the online test, and we request you to upload your updated CV (PDF or Word) for the next steps.
-                                </p>
+                        <p style="font-size:16px; margin:0 0 20px 0;">
+                        Thank you for your interest in the opportunities with the Azim Premji Scholarship Initiative.
+                        We appreciate the time and effort you have invested in exploring an opportunity with us.
+                        </p>
 
-                                <p>Please click the button below to upload your CV:</p>
+                        <p style="font-size:16px; margin:0 0 20px 0;">
+                        After careful consideration of your candidature, unfortunately, we will not be able to
+                        take your application forward at this point of time.
+                        </p>
 
-                                <p style="margin:20px 0;">
-                                <a href="https://careers.frappe.cloud/cv-submission/new?app_id={candidate_id}&applicant_name={applicant_name}"
-                                    style="background:#0078D4; color:#ffffff; padding:8px 14px; text-decoration:none; border-radius:4px; font-weight:500; font-size:14px; display:inline-block;">
-                                    Upload your CV
-                                </a>
-                                </p>
+                        <p style="font-size:16px; margin:0 0 25px 0;">
+                        We would like to thank you for your time, and we wish you the very best!
+                        </p>
 
-                                <p>
-                                <strong>Accepted formats:</strong> .pdf, .doc, .docx<br>
-                                <strong>Maximum size:</strong> 5 MB
-                                </p>
-
-                                <p>Our team will reach out to you soon.</p>
-
-                                <p>
-                                Regards,<br>
-                                <strong>People Function</strong><br>
-                                Azim Premji Foundation
-                                </p>
-
-                                <p style="font-size:13px; margin-top:28px;">
-                                If the button doesn't work, use the link below:<br>
-                                <a href="https://careers.frappe.cloud/cv-submission/new?app_id={candidate_id}&applicant_name={applicant_name}">
-                                    https://careers.frappe.cloud/cv-submission/new?app_id={candidate_id}&applicant_name={applicant_name}
-                                </a>
-                                </p>
-
-                            </td>
-                            </tr>
-                        </table>
+                        <p style="font-size:16px; margin:0 0 40px 0;">
+                        Regards,<br>
+                        People Function<br>
+                        Azim Premji Foundation
+                        </p>
 
                         </body>
                         </html>
-"""
-
-        fail_email_html = f"""
- <!DOCTYPE html>
-                    <html>
-                    <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    </head>
-
-                    <body style="margin:0; padding:20px; background:#ffffff; font-family:'Segoe UI', sans-serif; color:#333; line-height:1.6;">
-
-                    <p style="font-size:16px; margin:0 0 20px 0;">
-                    Dear {applicant_name},
-                    </p>
-
-                    <p style="font-size:16px; margin:0 0 20px 0;">
-                    Thank you for your interest in the opportunities with the Azim Premji Scholarship Initiative.
-                    We appreciate the time and effort you have invested in exploring an opportunity with us.
-                    </p>
-
-                    <p style="font-size:16px; margin:0 0 20px 0;">
-                    After careful consideration of your candidature, unfortunately, we will not be able to
-                    take your application forward at this point of time.
-                    </p>
-
-                    <p style="font-size:16px; margin:0 0 25px 0;">
-                    We would like to thank you for your time, and we wish you the very best!
-                    </p>
-
-                    <p style="font-size:16px; margin:0 0 40px 0;">
-                    Regards,<br>
-                    People Function<br>
-                    Azim Premji Foundation
-                    </p>
-
-                    </body>
-                    </html>
 """
 
         # ------------------------------------------------------------
@@ -253,15 +198,16 @@ def test_result_api():
             try:
                 if passed:
                     # send now
-                    frappe.sendmail(
-                        sender=SenderEmail,
-                        recipients=[applicant_email],
-                        subject=f"Azim Premji Scholarship – Your Application, {applicant_name}",
-                        message=pass_email_html,
-                        delayed=False,
-                        reference_doctype="Scholarship Recruitment Form",
-                        reference_name=candidate_id
-                    )
+                    # frappe.sendmail(
+                    #     sender=SenderEmail,
+                    #     recipients=[applicant_email],
+                    #     subject=f"Azim Premji Scholarship – Your Application, {applicant_name}",
+                    #     message=pass_email_html,
+                    #     delayed=False,
+                    #     reference_doctype="Scholarship Recruitment Form",
+                    #     reference_name=candidate_id
+                    # )
+                    print("Send")
                 else:
                    # Send FAIL email immediately
                     frappe.sendmail(
