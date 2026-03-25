@@ -354,7 +354,8 @@ def create_interview_event(
     start_dt = datetime.fromisoformat(start_datetime)
     end_dt   = datetime.fromisoformat(end_datetime)
 
-    interview_date = start_dt.strftime("%d/%m/%Y")
+    interview_date = start_dt.strftime("%d %b %Y").lower()   
+    start_time = start_dt.strftime("%I:%M %p")
     start_time = start_dt.strftime("%I:%M %p")
     end_time   = end_dt.strftime("%I:%M %p")
     mode_label = "Teams Meeting" if is_online == 1 else "In-Person"
