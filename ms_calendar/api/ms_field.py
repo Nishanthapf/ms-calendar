@@ -353,7 +353,7 @@ def create_interview_event(event_title,
 
     # ----------------------------------------
     # Round 2: salary details
-    # ----------------------------------------
+    # ---------------------------------------
     total_exp = current_ctc = expected_ctc = ""
     if is_round2:
         try:
