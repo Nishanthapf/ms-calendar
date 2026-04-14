@@ -280,7 +280,6 @@ def create_interview_event(event_title,
                            attachment_paths=None):
 
     import re
-    import ast
     import os
     import base64
     import time
@@ -296,13 +295,22 @@ def create_interview_event(event_title,
     except:
         is_online = 0
 
-    Organizer_email         = Organizer_email.strip()
+    # Guard: Organizer_email is required — without it the MS Graph URL breaks
+    if not Organizer_email:
+        frappe.throw(
+            "The <b>Organizer Email</b> field is empty. "
+            "Please select an organizer email on the document before saving.",
+            title="Missing Organizer Email"
+        )
+
+    Organizer_email         = (Organizer_email or "").strip()
     interview_mode          = (interview_mode or "").strip()
     Map_location            = Map_location or ""
     address                 = address or ""
     candidate_phone         = candidate_phone or ""
     commands_to_candidate   = commands_to_candidate or ""
     commands_to_interviewer = commands_to_interviewer or ""
+
 
     # Determine mode flags
     mode_is_online      = (interview_mode.lower() == "online"       or is_online == 1)
@@ -353,7 +361,7 @@ def create_interview_event(event_title,
 
     # ----------------------------------------
     # Round 2: salary details
-    # ---------------------------------------
+    # -----------------------  ----------------
     total_exp = current_ctc = expected_ctc = ""
     if is_round2:
         try:
@@ -405,8 +413,12 @@ def create_interview_event(event_title,
 
     if attachment_paths:
         try:
-            attachment_list = ast.literal_eval(attachment_paths)
-        except:
+            import json as _json
+            # JS sends JSON.stringify'd string e.g. '["/files/cv.pdf"]'
+            attachment_list = _json.loads(attachment_paths)
+            if not isinstance(attachment_list, list):
+                attachment_list = []
+        except Exception:
             attachment_list = []
 
     for web_path in attachment_list:
