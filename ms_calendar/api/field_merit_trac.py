@@ -564,7 +564,7 @@ def save_field_merittrac_tickets(tickets, start_datetime, end_datetime,
 
         # Look up applicant name and email from Field Registration Form1
         applicant_info = frappe.db.get_value(
-            "Field Registration Form1",
+            "Field Registration Form",
             candidate_id,
             ["full_name_aadhaar", "email_address"],
             as_dict=True
