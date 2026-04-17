@@ -357,7 +357,9 @@ def create_interview_event(event_title,
                            candidate_phone=None,
                            commands_to_candidate=None,
                            commands_to_interviewer=None,
-                           attachment_paths=None):
+                           attachment_paths=None,
+                           doc_name=None,
+                           ms_event_id=None):
 
     import re
     import ast
@@ -484,6 +486,20 @@ def create_interview_event(event_title,
     }
 
     # ----------------------------------------
+    # CANCEL OLD EVENT (reschedule case)
+    # ----------------------------------------
+    if ms_event_id:
+        try:
+            requests.delete(
+                f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/events/{ms_event_id}"
+                f"?sendUpdates=all",
+                headers=headers
+            )
+            # Do not raise — if old event already gone, that's fine
+        except Exception:
+            pass
+
+    # ----------------------------------------
     # ATTENDEES
     # ----------------------------------------
     interviewer_list = [i.strip() for i in (interviewer_emails or "").split(",") if i.strip()]
@@ -494,9 +510,6 @@ def create_interview_event(event_title,
         attendees.append({"emailAddress": {"address": r}, "type": "resource"})
     for i in interviewer_list:
         attendees.append({"emailAddress": {"address": i}, "type": "required"})
-    # Candidate is also a required attendee so their calendar gets blocked
-    if interviewee_email:
-        attendees.append({"emailAddress": {"address": interviewee_email}, "type": "required"})
     # ----------------------------------------
     # ATTACHMENTS (PUBLIC + PRIVATE FIXED)
     # ----------------------------------------
@@ -688,10 +701,12 @@ Please find the details of the interview below.</p>
         "showAs": "busy",
         "start": {"dateTime": start_datetime, "timeZone": "Asia/Kolkata"},
         "end":   {"dateTime": end_datetime,   "timeZone": "Asia/Kolkata"},
-        "body":  {"contentType": "HTML", "content": initial_body}
+        "body":  {"contentType": "HTML", "content": initial_body},
+        "attendees": attendees   # include interviewers now so invite is sent on creation
     }
 
-    res = requests.post(create_url, headers=headers, json=draft_payload)
+    # Create event silently — invite is sent via the PATCH below (one invite only)
+    res = requests.post(create_url + "?sendUpdates=none", headers=headers, json=draft_payload)
     res.raise_for_status()
     event_id = res.json()["id"]
 
@@ -869,7 +884,6 @@ Please find the details of the interview below.</p>
         event_fetch_url + "?sendUpdates=all",
         headers=headers,
         json={
-            "attendees": attendees,
             "body": {"contentType": "HTML", "content": final_body},
             "showAs": "busy"
         }
@@ -912,7 +926,10 @@ Please find the details of the interview below.</p>
         send_res = requests.post(send_mail_url, headers=headers, json=mail_payload)
         send_res.raise_for_status()
     except Exception as mail_err:
-        frappe.log_error(f"MS Graph sendMail failed ({mail_err}), falling back to frappe.sendmail")
+        try:
+            frappe.log_error(title="sendMail 403 fallback", message=str(mail_err))
+        except Exception:
+            pass  # never let log_error crash the flow
         frappe.sendmail(
             recipients=[interviewee_email, Organizer_email],
             sender=Organizer_email,
@@ -920,6 +937,16 @@ Please find the details of the interview below.</p>
             message=candidate_email_body,
             delayed=False
         )
+
+    # Save event_id to the document so reschedule can cancel it later
+    if doc_name:
+        try:
+            frappe.db.set_value(
+                "Field Schedule interview", doc_name, "ms_event_id", event_id,
+                update_modified=False
+            )
+        except Exception:
+            pass
 
     frappe.msgprint("✅ Event created successfully. Outlook invite sent.")
 
