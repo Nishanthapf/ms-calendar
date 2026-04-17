@@ -885,26 +885,12 @@ and any relevant documents.</p>
         delayed=False
     )
 
-    # # ----------------------------------------
-    # # EMAIL TO INTERVIEWER(S)
-    # # ----------------------------------------
-    # interviewer_email_subject = f"Discussion With - {Applicants_name} ({Applicants_Role} Role), Azim Premji Scholarship"
+    frappe.msgprint("✅ Event created successfully. Outlook invite sent.")
 
-    # if interviewer_list:
-    #     frappe.sendmail(
-    #         recipients=interviewer_list,
-    #         sender=Organizer_email,
-    #         subject=interviewer_email_subject,
-    #         message=final_body,
-    #         delayed=False
-    #     )
-
-    # frappe.msgprint("✅ Event created successfully. Outlook invite sent.")
-
-    # return {
-    #     "event_id": event_id,
-    #     "join_url": join_web_url,
-    #     "meeting_id": join_meeting_id,
-    #     "passcode": join_passcode,
-    #     "is_online": is_online
-    # }
+    return {
+        "event_id":   event_id,
+        "join_url":   join_web_url,
+        "meeting_id": join_meeting_id,
+        "passcode":   join_passcode,
+        "is_online":  is_online
+    }
