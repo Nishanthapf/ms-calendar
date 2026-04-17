@@ -878,7 +878,7 @@ and any relevant documents.</p>
     )
 
     frappe.sendmail(
-        recipients=[interviewee_email],
+        recipients=[interviewee_email, Organizer_email],
         sender=Organizer_email,
         subject=candidate_email_subject,
         message=candidate_email_body,
