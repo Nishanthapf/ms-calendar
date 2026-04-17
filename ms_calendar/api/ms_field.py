@@ -399,21 +399,18 @@ def create_interview_event(event_title,
 
     round_raw = str(Interview_round).strip().lower()
 
-    # Normalize — remove spaces, dashes, underscores
+    # Normalize
     round_clean = (
         round_raw.replace(" ", "")
-                 .replace("-", "")
-                 .replace("–", "")
-                 .replace("_", "")
+                .replace("-", "")
+                .replace("–", "")
     )
 
-    # Round 2 keywords — anything with "2", "two", "second", "final", "leadership", etc.
-    _round2_kw = ["roundtwo", "round2", "2ndround", "secondround",
-                  "finalround", "final", "hrround", "leadership", "functional"]
-    is_round2 = any(kw in round_clean for kw in _round2_kw)
-    is_round1 = not is_round2   # everything else is round 1 (default)
+    # New FRONTEND values:
+    is_round1 = "roundone" in round_clean
+    is_round2 = "roundtwo" in round_clean
 
-    form_key = "two" if is_round2 else "one"
+    form_key = "one" if is_round1 else "two"
 
     feedback_url = (
         f"https://careers.frappe.cloud/feedback-form-{form_key}/new"
@@ -888,31 +885,26 @@ and any relevant documents.</p>
         delayed=False
     )
 
-    # ----------------------------------------
-    # EMAIL TO INTERVIEWER(S)
-    # ----------------------------------------
-    interviewer_email_subject = f"Discussion With - {Applicants_name} ({Applicants_Role} Role), Azim Premji Scholarship"
+    # # ----------------------------------------
+    # # EMAIL TO INTERVIEWER(S)
+    # # ----------------------------------------
+    # interviewer_email_subject = f"Discussion With - {Applicants_name} ({Applicants_Role} Role), Azim Premji Scholarship"
 
-    if interviewer_list:
-        sendmail_attachments = [
-            {"fname": fname, "fcontent": base64.b64decode(fb64)}
-            for fname, fb64 in final_files
-        ]
-        frappe.sendmail(
-            recipients=interviewer_list,
-            sender=Organizer_email,
-            subject=interviewer_email_subject,
-            message=final_body,
-            attachments=sendmail_attachments if sendmail_attachments else None,
-            delayed=False
-        )
+    # if interviewer_list:
+    #     frappe.sendmail(
+    #         recipients=interviewer_list,
+    #         sender=Organizer_email,
+    #         subject=interviewer_email_subject,
+    #         message=final_body,
+    #         delayed=False
+    #     )
 
-    frappe.msgprint("✅ Event created successfully. Outlook invite sent.")
+    # frappe.msgprint("✅ Event created successfully. Outlook invite sent.")
 
-    return {
-        "event_id": event_id,
-        "join_url": join_web_url,
-        "meeting_id": join_meeting_id,
-        "passcode": join_passcode,
-        "is_online": is_online
-    }
+    # return {
+    #     "event_id": event_id,
+    #     "join_url": join_web_url,
+    #     "meeting_id": join_meeting_id,
+    #     "passcode": join_passcode,
+    #     "is_online": is_online
+    # }
