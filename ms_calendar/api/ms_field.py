@@ -376,7 +376,10 @@ def create_interview_event(event_title,
     except:
         is_online = 0
 
-    Organizer_email = Organizer_email.strip()
+    Organizer_email  = Organizer_email.strip()
+    Applicants_name  = (Applicants_name or "").strip()
+    Applicants_Role  = (Applicants_Role or "").strip()
+    InterviewersName = (InterviewersName or "").strip()
     Map_location = Map_location or ""
     address = address or ""
     commands_to_candidate = commands_to_candidate or ""
