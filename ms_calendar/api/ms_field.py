@@ -397,6 +397,13 @@ def create_interview_event(event_title,
     mode_is_online     = (is_online == 1) or (display_mode.lower() == "online")
     candidate_phone    = candidate_phone or ""
 
+    # Phone number HTML for interviewer email (Phone mode only)
+    phone_info_html = (
+        f"<b>Candidate Phone No.:</b> {candidate_phone}<br>"
+        if display_mode.lower() == "phone" and candidate_phone
+        else ""
+    )
+
     round_raw = str(Interview_round).strip().lower()
 
     # Normalize
@@ -406,9 +413,11 @@ def create_interview_event(event_title,
                 .replace("–", "")
     )
 
-    # New FRONTEND values:
-    is_round1 = "roundone" in round_clean
-    is_round2 = "roundtwo" in round_clean
+    # Round detection: Round 2 keywords; everything else defaults to Round 1
+    _round2_kw = ["roundtwo", "round2", "2ndround", "secondround",
+                  "finalround", "final", "hrround", "leadership", "functional"]
+    is_round2 = any(kw in round_clean for kw in _round2_kw)
+    is_round1 = not is_round2   # default to round 1
 
     form_key = "one" if is_round1 else "two"
 
@@ -416,7 +425,7 @@ def create_interview_event(event_title,
         f"https://careers.frappe.cloud/feedback-form-{form_key}/new"
         f"?app_id={application_id}&applicant_name={Applicants_name}"
     )
-    if is_online == 0 and (address or Map_location):
+    if display_mode.lower() == "face-to-face" and (address or Map_location):
         Map_location_html = ""
         if address:
             Map_location_html += f'<p style="margin:6px 0;"><strong>Venue:</strong> {address}</p>'
@@ -541,6 +550,7 @@ Please find the details of the interview below.</p>
 (UTC+05:30) Asia/Calcutta<br>
 <b>Interview Mode:</b> {display_mode}<br>
 {meeting_info}
+{phone_info}
 <b>Interview Round:</b> {round_label}<br>
 <b>Interview Time:</b> {interview_time_str} – {end_time_str}<br>
 <b>Interviewers:</b> {InterviewersName}
@@ -555,8 +565,8 @@ Please find the details of the interview below.</p>
 <p>Regards,<br>People Function</p>
 """
 
-    # ── CANDIDATE TEMPLATE (Round 1) ────────────────────────────────────────
-    round1_candidate_template = """
+    # ── CANDIDATE TEMPLATE (all rounds, mode-based) ──────────────────────────
+    candidate_template = """
 <p>Dear {Applicants_name},</p>
 
 <p>We are pleased to inform you that your interview for the position of
@@ -567,17 +577,15 @@ as per the details below:</p>
 <ul>
   <li><b>Interview Round:</b> {round_label}</li>
   <li><b>Date:</b> {interview_date_str}</li>
-  <li><b>Interview Time:</b> {interview_time_str} – {end_time_str} (UTC+05:30) Asia/Calcutta</li>
-  <li><b>Interview Mode:</b> {display_mode}</li>
-  <li><b>Interviewers:</b> {InterviewersName}</li>
+  <li><b>Time:</b> {interview_time_str} – {end_time_str} (UTC+05:30) Asia/Calcutta</li>
+  <li><b>Mode:</b> {display_mode}</li>
 </ul>
 
-{meeting_info}
-{Map_html}
+{candidate_mode_html}
+
 {Note_to_candidate_html}
 
-<p>Please ensure you are available on time and carry a copy of your resume
-and any relevant documents.</p>
+{candidate_advice_html}
 
 <p>We wish you all the best for your interview.</p>
 
@@ -602,6 +610,7 @@ Please find the details of the interview below.</p>
 (UTC+05:30) Asia/Calcutta<br>
 <b>Interview Mode:</b> {display_mode}<br>
 {meeting_info}
+{phone_info}
 <b>Interview Round:</b> {round_label}<br>
 <b>Interview Time:</b> {interview_time_str} – {end_time_str}<br>
 <b>Interviewers:</b> {InterviewersName}
@@ -614,35 +623,6 @@ Please find the details of the interview below.</p>
 <a href="{feedback_url}" target="_blank">Click here</a></p>
 
 <p>Regards,<br>People Function</p>
-"""
-
-    # ── CANDIDATE TEMPLATE (Round 2) ────────────────────────────────────────
-    round2_candidate_template = """
-<p>Dear {Applicants_name},</p>
-
-<p>We are pleased to inform you that your interview for the position of
-<b>{Applicants_Role}</b> at Azim Premji Foundation has been scheduled
-as per the details below:</p>
-
-<p><b>Interview Details</b></p>
-<ul>
-  <li><b>Interview Round:</b> {round_label}</li>
-  <li><b>Date:</b> {interview_date_str}</li>
-  <li><b>Interview Time:</b> {interview_time_str} – {end_time_str} (UTC+05:30) Asia/Calcutta</li>
-  <li><b>Interview Mode:</b> {display_mode}</li>
-  <li><b>Interviewers:</b> {InterviewersName}</li>
-</ul>
-
-{meeting_info}
-{Map_html}
-{Note_to_candidate_html}
-
-<p>Please ensure you are available on time and carry a copy of your resume
-and any relevant documents.</p>
-
-<p>We wish you all the best for your interview.</p>
-
-<p>Warm regards,<br>Recruitment Team<br>Azim Premji Foundation</p>
 """
 
     # ----------------------------------------
@@ -666,6 +646,7 @@ and any relevant documents.</p>
             end_time_str=end_time_str,
             InterviewersName=InterviewersName,
             meeting_info="",
+            phone_info=phone_info_html,
             Map_html=map_html,
             feedback_url=feedback_url,
             Note_to_interviewer_html=note_to_interviewer_html
@@ -686,6 +667,7 @@ and any relevant documents.</p>
             end_time_str=end_time_str,
             InterviewersName=InterviewersName,
             meeting_info="",
+            phone_info=phone_info_html,
             Map_html=map_html,
             feedback_url=feedback_url,
             Note_to_interviewer_html=note_to_interviewer_html
@@ -807,6 +789,34 @@ and any relevant documents.</p>
         meeting_html = ""
 
     # ----------------------------------------
+    # MODE-SPECIFIC CONTENT FOR CANDIDATE EMAIL
+    # ----------------------------------------
+    _mode_lower = display_mode.lower()
+    if _mode_lower == "online":
+        candidate_mode_html = meeting_html
+    elif _mode_lower == "phone":
+        candidate_mode_html = (
+            f'<p><b>Candidate Phone No.:</b> {candidate_phone}</p>'
+            if candidate_phone else ""
+        )
+    else:  # Face-to-Face (default)
+        candidate_mode_html = map_html
+
+    if _mode_lower == "online":
+        candidate_advice_html = (
+            "<p>Please ensure you are available on time. "
+            "If you are attending online, be in a suitable environment "
+            "(quiet, well-lit, with minimal disturbance) for the interview "
+            "and kindly test your internet connection, webcam, and microphone "
+            "in advance.</p>"
+        )
+    else:
+        candidate_advice_html = (
+            "<p>Please ensure you are available on time and carry a copy of "
+            "your resume and any relevant documents.</p>"
+        )
+
+    # ----------------------------------------
     # FINAL EVENT BODY
     # ----------------------------------------
     if is_round1:
@@ -820,6 +830,7 @@ and any relevant documents.</p>
             end_time_str=end_time_str,
             InterviewersName=InterviewersName,
             meeting_info=meeting_html,
+            phone_info=phone_info_html,
             Map_html=map_html,
             feedback_url=feedback_url,
             Note_to_interviewer_html=note_to_interviewer_html
@@ -839,6 +850,7 @@ and any relevant documents.</p>
             end_time_str=end_time_str,
             InterviewersName=InterviewersName,
             meeting_info=meeting_html,
+            phone_info=phone_info_html,
             Map_html=map_html,
             feedback_url=feedback_url,
             Note_to_interviewer_html=note_to_interviewer_html
@@ -860,10 +872,9 @@ and any relevant documents.</p>
     # ----------------------------------------
     # EMAIL TO CANDIDATE
     # ----------------------------------------
-    candidate_email_subject = f"Tech for Social Sector: {round_label} for {Applicants_Role}"
+    candidate_email_subject = f"Interview Scheduled \u2013 {round_label} for {Applicants_Role}"
 
-    candidate_tmpl = round2_candidate_template if is_round2 else round1_candidate_template
-    candidate_email_body = candidate_tmpl.format(
+    candidate_email_body = candidate_template.format(
         Applicants_name=Applicants_name,
         Applicants_Role=Applicants_Role,
         round_label=round_label,
@@ -871,10 +882,9 @@ and any relevant documents.</p>
         interview_time_str=interview_time_str,
         end_time_str=end_time_str,
         display_mode=display_mode,
-        InterviewersName=InterviewersName,
-        meeting_info=meeting_html,
-        Map_html=map_html,
+        candidate_mode_html=candidate_mode_html,
         Note_to_candidate_html=note_to_candidate_html,
+        candidate_advice_html=candidate_advice_html,
     )
 
     frappe.sendmail(
