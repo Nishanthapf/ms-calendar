@@ -491,6 +491,9 @@ def create_interview_event(event_title,
         attendees.append({"emailAddress": {"address": r}, "type": "resource"})
     for i in interviewer_list:
         attendees.append({"emailAddress": {"address": i}, "type": "required"})
+    # Candidate is also a required attendee so their calendar gets blocked
+    if interviewee_email:
+        attendees.append({"emailAddress": {"address": interviewee_email}, "type": "required"})
     # ----------------------------------------
     # ATTACHMENTS (PUBLIC + PRIVATE FIXED)
     # ----------------------------------------
@@ -887,13 +890,33 @@ Please find the details of the interview below.</p>
         candidate_advice_html=candidate_advice_html,
     )
 
-    frappe.sendmail(
-        recipients=[interviewee_email, Organizer_email],
-        sender=Organizer_email,
-        subject=candidate_email_subject,
-        message=candidate_email_body,
-        delayed=False
-    )
+    # Send candidate email via MS Graph so FROM shows the organizer's real name
+    # Requires Mail.Send application permission in Azure AD app registration.
+    # Falls back to frappe.sendmail if that permission is not yet granted.
+    try:
+        send_mail_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/sendMail"
+        mail_payload = {
+            "message": {
+                "subject": candidate_email_subject,
+                "body": {"contentType": "HTML", "content": candidate_email_body},
+                "toRecipients": [
+                    {"emailAddress": {"address": interviewee_email}},
+                    {"emailAddress": {"address": Organizer_email}}
+                ]
+            },
+            "saveToSentItems": True
+        }
+        send_res = requests.post(send_mail_url, headers=headers, json=mail_payload)
+        send_res.raise_for_status()
+    except Exception as mail_err:
+        frappe.log_error(f"MS Graph sendMail failed ({mail_err}), falling back to frappe.sendmail")
+        frappe.sendmail(
+            recipients=[interviewee_email, Organizer_email],
+            sender=Organizer_email,
+            subject=candidate_email_subject,
+            message=candidate_email_body,
+            delayed=False
+        )
 
     frappe.msgprint("✅ Event created successfully. Outlook invite sent.")
 
