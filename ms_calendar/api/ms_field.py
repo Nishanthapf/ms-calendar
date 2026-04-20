@@ -358,6 +358,7 @@ def create_interview_event(event_title,
                            commands_to_candidate=None,
                            commands_to_interviewer=None,
                            attachment_paths=None,
+                           demo_feed_back_form=0,
                            doc_name=None,
                            ms_event_id=None):
 
@@ -409,37 +410,102 @@ def create_interview_event(event_title,
         else ""
     )
 
-    round_raw = str(Interview_round).strip().lower()
+    round_raw  = str(Interview_round).strip().lower()
+    role_raw   = str(Applicants_Role or "").strip().lower()
 
-    # Normalize
-    round_clean = (
-        round_raw.replace(" ", "")
-                .replace("-", "")
-                .replace("–", "")
-    )
+    # ── Round flags ──────────────────────────────────────────────────────────
+    is_recruiter_round = ("recruiter" in round_raw)
+    is_round1          = ("round one"  in round_raw or round_raw == "round 1")
+    is_round2          = ("round two"  in round_raw or round_raw == "round 2")
+    is_round3          = ("round three" in round_raw or round_raw == "round 3")
 
-    # Round detection: Round 2 keywords; everything else defaults to Round 1
-    _round2_kw = ["roundtwo", "round2", "2ndround", "secondround",
-                  "finalround", "final", "hrround", "leadership", "functional"]
-    is_round2 = any(kw in round_clean for kw in _round2_kw)
-    is_round1 = not is_round2   # default to round 1
+    # ── Feedback URL: driven by round × role × demo_feed_back_form ──────────
+    #
+    #   Recruiter Round  (any role)
+    #     → recruiter-assessment-form-feed-back-form
+    #
+    #   Round One  +  School Teacher  +  demo_feed_back_form checked
+    #     → school-teacher-functional-feedback
+    #
+    #   Round One  +  Resource Person
+    #     → educational-capacity-interview---feedback-form
+    #
+    #   Round Two  +  School Teacher
+    #     → demo-lesson-observation-feedback-form-feed-back-form
+    #
+    #   All other combinations → generic feedback-form-one / feedback-form-two
+    #
+    _base        = "https://careers.frappe.cloud"
+    _qs          = f"?app_id={application_id}&applicant_name={Applicants_name}"
+    _demo_checked = str(demo_feed_back_form or "0").strip().lower() in ("1", "true", "yes")
 
-    form_key = "one" if is_round1 else "two"
-
-    feedback_url = (
-        f"https://careers.frappe.cloud/feedback-form-{form_key}/new"
-        f"?app_id={application_id}&applicant_name={Applicants_name}"
-    )
+    if is_recruiter_round:
+        feedback_url = f"{_base}/recruiter-assessment-form-feed-back-form/new{_qs}"
+    elif is_round1 and "school teacher" in role_raw and _demo_checked:
+        feedback_url = f"{_base}/school-teacher-functional-feedback/new{_qs}"
+    elif is_round1 and "resource person" in role_raw:
+        feedback_url = f"{_base}/educational-capacity-interview---feedback-form/new{_qs}"
+    elif is_round2 and "school teacher" in role_raw:
+        feedback_url = f"{_base}/demo-lesson-observation-feedback-form-feed-back-form/new{_qs}"
+    elif is_round2:
+        feedback_url = f"{_base}/feedback-form-two/new{_qs}"
+    else:
+        feedback_url = f"{_base}/feedback-form-one/new{_qs}"
     if display_mode.lower() == "face-to-face" and (address or Map_location):
-        Map_location_html = ""
+        venue_row = ""
         if address:
-            Map_location_html += f'<p style="margin:6px 0;"><strong>Venue:</strong> {address}</p>'
+            venue_row = f"""
+            <tr>
+              <td style="padding:4px 0 2px;">
+                <span style="font-size:12px;font-weight:600;color:#64748b;
+                             text-transform:uppercase;letter-spacing:0.05em;">
+                  Venue Address
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 0 10px;">
+                <span style="font-size:14px;color:#1e293b;font-weight:500;">
+                  {address}
+                </span>
+              </td>
+            </tr>"""
+
+        map_btn = ""
         if Map_location:
-            Map_location_html += (
-                f'<p style="margin:6px 0;"><strong>Google Map Link:</strong> '
-                f'<a href="{Map_location}" target="_blank">Click here</a></p>'
-            )
-        map_html = Map_location_html
+            map_btn = f"""
+            <tr>
+              <td style="padding:4px 0 0;">
+                <a href="{Map_location}" target="_blank"
+                   style="display:inline-block;padding:8px 18px;
+                          background:#1d4ed8;color:#ffffff;
+                          font-size:13px;font-weight:600;
+                          text-decoration:none;border-radius:6px;">
+                  &#128205; View on Google Maps
+                </a>
+              </td>
+            </tr>"""
+
+        map_html = f"""
+<table width="100%" cellpadding="0" cellspacing="0"
+       style="margin:16px 0;border-collapse:collapse;">
+  <tr>
+    <td style="background:#eff6ff;border-left:4px solid #1d4ed8;
+               border-radius:0 8px 8px 0;padding:14px 18px;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding:0 0 8px;">
+            <span style="font-size:15px;font-weight:700;color:#1e3a8a;">
+              &#x1F3E2;&nbsp; Interview Venue
+            </span>
+          </td>
+        </tr>
+        {venue_row}
+        {map_btn}
+      </table>
+    </td>
+  </tr>
+</table>"""
     else:
         map_html = ""
 
@@ -702,16 +768,19 @@ Please find the details of the interview below.</p>
         "start": {"dateTime": start_datetime, "timeZone": "Asia/Kolkata"},
         "end":   {"dateTime": end_datetime,   "timeZone": "Asia/Kolkata"},
         "body":  {"contentType": "HTML", "content": initial_body},
-        "attendees": attendees   # include interviewers now so invite is sent on creation
+        # NO attendees here — adding attendees at creation triggers a first invite
+        # even with sendUpdates=none. Attendees are added in the PATCH so only
+        # ONE invite (with the complete final body + Teams URL) is ever sent.
     }
 
-    # Create event silently — invite is sent via the PATCH below (one invite only)
+    # Create event without attendees so no premature invite is fired
     res = requests.post(create_url + "?sendUpdates=none", headers=headers, json=draft_payload)
     res.raise_for_status()
     event_id = res.json()["id"]
 
     # ----------------------------------------
-    # ATTACH FILES
+    # ATTACH FILES  (CV / feedback form)
+    # Attached to the event so interviewers can access them from the calendar.
     # ----------------------------------------
     attach_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/events/{event_id}/attachments"
     for fname, fb64 in final_files:
@@ -880,12 +949,28 @@ Please find the details of the interview below.</p>
     else:
         final_body = initial_body
 
+    # ── PATCH 1: update body silently (no email yet) ────────────────────────
+    # Set the final body (with Teams link / venue info) BEFORE adding
+    # attendees so that when the invite lands in their inbox, it already
+    # contains the complete content. Using sendUpdates=none means no
+    # notification is fired for this body change.
+    requests.patch(
+        event_fetch_url + "?sendUpdates=none",
+        headers=headers,
+        json={
+            "body":   {"contentType": "HTML", "content": final_body},
+            "showAs": "busy"
+        }
+    ).raise_for_status()
+
+    # ── PATCH 2: add attendees → fires exactly ONE invite email ─────────────
+    # Because the body is already finalised above, this single patch triggers
+    # one clean invitation email per attendee — no "meeting updated" follow-up.
     requests.patch(
         event_fetch_url + "?sendUpdates=all",
         headers=headers,
         json={
-            "body": {"contentType": "HTML", "content": final_body},
-            "showAs": "busy"
+            "attendees": attendees
         }
     ).raise_for_status()
 

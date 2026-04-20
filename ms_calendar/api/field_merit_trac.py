@@ -92,27 +92,8 @@ def test_result_api():
             return {"status": "error", "http_status": 400, "message": "candidateId missing"}
 
         # ------------------------------------------------------------
-        # 5️⃣ INSERT Field MeritTrac Result
-        # ------------------------------------------------------------
-        test_doc = frappe.get_doc({
-            "doctype": "Field MeritTrac Result",
-            "applicant_id": candidate_id,
-            "score_percentile": percentage,
-            "attempt_id": attempt_id,
-            "assessment_id": assessment_id,
-            "attempt_status": attempt_status,
-            "score_report": report_url,
-            "total_score": score,
-            "max_score": max_score,
-            "total_questions": total_questions,
-            "total_attempted": total_attempted,
-            "updated_at": updated_at,
-            "created_at": created_at
-        })
-        test_doc.insert(ignore_permissions=True)
-
-        # ------------------------------------------------------------
-        # 6️⃣ UPDATE Field Registration Form
+        # 5️⃣ Fetch applicant details from Field Registration Form
+        #    (done before insert so applicant_name is stored correctly)
         # ------------------------------------------------------------
         srf = frappe.db.get_value(
             "Field Registration Form",
@@ -120,6 +101,35 @@ def test_result_api():
             ["name", "full_name_as_per_aadhar", "email", "srt_mail"],
             as_dict=True
         )
+
+        applicant_name_for_result = (
+            srf.get("full_name_as_per_aadhar") if srf else None
+        ) or ""
+
+        # ------------------------------------------------------------
+        # 6️⃣ INSERT MeritTrac Test Result  (with applicant_name)
+        # ------------------------------------------------------------
+        test_doc = frappe.get_doc({
+            "doctype":        "MeritTrac Test Result",
+            "applicant_id":   candidate_id,
+            "applicant_name": applicant_name_for_result,
+            "score_percentile": percentage,
+            "attempt_id":     attempt_id,
+            "assessment_id":  assessment_id,
+            "attempt_status": attempt_status,
+            "score_report":   report_url,
+            "total_score":    score,
+            "max_score":      max_score,
+            "total_questions": total_questions,
+            "total_attempted": total_attempted,
+            "updated_at":     updated_at,
+            "created_at":     created_at
+        })
+        test_doc.insert(ignore_permissions=True, ignore_links=True)
+
+        # ------------------------------------------------------------
+        # 7️⃣ UPDATE Field Registration Form  (srf already fetched above)
+        # ------------------------------------------------------------
 
         if not srf:
             frappe.db.commit()
