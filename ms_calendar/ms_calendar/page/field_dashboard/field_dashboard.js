@@ -99,16 +99,20 @@ frappe.pages['field-dashboard'].on_page_load = function (wrapper) {
             }
         </style>
         <div class="recruit-filters">
-            <select id="filter-role"><option value="">All Roles</option></select>
             <select id="filter-department"><option value="">All Departments</option></select>
+            <select id="filter-role"><option value="">All Roles</option></select>
+            <select id="filter-state"><option value="">All States</option></select>
+            <select id="filter-district"><option value="">All Districts</option></select>
             <select id="filter-location"><option value="">All Locations</option></select>
         </div>
         <div class="recruit-grid" id="recruit-grid"></div>
     `);
 
 	const $grid = $(wrapper).find('#recruit-grid');
-	const $roleFilter = $(wrapper).find('#filter-role');
 	const $deptFilter = $(wrapper).find('#filter-department');
+	const $roleFilter = $(wrapper).find('#filter-role');
+	const $stateFilter = $(wrapper).find('#filter-state');
+	const $distFilter = $(wrapper).find('#filter-district');
 	const $locFilter = $(wrapper).find('#filter-location');
 
 	// Render cards
@@ -121,19 +125,7 @@ frappe.pages['field-dashboard'].on_page_load = function (wrapper) {
         `);
 	});
 
-	// Populate Role dropdown from Field Role doctype
-	frappe.call({
-		method: 'frappe.client.get_list',
-		args: { doctype: 'Field Role', fields: ['name'], limit_page_length: 0 },
-		callback: function (r) {
-			(r.message || []).sort(function (a, b) { return a.name.localeCompare(b.name); })
-				.forEach(function (d) {
-					$roleFilter.append(`<option value="${d.name}">${d.name}</option>`);
-				});
-		}
-	});
-
-	// Populate Department dropdown from Field Department doctype
+	// 1. Populate Department dropdown from Field Department doctype
 	frappe.call({
 		method: 'frappe.client.get_list',
 		args: { doctype: 'Field Department', fields: ['name'], limit_page_length: 0 },
@@ -145,7 +137,43 @@ frappe.pages['field-dashboard'].on_page_load = function (wrapper) {
 		}
 	});
 
-	// Populate Location dropdown from Field Location doctype
+	// 2. Populate Role dropdown from Field Role doctype
+	frappe.call({
+		method: 'frappe.client.get_list',
+		args: { doctype: 'Field Role', fields: ['name'], limit_page_length: 0 },
+		callback: function (r) {
+			(r.message || []).sort(function (a, b) { return a.name.localeCompare(b.name); })
+				.forEach(function (d) {
+					$roleFilter.append(`<option value="${d.name}">${d.name}</option>`);
+				});
+		}
+	});
+
+	// 3. Populate State dropdown from State doctype
+	frappe.call({
+		method: 'frappe.client.get_list',
+		args: { doctype: 'State', fields: ['name'], limit_page_length: 0 },
+		callback: function (r) {
+			(r.message || []).sort(function (a, b) { return a.name.localeCompare(b.name); })
+				.forEach(function (d) {
+					$stateFilter.append(`<option value="${d.name}">${d.name}</option>`);
+				});
+		}
+	});
+
+	// 4. Populate District dropdown from District doctype
+	frappe.call({
+		method: 'frappe.client.get_list',
+		args: { doctype: 'District', fields: ['name'], limit_page_length: 0 },
+		callback: function (r) {
+			(r.message || []).sort(function (a, b) { return a.name.localeCompare(b.name); })
+				.forEach(function (d) {
+					$distFilter.append(`<option value="${d.name}">${d.name}</option>`);
+				});
+		}
+	});
+
+	// 5. Populate Location dropdown from Field Location doctype
 	frappe.call({
 		method: 'frappe.client.get_list',
 		args: { doctype: 'Field Location', fields: ['name'], limit_page_length: 0 },
@@ -164,8 +192,10 @@ frappe.pages['field-dashboard'].on_page_load = function (wrapper) {
 		});
 
 		const filters = [['name', '!=', '']];
-		if ($roleFilter.val()) filters.push(['role', '=', $roleFilter.val()]);
 		if ($deptFilter.val()) filters.push(['department', '=', $deptFilter.val()]);
+		if ($roleFilter.val()) filters.push(['role', '=', $roleFilter.val()]);
+		if ($stateFilter.val()) filters.push(['state', '=', $stateFilter.val()]);
+		if ($distFilter.val()) filters.push(['district', '=', $distFilter.val()]);
 		if ($locFilter.val()) filters.push(['location', '=', $locFilter.val()]);
 
 		frappe.call({
@@ -191,8 +221,10 @@ frappe.pages['field-dashboard'].on_page_load = function (wrapper) {
 	}
 
 	// Re-load counts when filter changes
-	$roleFilter.on('change', loadCounts);
 	$deptFilter.on('change', loadCounts);
+	$roleFilter.on('change', loadCounts);
+	$stateFilter.on('change', loadCounts);
+	$distFilter.on('change', loadCounts);
 	$locFilter.on('change', loadCounts);
 
 	// Initial count load
@@ -202,8 +234,10 @@ frappe.pages['field-dashboard'].on_page_load = function (wrapper) {
 	$grid.on('click', '.recruit-card', function () {
 		const status = $(this).data('status');
 		let url = '/app/field-registration-form?application_status=' + encodeURIComponent(status);
-		if ($roleFilter.val()) url += '&role=' + encodeURIComponent($roleFilter.val());
 		if ($deptFilter.val()) url += '&department=' + encodeURIComponent($deptFilter.val());
+		if ($roleFilter.val()) url += '&role=' + encodeURIComponent($roleFilter.val());
+		if ($stateFilter.val()) url += '&state=' + encodeURIComponent($stateFilter.val());
+		if ($distFilter.val()) url += '&district=' + encodeURIComponent($distFilter.val());
 		if ($locFilter.val()) url += '&location=' + encodeURIComponent($locFilter.val());
 		window.location.href = url;
 	});
