@@ -684,11 +684,6 @@ as per the details below:</p>
 <p>An interview with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b> has been confirmed.
 Please find the details of the interview below.</p>
 
-<p>
-<b>Total Experience:</b> {total_exp}<br>
-<b>Current CTC:</b> {current_ctc}<br>
-<b>Expected CTC:</b> {expected_ctc}
-</p>
 
 <p>
 <b>Date:</b> {interview_date_str}<br>
@@ -714,7 +709,7 @@ Please find the details of the interview below.</p>
     # INITIAL EVENT BODY
     # ----------------------------------------
     if is_round1:
-        calendar_subject = f"Discussion With - {Applicants_name} ({Applicants_Role} Role), Azim Premji Scholarship"
+        calendar_subject = f"Discussion With - {Applicants_name} ({Applicants_Role} Role) | {candidate_phone} | {display_mode}, Azim Premji Scholarship"
         # initial_body = round1_interviewer_template.format(
         #     Interviewer_name=InterviewersName,
         #     when_str=when_str,
@@ -738,7 +733,7 @@ Please find the details of the interview below.</p>
         )
 
     else:
-        calendar_subject = f"Discussion With - {Applicants_name} ({Applicants_Role} Role), Azim Premji Scholarship"
+        calendar_subject = f"Discussion With - {Applicants_name} ({Applicants_Role} Role) | {candidate_phone} | {display_mode}, Azim Premji Scholarship"
         initial_body = round2_interviewer_template.format(
             Applicants_name=Applicants_name,
             Applicants_Role=Applicants_Role,
@@ -977,7 +972,7 @@ Please find the details of the interview below.</p>
     # ----------------------------------------
     # EMAIL TO CANDIDATE
     # ----------------------------------------
-    candidate_email_subject = f"Interview Scheduled \u2013 {round_label} for {Applicants_Role}"
+    candidate_email_subject = f"Interview Scheduled \u2013 {round_label} for {Applicants_Role} | {candidate_phone} | {display_mode}"
 
     candidate_email_body = candidate_template.format(
         Applicants_name=Applicants_name,
