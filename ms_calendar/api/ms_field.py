@@ -369,7 +369,8 @@ def create_interview_event(event_title,
                            attachment_paths=None,
                            demo_feed_back_form=0,
                            doc_name=None,
-                           ms_event_id=None):
+                           ms_event_id=None,
+                           department=None):
 
     import re
     import ast
@@ -428,33 +429,55 @@ def create_interview_event(event_title,
     is_round2          = ("round two"  in round_raw or round_raw == "round 2")
     is_round3          = ("round three" in round_raw or round_raw == "round 3")
 
-    # ── Feedback URL: driven by round × role ────────────────────────────────
+    dept_raw = str(department or "").strip().lower()
+    is_dept_livelihood = "livelihood" in dept_raw
+    is_dept_health     = "health"     in dept_raw
+
+    # ── Feedback URL: driven by department → round (then role for non-dept cases) ──
     #
-    #   Recruiter Round  (any role)
-    #     → recruiter-assessment-form-feed-back-form
+    #   Livelihood department:
+    #     Recruiter Round → livelihoods-recruiter-feedback-form
+    #     Round One       → livelihoods-functional-round-feedback-form
+    #     Round Two       → livelihoods-final-round-feedback-form
     #
-    #   Round One  +  School Teacher
-    #     → school-teacher-functional-feedback
+    #   Health department:
+    #     Recruiter Round → health-recruitment-feedback-form
+    #     Round One       → health-functional-round-feedback-form
+    #     Round Two       → health-final-round-feedback-form
     #
-    #   Round One  +  Resource Person
-    #     → educational-capacity-interview---feedback-form
-    #
-    #   Round Two  +  School Teacher
-    #     → demo-lesson-observation-feedback-form-feed-back-form
-    #
-    #   Round Two  +  Resource Person
-    #     → leader-final-feedback
-    #
-    #   Round Three  +  School Teacher
-    #     → leader-final-feedback
-    #
-    #   All other combinations → generic feedback-form-one / feedback-form-two
+    #   All other departments (Education etc.) — driven by round × role:
+    #     Recruiter Round  → recruiter-assessment-form-feed-back-form
+    #     Round One  +  School Teacher   → school-teacher-functional-feedback
+    #     Round One  +  Resource Person  → educational-capacity-interview---feedback-form
+    #     Round Two  +  School Teacher   → demo-lesson-observation-feedback-form-feed-back-form
+    #     Round Two  +  Resource Person  → leader-final-feedback
+    #     Round Three + School Teacher   → leader-final-feedback
+    #     Round Two (others)             → feedback-form-two
+    #     All else                       → feedback-form-one
     #
     _base        = "https://careers.frappe.cloud"
-    _qs          = f"?app_id={application_id}&applicant_name={Applicants_name}"
+    _qs          = f"?applicant_id={application_id}&applicant_name={Applicants_name}"
     _demo_checked = str(demo_feed_back_form or "0").strip().lower() in ("1", "true", "yes")
 
-    if is_recruiter_round:
+    if is_dept_livelihood:
+        if is_recruiter_round:
+            feedback_url = f"{_base}/livelihoods-recruiter-feedback-form/new{_qs}"
+        elif is_round1:
+            feedback_url = f"{_base}/livelihoods-functional-round-feedback-form/new{_qs}"
+        elif is_round2:
+            feedback_url = f"{_base}/livelihoods-final-round-feedback-form/new{_qs}"
+        else:
+            feedback_url = f"{_base}/livelihoods-functional-round-feedback-form/new{_qs}"
+    elif is_dept_health:
+        if is_recruiter_round:
+            feedback_url = f"{_base}/health-recruitment-feedback-form/new{_qs}"
+        elif is_round1:
+            feedback_url = f"{_base}/health-functional-round-feedback-form/new{_qs}"
+        elif is_round2:
+            feedback_url = f"{_base}/health-final-round-feedback-form/new{_qs}"
+        else:
+            feedback_url = f"{_base}/health-functional-round-feedback-form/new{_qs}"
+    elif is_recruiter_round:
         feedback_url = f"{_base}/recruiter-assessment-form-feed-back-form/new{_qs}"
     elif is_round1 and "school teacher" in role_raw:
         feedback_url = f"{_base}/school-teacher-functional-feedback/new{_qs}"
@@ -659,6 +682,85 @@ def create_interview_event(event_title,
             file_content = base64.b64encode(f.read()).decode()
 
         final_files.append((file_name, file_content))
+
+    # ----------------------------------------
+    # AUTO-ATTACH FEEDBACK FORMS FROM Field Registration Form
+    # Round One   → recruiter_round_feedback_form
+    # Round Two   → recruiter_round_feedback_form + round_one_feedback_from + resume
+    # Round Three → recruiter_round_feedback_form + round_one_feedback_from
+    #               + round_two_feedback_form + resume
+    # ----------------------------------------
+    if application_id:
+        try:
+            srf = frappe.get_doc("Field Registration Form", application_id)
+
+            # Determine which fields to attach based on round
+            if is_round1:
+                auto_attach_fields = ["recruiter_round_feedback_form", "resume_upload"]
+            elif is_round2:
+                auto_attach_fields = [
+                    "recruiter_round_feedback_form",
+                    "round_one_feedback_from",
+                    "resume_upload"
+                ]
+            elif is_round3:
+                auto_attach_fields = [
+                    "recruiter_round_feedback_form",
+                    "round_one_feedback_from",
+                    "round_two_feedback_form",
+                    "resume_upload"
+                ]
+            else:
+                auto_attach_fields = []
+
+            for field in auto_attach_fields:
+                web_path = getattr(srf, field, None)
+                if not web_path:
+                    continue
+
+                # Resolve physical path
+                f_docs = frappe.get_all(
+                    "File",
+                    filters={"file_url": web_path},
+                    fields=["file_name", "is_private"],
+                    limit=1
+                )
+                if f_docs:
+                    f_name = f_docs[0]["file_name"]
+                    f_private = f_docs[0]["is_private"]
+                else:
+                    # Fallback: derive filename from URL
+                    f_name = web_path.split("/")[-1]
+                    f_private = False
+
+                if f_private:
+                    f_path = frappe.get_site_path("private", "files", f_name)
+                else:
+                    f_path = frappe.get_site_path("public", "files", f_name)
+
+                if not os.path.isfile(f_path):
+                    frappe.log_error(
+                        f"Auto-attach file missing: {f_path} (field={field})",
+                        "Interview Auto-Attach Error"
+                    )
+                    continue
+
+                if os.path.getsize(f_path) > 5 * 1024 * 1024:
+                    frappe.log_error(
+                        f"Auto-attach file too large: {f_name}",
+                        "Interview Auto-Attach Error"
+                    )
+                    continue
+
+                with open(f_path, "rb") as fh:
+                    final_files.append((f_name, base64.b64encode(fh.read()).decode()))
+
+        except Exception as e:
+            frappe.log_error(
+                f"Auto-attach from SRF failed for {application_id}: {e}",
+                "Interview Auto-Attach Error"
+            )
+
     # ----------------------------------------
     # ROUND 1 TEMPLATES
     # ----------------------------------------
