@@ -230,9 +230,18 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
         "client_secret": secret,
         "scope": "https://graph.microsoft.com/.default"
     }
-    token_resp = requests.post(token_url, data=token_data)
-    token_resp.raise_for_status()
-    access_token = token_resp.json()["access_token"]
+    try:
+        token_resp = requests.post(token_url, data=token_data, timeout=30)
+        token_resp.raise_for_status()
+        access_token = token_resp.json().get("access_token")
+        if not access_token:
+            frappe.throw(f"Failed to fetch MS access token: {token_resp.json()}")
+    except requests.exceptions.ConnectionError:
+        frappe.throw("Cannot reach Microsoft login servers. Check network connectivity and try again.")
+    except requests.exceptions.Timeout:
+        frappe.throw("Microsoft login server timed out. Please try again.")
+    except requests.exceptions.RequestException as e:
+        frappe.throw(f"Token request failed: {e}")
     headers = {"Authorization": f"Bearer {access_token}"}
 
     print("DEBUG → Token OK")
@@ -419,12 +428,12 @@ def create_interview_event(event_title,
     is_round2          = ("round two"  in round_raw or round_raw == "round 2")
     is_round3          = ("round three" in round_raw or round_raw == "round 3")
 
-    # ── Feedback URL: driven by round × role × demo_feed_back_form ──────────
+    # ── Feedback URL: driven by round × role ────────────────────────────────
     #
     #   Recruiter Round  (any role)
     #     → recruiter-assessment-form-feed-back-form
     #
-    #   Round One  +  School Teacher  +  demo_feed_back_form checked
+    #   Round One  +  School Teacher
     #     → school-teacher-functional-feedback
     #
     #   Round One  +  Resource Person
@@ -432,6 +441,12 @@ def create_interview_event(event_title,
     #
     #   Round Two  +  School Teacher
     #     → demo-lesson-observation-feedback-form-feed-back-form
+    #
+    #   Round Two  +  Resource Person
+    #     → leader-final-feedback
+    #
+    #   Round Three  +  School Teacher
+    #     → leader-final-feedback
     #
     #   All other combinations → generic feedback-form-one / feedback-form-two
     #
@@ -441,16 +456,31 @@ def create_interview_event(event_title,
 
     if is_recruiter_round:
         feedback_url = f"{_base}/recruiter-assessment-form-feed-back-form/new{_qs}"
-    elif is_round1 and "school teacher" in role_raw and _demo_checked:
+    elif is_round1 and "school teacher" in role_raw:
         feedback_url = f"{_base}/school-teacher-functional-feedback/new{_qs}"
     elif is_round1 and "resource person" in role_raw:
         feedback_url = f"{_base}/educational-capacity-interview---feedback-form/new{_qs}"
     elif is_round2 and "school teacher" in role_raw:
         feedback_url = f"{_base}/demo-lesson-observation-feedback-form-feed-back-form/new{_qs}"
+    elif is_round2 and "resource person" in role_raw:
+        feedback_url = f"{_base}/leader-final-feedback/new{_qs}"
+    elif is_round3 and "school teacher" in role_raw:
+        feedback_url = f"{_base}/leader-final-feedback/new{_qs}"
     elif is_round2:
         feedback_url = f"{_base}/feedback-form-two/new{_qs}"
     else:
         feedback_url = f"{_base}/feedback-form-one/new{_qs}"
+
+    # Extra demo feedback form block — only in Round One + School Teacher + demo checked
+    if is_round1 and "school teacher" in role_raw and _demo_checked:
+        _demo_url = f"{_base}/demo-lesson-observation-feedback-form-feed-back-form/new{_qs}"
+        demo_feedback_html = (
+            f'<p><b>Demo Lesson Observation Feedback form link:</b> '
+            f'<a href="{_demo_url}" target="_blank">Click here</a></p>'
+        )
+    else:
+        demo_feedback_html = ""
+
     if display_mode.lower() == "face-to-face" and (address or Map_location):
         venue_row = ""
         if address:
@@ -537,14 +567,23 @@ def create_interview_event(event_title,
     creds = frappe.get_single("MS Graph Credentials")
     token_url = f"https://login.microsoftonline.com/{creds.tenant_id.strip()}/oauth2/v2.0/token"
 
-    tok = requests.post(token_url, data={
-        "grant_type": "client_credentials",
-        "client_id": creds.client_id.strip(),
-        "client_secret": creds.get_password("client_secret"),
-        "scope": "https://graph.microsoft.com/.default"
-    })
-    tok.raise_for_status()
-    access_token = tok.json()["access_token"]
+    try:
+        tok = requests.post(token_url, data={
+            "grant_type": "client_credentials",
+            "client_id": creds.client_id.strip(),
+            "client_secret": creds.get_password("client_secret"),
+            "scope": "https://graph.microsoft.com/.default"
+        }, timeout=30)
+        tok.raise_for_status()
+        access_token = tok.json().get("access_token")
+        if not access_token:
+            frappe.throw(f"Failed to fetch MS access token: {tok.json()}")
+    except requests.exceptions.ConnectionError:
+        frappe.throw("Cannot reach Microsoft login servers. Check network connectivity and try again.")
+    except requests.exceptions.Timeout:
+        frappe.throw("Microsoft login server timed out. Please try again.")
+    except requests.exceptions.RequestException as e:
+        frappe.throw(f"Token request failed: {e}")
 
     headers = {
         "Authorization": f"Bearer {access_token}",
@@ -647,6 +686,8 @@ Please find the details of the interview below.</p>
 <p><b>Feedback form link:</b>
 <a href="{feedback_url}" target="_blank">Click here</a></p>
 
+{demo_feedback_html}
+
 <p>Regards,<br>People Function</p>
 """
 
@@ -729,6 +770,7 @@ Please find the details of the interview below.</p>
             phone_info=phone_info_html,
             Map_html=map_html,
             feedback_url=feedback_url,
+            demo_feedback_html=demo_feedback_html,
             Note_to_interviewer_html=note_to_interviewer_html
         )
 
@@ -918,6 +960,7 @@ Please find the details of the interview below.</p>
             phone_info=phone_info_html,
             Map_html=map_html,
             feedback_url=feedback_url,
+            demo_feedback_html=demo_feedback_html,
             Note_to_interviewer_html=note_to_interviewer_html
         )
 
@@ -958,16 +1001,33 @@ Please find the details of the interview below.</p>
         }
     ).raise_for_status()
 
-    # ── PATCH 2: add attendees → fires exactly ONE invite email ─────────────
-    # Because the body is already finalised above, this single patch triggers
-    # one clean invitation email per attendee — no "meeting updated" follow-up.
-    requests.patch(
-        event_fetch_url + "?sendUpdates=all",
-        headers=headers,
-        json={
-            "attendees": attendees
-        }
-    ).raise_for_status()
+    # ── PATCH 2: add attendees silently (no Outlook calendar invite email) ──
+    # sendUpdates=none → attendees are added to the event (it appears in their
+    # calendar) but the automatic Outlook invite notification email is blocked.
+    # Custom emails are sent below instead.
+    # MS Graph can return 504 Gateway Timeout — the event is already created,
+    # so we log and continue.
+    try:
+        patch2_res = requests.patch(
+            event_fetch_url + "?sendUpdates=none",
+            headers=headers,
+            json={"attendees": attendees},
+            timeout=60
+        )
+        patch2_res.raise_for_status()
+    except requests.exceptions.Timeout:
+        frappe.log_error(
+            title="Attendees PATCH timeout",
+            message=f"504/timeout patching attendees for event {event_id}. Event was created; invites may still arrive."
+        )
+    except requests.exceptions.HTTPError as patch_err:
+        if patch2_res.status_code in (502, 503, 504):
+            frappe.log_error(
+                title="Attendees PATCH gateway error",
+                message=f"{patch_err} — event {event_id} created; invites may still arrive."
+            )
+        else:
+            raise
 
     # ----------------------------------------
     # EMAIL TO CANDIDATE
