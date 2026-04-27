@@ -369,8 +369,7 @@ def create_interview_event(event_title,
                            attachment_paths=None,
                            demo_feed_back_form=0,
                            doc_name=None,
-                           ms_event_id=None,
-                           department=None):
+                           ms_event_id=None):
 
     import re
     import ast
@@ -429,37 +428,15 @@ def create_interview_event(event_title,
     is_round2          = ("round two"  in round_raw or round_raw == "round 2")
     is_round3          = ("round three" in round_raw or round_raw == "round 3")
 
-    dept_raw = str(department or "").strip().lower()
-    is_dept_livelihood = "livelihood" in dept_raw
-    is_dept_health     = "health"     in dept_raw
-
-    # ── Feedback URL: driven by department → round (then role for non-dept cases) ──
-    #
-    #   Livelihood department:
-    #     Recruiter Round → livelihoods-recruiter-feedback-form
-    #     Round One       → livelihoods-functional-round-feedback-form
-    #     Round Two       → livelihoods-final-round-feedback-form
-    #
-    #   Health department:
-    #     Recruiter Round → health-recruitment-feedback-form
-    #     Round One       → health-functional-round-feedback-form
-    #     Round Two       → health-final-round-feedback-form
-    #
-    #   All other departments (Education etc.) — driven by round × role:
-    #     Recruiter Round  → recruiter-assessment-form-feed-back-form
-    #     Round One  +  School Teacher   → school-teacher-functional-feedback
-    #     Round One  +  Resource Person  → educational-capacity-interview---feedback-form
-    #     Round Two  +  School Teacher   → demo-lesson-observation-feedback-form-feed-back-form
-    #     Round Two  +  Resource Person  → leader-final-feedback
-    #     Round Three + School Teacher   → leader-final-feedback
-    #     Round Two (others)             → feedback-form-two
-    #     All else                       → feedback-form-one
-    #
+    # ── Feedback URL: driven by round × role ────────────────────────────────
     _base        = "https://careers.frappe.cloud"
     _qs          = f"?applicant_id={application_id}&applicant_name={Applicants_name}"
     _demo_checked = str(demo_feed_back_form or "0").strip().lower() in ("1", "true", "yes")
 
-    if is_dept_livelihood:
+    is_livelihood_rp = "livelihood resource person" in role_raw
+    is_health_rp     = "health resource person" in role_raw
+
+    if is_livelihood_rp:
         if is_recruiter_round:
             feedback_url = f"{_base}/livelihoods-recruiter-feedback-form/new{_qs}"
         elif is_round1:
@@ -468,7 +445,7 @@ def create_interview_event(event_title,
             feedback_url = f"{_base}/livelihoods-final-round-feedback-form/new{_qs}"
         else:
             feedback_url = f"{_base}/livelihoods-functional-round-feedback-form/new{_qs}"
-    elif is_dept_health:
+    elif is_health_rp:
         if is_recruiter_round:
             feedback_url = f"{_base}/health-recruitment-feedback-form/new{_qs}"
         elif is_round1:
@@ -692,7 +669,12 @@ def create_interview_event(event_title,
     # ----------------------------------------
     if application_id:
         try:
-            srf = frappe.get_doc("Field Registration Form", application_id)
+            _frf_doctype = (
+                "Field Registration Form"
+                if frappe.db.exists("DocType", "Field Registration Form")
+                else "Field Registration Form"
+            )
+            srf = frappe.get_doc(_frf_doctype, application_id)
 
             # Determine which fields to attach based on round
             if is_round1:
@@ -1159,7 +1141,9 @@ Please find the details of the interview below.</p>
                 "subject": candidate_email_subject,
                 "body": {"contentType": "HTML", "content": candidate_email_body},
                 "toRecipients": [
-                    {"emailAddress": {"address": interviewee_email}},
+                    {"emailAddress": {"address": interviewee_email}}
+                ],
+                "ccRecipients": [
                     {"emailAddress": {"address": Organizer_email}}
                 ]
             },
