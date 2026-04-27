@@ -91,8 +91,36 @@ def test_result_api():
         # ------------------------------------------------------------
         # 5️⃣ INSERT MeritTrac Test Result
         # ------------------------------------------------------------
+        # test_doc = frappe.get_doc({
+        #     "doctype": "MeritTrac Test Result",
+        #     "applicant_id": candidate_id,
+        #     "score_percentile": percentage,
+        #     "attempt_id": attempt_id,
+        #     "assessment_id": assessment_id,
+        #     "attempt_status": attempt_status,
+        #     "score_report": report_url,
+        #     "total_score": score,
+        #     "max_score": max_score,
+        #     "total_questions": total_questions,
+        #     "total_attempted": total_attempted,
+        #     "updated_at": updated_at,
+        #     "created_at": created_at
+        # })
+        # test_doc.insert(ignore_permissions=True)
+        if candidate_id.startswith("APSRF"):
+            doctype_name = "MeritTrac Test Result"
+        elif candidate_id.startswith("APFFRF"):
+            doctype_name = "Field MeritTrac Test Result"
+        else:
+            frappe.local.response.http_status_code = 400
+            return {
+                "status": "error",
+                "http_status": 400,
+                "message": f"Unknown candidate ID prefix: {candidate_id}"
+            }
+ 
         test_doc = frappe.get_doc({
-            "doctype": "MeritTrac Test Result",
+            "doctype": doctype_name,
             "applicant_id": candidate_id,
             "score_percentile": percentage,
             "attempt_id": attempt_id,
@@ -107,7 +135,7 @@ def test_result_api():
             "created_at": created_at
         })
         test_doc.insert(ignore_permissions=True)
-
+ 
         # ------------------------------------------------------------
         # 6️⃣ UPDATE SCHOLARSHIP RECRUITMENT FORM
         # ------------------------------------------------------------
