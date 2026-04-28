@@ -432,6 +432,25 @@ def create_interview_event(event_title,
     # ── Feedback URL: taken directly from the Feedback Form Link field ──────
     _demo_checked = str(demo_feed_back_form or "0").strip().lower() in ("1", "true", "yes")
     feedback_url  = str(feedback_form_link or "").strip()
+
+    # If JS didn't pass the value (old cloud JS), read it directly from the DB
+    if not feedback_url and application_id:
+        try:
+            _fis = frappe.get_all(
+                "Field Interview Schedule",
+                filters={
+                    "application_id": application_id,
+                    "interview_round": Interview_round
+                },
+                fields=["feedback_form_link"],
+                order_by="modified desc",
+                limit=1
+            )
+            if _fis and _fis[0].get("feedback_form_link"):
+                feedback_url = str(_fis[0]["feedback_form_link"]).strip()
+        except Exception:
+            pass
+
     # Ensure absolute URL so Outlook doesn't treat it as a relative path
     if feedback_url and not feedback_url.startswith("http"):
         feedback_url = "https://" + feedback_url
