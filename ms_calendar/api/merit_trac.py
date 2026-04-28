@@ -296,6 +296,10 @@ def test_result_api():
                 "http_status": 400,
                 "message": "Empty request body"
             }
+
+        # ------------------------------------------------------------
+        # JSON LOAD
+        # ------------------------------------------------------------
         try:
             payload = json.loads(raw)
         except Exception as e:
@@ -308,39 +312,72 @@ def test_result_api():
             }
 
         print("FULL PAYLOAD:", payload)
-        data_block = payload.get("data")
 
-        if not isinstance(data_block, list) or len(data_block) == 0:
+        # ------------------------------------------------------------
+        # ACCEPT ALL POSSIBLE FORMATS
+        #
+        # 1. {"data": [{...}]}
+        # 2. {"data": {...}}
+        # 3. [{...}]
+        # 4. {...}
+        # ------------------------------------------------------------
+        item = None
+
+        # Case 1 & 2
+        if isinstance(payload, dict) and "data" in payload:
+            data_block = payload.get("data")
+
+            # {"data": [{...}]}
+            if isinstance(data_block, list) and len(data_block) > 0:
+                item = data_block[0]
+
+            # {"data": {...}}
+            elif isinstance(data_block, dict):
+                item = data_block
+
+        # Case 3
+        elif isinstance(payload, list) and len(payload) > 0:
+            item = payload[0]
+
+        # Case 4
+        elif isinstance(payload, dict):
+            item = payload
+
+        if not item or not isinstance(item, dict):
             frappe.local.response.http_status_code = 400
             return {
                 "status": 400,
                 "http_status": 400,
-                "message": "data must be a non-empty list"
+                "message": "Invalid request payload format"
             }
-
-        # Taking first record
-        item = data_block[0]
 
         print("ITEM:", item)
         print("AVAILABLE KEYS:", list(item.keys()))
 
         # ------------------------------------------------------------
-        # 4. DATETIME FIXER
+        # DATETIME FIXER
         # ------------------------------------------------------------
         def fix_datetime(dt):
             if not dt:
                 return None
-
             try:
                 return get_datetime(dt).strftime("%Y-%m-%d %H:%M:%S")
             except Exception:
                 return None
 
         # ------------------------------------------------------------
-        # 5. GET candidate_id
+        # ACCEPT ALL candidateId KEY FORMATS
         # ------------------------------------------------------------
-        candidate_id = item.get("candidateId")
-        percentage= item.get("overAllPercentageScore")
+        candidate_id = (
+            item.get("candidateId")
+            or item.get("candidate_id")
+            or item.get("CandidateId")
+            or item.get("candidateID")
+            or item.get("candidateid")
+        )
+
+        percentage = item.get("overAllPercentageScore")
+
         print("FINAL candidate_id:", candidate_id)
 
         if not candidate_id:
@@ -352,12 +389,16 @@ def test_result_api():
             }
 
         # ------------------------------------------------------------
-        # 6. CHECK DOCTYPE BASED ON candidate_id
+        # CHECK DOCTYPE
         # ------------------------------------------------------------
         if "APSRF" in candidate_id:
             application_doctype = "Scholarship Recruitment Form"
             result_doctype = "MeritTrac Test Result"
-            update_application_status_and_send_mail(candidate_id, percentage)
+
+            update_application_status_and_send_mail(
+                candidate_id,
+                percentage
+            )
 
         elif "APFFRF" in candidate_id:
             application_doctype = "Field Registration Form"
@@ -376,7 +417,7 @@ def test_result_api():
         print("Result Doctype:", result_doctype)
 
         # ------------------------------------------------------------
-        # 7. INSERT RESULT DOC
+        # INSERT RESULT DOC
         # ------------------------------------------------------------
         test_doc = frappe.get_doc({
             "doctype": result_doctype,
@@ -434,8 +475,6 @@ def test_result_api():
             "http_status": 500,
             "message": str(e)
         }
-    
-
 
 
 def update_application_status_and_send_mail(candidate_id, percentage):
