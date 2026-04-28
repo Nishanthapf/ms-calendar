@@ -1082,7 +1082,7 @@ Please find the details of the interview below.</p>
     else:
         final_body = initial_body
 
-    # ── PATCH 1: update body silently (no email yet) ────────────────────────
+    # ── PATCH 1: update body silently (no email yet) 
     # Set the final body (with Teams link / venue info) BEFORE adding
     # attendees so that when the invite lands in their inbox, it already
     # contains the complete content. Using sendUpdates=none means no
