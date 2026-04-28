@@ -590,9 +590,9 @@ def create_interview_event(event_title,
         "Content-Type": "application/json"
     }
 
-    # ----------------------------------------
+    # --------------------------------------
     # CANCEL OLD EVENT (reschedule case)
-    # ----------------------------------------
+    # --------------------------------------
     if ms_event_id:
         try:
             requests.delete(
