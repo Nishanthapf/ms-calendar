@@ -812,7 +812,7 @@ as per the details below:</p>
 <p>Warm regards,<br>Recruitment Team<br>Azim Premji Foundation</p>
 """
 
-    # ── INTERVIEWER TEMPLATE (Round 2) ──────────────────────────────────────
+    # ── INTERVIEWER TEMPLATE (Round 2) 
     round2_interviewer_template = """
 <p>Hi,</p>
 
@@ -947,9 +947,9 @@ Please find the details of the interview below.</p>
     join_meeting_id = ""
     join_passcode = ""
 
-    # ----------------------------------------
+    # ---------------------------------------
     # SECONDARY (THE ORIGINAL): onlineMeetings filter (may return empty)
-    # ----------------------------------------
+    # ---------------------------------------
     if mode_is_online and join_web_url:
         filter_url = (
             f"https://graph.microsoft.com/v1.0/users/{Organizer_email}"
