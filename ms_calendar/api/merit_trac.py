@@ -107,9 +107,9 @@ def test_result_api():
         #     "created_at": created_at
         # })
         # test_doc.insert(ignore_permissions=True)
-        if candidate_id.startswith("APSRF"):
+        if "APSRF" in candidate_id:
             doctype_name = "MeritTrac Test Result"
-        elif candidate_id.startswith("APFFRF"):
+        elif "APFFRF" in candidate_id:
             doctype_name = "Field MeritTrac Test Result"
         else:
             frappe.local.response.http_status_code = 400
@@ -118,7 +118,7 @@ def test_result_api():
                 "http_status": 400,
                 "message": f"Unknown candidate ID prefix: {candidate_id}"
             }
- 
+
         test_doc = frappe.get_doc({
             "doctype": doctype_name,
             "applicant_id": candidate_id,
@@ -134,8 +134,8 @@ def test_result_api():
             "updated_at": updated_at,
             "created_at": created_at
         })
+
         test_doc.insert(ignore_permissions=True)
- 
         # ------------------------------------------------------------
         # 6️⃣ UPDATE SCHOLARSHIP RECRUITMENT FORM
         # ------------------------------------------------------------
@@ -268,3 +268,4 @@ def test_result_api():
         frappe.log_error(frappe.get_traceback(), "MERIT_TRAC_API_ERROR")
         frappe.local.response.http_status_code = 500
         return {"status": 500, "http_status": 500, "message": str(e)}
+
