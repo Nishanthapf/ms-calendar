@@ -417,10 +417,10 @@ def test_result_api():
             application_doctype = "Scholarship Recruitment Form"
             result_doctype = "MeritTrac Test Result"
 
-            update_application_status_and_send_mail(
-                candidate_id,
-                percentage
-            )
+            # update_application_status_and_send_mail(
+            #     candidate_id,
+            #     percentage
+            # )
 
         elif "APFFRF" in candidate_id:
             application_doctype = "Field Registration Form"
