@@ -369,7 +369,8 @@ def create_interview_event(event_title,
                            attachment_paths=None,
                            demo_feed_back_form=0,
                            doc_name=None,
-                           ms_event_id=None):
+                           ms_event_id=None,
+                           feedback_form_link=None):
 
     import re
     import ast
@@ -428,59 +429,10 @@ def create_interview_event(event_title,
     is_round2          = ("round two"  in round_raw or round_raw == "round 2")
     is_round3          = ("round three" in round_raw or round_raw == "round 3")
 
-    # ── Feedback URL: driven by round × role ────────────────────────────────
-    from urllib.parse import quote
-    _base        = "https://careers.frappe.cloud"
-    _qs          = f"?applicant_id={application_id}&applicant_name={quote(str(Applicants_name))}"
+    # ── Feedback URL: taken directly from the Feedback Form Link field ──────
     _demo_checked = str(demo_feed_back_form or "0").strip().lower() in ("1", "true", "yes")
-
-    is_livelihood_rp = "livelihood resource person" in role_raw
-    is_health_rp     = "health resource person" in role_raw
-
-    if is_livelihood_rp:
-        if is_recruiter_round:
-            feedback_url = f"{_base}/livelihoods-recruiter-feedback-form/new{_qs}"
-        elif is_round1:
-            feedback_url = f"{_base}/livelihoods-functional-round-feedback-form/new{_qs}"
-        elif is_round2:
-            feedback_url = f"{_base}/livelihoods-final-round-feedback-form/new{_qs}"
-        else:
-            feedback_url = f"{_base}/livelihoods-functional-round-feedback-form/new{_qs}"
-    elif is_health_rp:
-        if is_recruiter_round:
-            feedback_url = f"{_base}/health-recruitment-feedback-form/new{_qs}"
-        elif is_round1:
-            feedback_url = f"{_base}/health-functional-round-feedback-form/new{_qs}"
-        elif is_round2:
-            feedback_url = f"{_base}/health-final-round-feedback-form/new{_qs}"
-        else:
-            feedback_url = f"{_base}/health-functional-round-feedback-form/new{_qs}"
-    elif is_recruiter_round:
-        feedback_url = f"{_base}/recruiter-assessment-form-feed-back-form/new{_qs}"
-    elif is_round1 and "school teacher" in role_raw:
-        feedback_url = f"{_base}/school-teacher-functional-feedback/new{_qs}"
-    elif is_round1 and "resource person" in role_raw:
-        feedback_url = f"{_base}/educational-capacity-interview---feedback-form/new{_qs}"
-    elif is_round2 and "school teacher" in role_raw:
-        feedback_url = f"{_base}/demo-lesson-observation-feedback-form-feed-back-form/new{_qs}"
-    elif is_round2 and "resource person" in role_raw:
-        feedback_url = f"{_base}/leader-final-feedback/new{_qs}"
-    elif is_round3 and "school teacher" in role_raw:
-        feedback_url = f"{_base}/leader-final-feedback/new{_qs}"
-    elif is_round2:
-        feedback_url = f"{_base}/feedback-form-two/new{_qs}"
-    else:
-        feedback_url = f"{_base}/feedback-form-one/new{_qs}"
-
-    # Extra demo feedback form block — only in Round One + School Teacher + demo checked
-    if is_round1 and "school teacher" in role_raw and _demo_checked:
-        _demo_url = f"{_base}/demo-lesson-observation-feedback-form-feed-back-form/new{_qs}"
-        demo_feedback_html = (
-            f'<p><b>Demo Lesson Observation Feedback form link:</b> '
-            f'<a href="{_demo_url}" target="_blank">Click here</a></p>'
-        )
-    else:
-        demo_feedback_html = ""
+    feedback_url  = str(feedback_form_link or "").strip()
+    demo_feedback_html = ""
 
     if display_mode.lower() == "face-to-face" and (address or Map_location):
         venue_row = ""
