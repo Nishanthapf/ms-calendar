@@ -432,10 +432,20 @@ def create_interview_event(event_title,
     # ── Feedback URL: taken directly from the Feedback Form Link field ──────
     _demo_checked = str(demo_feed_back_form or "0").strip().lower() in ("1", "true", "yes")
     feedback_url  = str(feedback_form_link or "").strip()
+    # Ensure absolute URL so Outlook doesn't treat it as a relative path
+    if feedback_url and not feedback_url.startswith("http"):
+        feedback_url = "https://" + feedback_url
     demo_feedback_html = ""
 
     feedback_html_block = (
-        f'<p><b>Feedback form link:</b> <a href="{feedback_url}" target="_blank">Click here</a></p>'
+        f'<p><b>Feedback Form Link:</b><br>'
+        f'<a href="{feedback_url}" target="_blank" '
+        f'style="display:inline-block;margin-top:6px;padding:8px 18px;'
+        f'background-color:#1d4ed8;color:#ffffff;text-decoration:none;'
+        f'border-radius:4px;font-weight:600;font-size:13px;">'
+        f'Click Here to Open Feedback Form</a><br>'
+        f'<span style="font-size:11px;color:#6b7280;word-break:break-all;">'
+        f'Or copy this link: {feedback_url}</span></p>'
         if feedback_url else ""
     )
 
