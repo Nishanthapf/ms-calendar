@@ -672,9 +672,19 @@ def create_interview_event(event_title,
             _frf_doctype = (
                 "Field Registration Form"
                 if frappe.db.exists("DocType", "Field Registration Form")
-                else "Field Registration Form"
+                else "Field Registration Form1"
             )
-            srf = frappe.get_doc(_frf_doctype, application_id)
+            if not frappe.db.exists(_frf_doctype, application_id):
+                frappe.log_error(
+                    f"Skipping auto-attach: {_frf_doctype} '{application_id}' not found",
+                    "Interview Auto-Attach Skip"
+                )
+                srf = None
+            else:
+                srf = frappe.get_doc(_frf_doctype, application_id)
+
+            if not srf:
+                raise Exception("srf not loaded, skipping auto-attach")
 
             # Determine which fields to attach based on round
             if is_round1:
