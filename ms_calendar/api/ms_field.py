@@ -429,8 +429,9 @@ def create_interview_event(event_title,
     is_round3          = ("round three" in round_raw or round_raw == "round 3")
 
     # ── Feedback URL: driven by round × role ────────────────────────────────
+    from urllib.parse import quote
     _base        = "https://careers.frappe.cloud"
-    _qs          = f"?applicant_id={application_id}&applicant_name={Applicants_name}"
+    _qs          = f"?applicant_id={application_id}&applicant_name={quote(str(Applicants_name))}"
     _demo_checked = str(demo_feed_back_form or "0").strip().lower() in ("1", "true", "yes")
 
     is_livelihood_rp = "livelihood resource person" in role_raw
