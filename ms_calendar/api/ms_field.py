@@ -865,7 +865,7 @@ Please find the details of the interview below.</p>
     
     # ATTACH FILES  (CV / feedback form)
     # Attached to the event so interviewers can access them from the calendar.
-    # ----------------------------------------
+   
     attach_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/events/{event_id}/attachments"
     for fname, fb64 in final_files:
         requests.post(
