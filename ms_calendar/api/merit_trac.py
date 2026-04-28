@@ -283,9 +283,17 @@ import frappe
 from frappe.utils import get_datetime
 
 
+import json
+import frappe
+from frappe.utils import get_datetime
+
+
 @frappe.whitelist(allow_guest=True)
 def test_result_api():
     try:
+        # ------------------------------------------------------------
+        # 1. READ REQUEST BODY
+        # ------------------------------------------------------------
         raw = frappe.request.data
         print("RAW BODY:", raw)
 
@@ -298,7 +306,7 @@ def test_result_api():
             }
 
         # ------------------------------------------------------------
-        # JSON LOAD
+        # 2. LOAD JSON
         # ------------------------------------------------------------
         try:
             payload = json.loads(raw)
@@ -314,16 +322,29 @@ def test_result_api():
         print("FULL PAYLOAD:", payload)
 
         # ------------------------------------------------------------
-        # ACCEPT ALL POSSIBLE FORMATS
+        # 3. ACCEPT ALL POSSIBLE FORMATS
         #
-        # 1. {"data": [{...}]}
-        # 2. {"data": {...}}
-        # 3. [{...}]
-        # 4. {...}
+        # Supported:
+        #
+        # 1. {
+        #      "data": [{...}]
+        #    }
+        #
+        # 2. {
+        #      "data": {...}
+        #    }
+        #
+        # 3. [
+        #      {...}
+        #    ]
+        #
+        # 4. {
+        #      ...
+        #    }
         # ------------------------------------------------------------
         item = None
 
-        # Case 1 & 2
+        # Case 1 + Case 2
         if isinstance(payload, dict) and "data" in payload:
             data_block = payload.get("data")
 
@@ -335,11 +356,11 @@ def test_result_api():
             elif isinstance(data_block, dict):
                 item = data_block
 
-        # Case 3
+        # Case 3 → direct list
         elif isinstance(payload, list) and len(payload) > 0:
             item = payload[0]
 
-        # Case 4
+        # Case 4 → direct dict
         elif isinstance(payload, dict):
             item = payload
 
@@ -355,18 +376,19 @@ def test_result_api():
         print("AVAILABLE KEYS:", list(item.keys()))
 
         # ------------------------------------------------------------
-        # DATETIME FIXER
+        # 4. DATETIME FIXER
         # ------------------------------------------------------------
         def fix_datetime(dt):
             if not dt:
                 return None
+
             try:
                 return get_datetime(dt).strftime("%Y-%m-%d %H:%M:%S")
             except Exception:
                 return None
 
         # ------------------------------------------------------------
-        # ACCEPT ALL candidateId KEY FORMATS
+        # 5. ACCEPT ALL candidateId KEY FORMATS
         # ------------------------------------------------------------
         candidate_id = (
             item.get("candidateId")
@@ -389,7 +411,7 @@ def test_result_api():
             }
 
         # ------------------------------------------------------------
-        # CHECK DOCTYPE
+        # 6. CHECK DOCTYPE
         # ------------------------------------------------------------
         if "APSRF" in candidate_id:
             application_doctype = "Scholarship Recruitment Form"
@@ -417,7 +439,7 @@ def test_result_api():
         print("Result Doctype:", result_doctype)
 
         # ------------------------------------------------------------
-        # INSERT RESULT DOC
+        # 7. INSERT RESULT DOC
         # ------------------------------------------------------------
         test_doc = frappe.get_doc({
             "doctype": result_doctype,
@@ -446,7 +468,7 @@ def test_result_api():
         print("Inserted Document Name:", test_doc.name)
 
         # ------------------------------------------------------------
-        # SUCCESS RESPONSE
+        # 8. SUCCESS RESPONSE
         # ------------------------------------------------------------
         frappe.local.response.http_status_code = 200
 
@@ -475,7 +497,6 @@ def test_result_api():
             "http_status": 500,
             "message": str(e)
         }
-
 
 def update_application_status_and_send_mail(candidate_id, percentage):
 
