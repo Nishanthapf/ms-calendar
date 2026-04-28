@@ -490,6 +490,11 @@ from datetime import datetime, timedelta
 #             "message": str(e)
 #         }
 
+import json
+import frappe
+from frappe.utils import get_datetime
+
+
 @frappe.whitelist(allow_guest=True)
 def test_result_api():
     try:
@@ -499,8 +504,8 @@ def test_result_api():
         raw = frappe.request.data
 
         frappe.log_error(
-            title="MERIT_TRAC_DEBUG",
-            message=f"RAW BODY: {raw}"
+            message=f"RAW BODY: {raw}",
+            title="MERIT_TRAC_DEBUG"
         )
 
         if not raw:
@@ -518,8 +523,8 @@ def test_result_api():
             payload = json.loads(raw)
         except Exception as e:
             frappe.log_error(
-                title="MERIT_TRAC_JSON_ERROR",
-                message=str(e)
+                message=str(e),
+                title="MERIT_TRAC_JSON_ERROR"
             )
 
             frappe.local.response.http_status_code = 400
@@ -531,8 +536,8 @@ def test_result_api():
             }
 
         frappe.log_error(
-            title="MERIT_TRAC_PAYLOAD",
-            message=f"FULL PAYLOAD: {payload}"
+            message=f"FULL PAYLOAD: {payload}",
+            title="MERIT_TRAC_PAYLOAD"
         )
 
         # ------------------------------------------------------------
@@ -557,8 +562,8 @@ def test_result_api():
 
         if not item or not isinstance(item, dict):
             frappe.log_error(
-                title="MERIT_TRAC_INVALID_PAYLOAD",
-                message=f"Invalid Payload: {payload}"
+                message=f"Invalid Payload: {payload}",
+                title="MERIT_TRAC_INVALID_PAYLOAD"
             )
 
             frappe.local.response.http_status_code = 400
@@ -569,8 +574,8 @@ def test_result_api():
             }
 
         frappe.log_error(
-            title="MERIT_TRAC_ITEM",
-            message=f"ITEM: {item}"
+            message=f"ITEM: {item}",
+            title="MERIT_TRAC_ITEM"
         )
 
         # ------------------------------------------------------------
@@ -599,8 +604,8 @@ def test_result_api():
         percentage = item.get("overAllPercentageScore")
 
         frappe.log_error(
-            title="MERIT_TRAC_CANDIDATE_ID",
-            message=f"Candidate ID: {candidate_id}"
+            message=f"Candidate ID: {candidate_id}",
+            title="MERIT_TRAC_CANDIDATE_ID"
         )
 
         if not candidate_id:
@@ -631,12 +636,12 @@ def test_result_api():
             }
 
         frappe.log_error(
-            title="MERIT_TRAC_DOCTYPE",
             message=f"""
-            Candidate ID: {candidate_id}
-            Application Doctype: {application_doctype}
-            Result Doctype: {result_doctype}
-            """
+Candidate ID: {candidate_id}
+Application Doctype: {application_doctype}
+Result Doctype: {result_doctype}
+            """,
+            title="MERIT_TRAC_DOCTYPE"
         )
 
         # ------------------------------------------------------------
@@ -659,19 +664,19 @@ def test_result_api():
         })
 
         frappe.log_error(
-            title="MERIT_TRAC_BEFORE_INSERT",
             message=f"""
-            Doctype: {result_doctype}
-            Candidate ID: {candidate_id}
-            """
+Doctype: {result_doctype}
+Candidate ID: {candidate_id}
+            """,
+            title="MERIT_TRAC_BEFORE_INSERT"
         )
 
         test_doc.insert(ignore_permissions=True)
         frappe.db.commit()
 
         frappe.log_error(
-            title="MERIT_TRAC_AFTER_INSERT",
-            message=f"Inserted Document Name: {test_doc.name}"
+            message=f"Inserted Document Name: {test_doc.name}",
+            title="MERIT_TRAC_AFTER_INSERT"
         )
 
         # ------------------------------------------------------------
@@ -693,8 +698,8 @@ def test_result_api():
 
     except Exception as e:
         frappe.log_error(
-            title="TEST_RESULT_API_ERROR",
-            message=frappe.get_traceback()
+            message=frappe.get_traceback(),
+            title="TEST_RESULT_API_ERROR"
         )
 
         frappe.local.response.http_status_code = 500
@@ -704,7 +709,6 @@ def test_result_api():
             "http_status": 500,
             "message": str(e)
         }
-
 
 
 
