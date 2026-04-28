@@ -278,6 +278,218 @@ from datetime import datetime, timedelta
 
 
 
+
+
+# @frappe.whitelist(allow_guest=True)
+# def test_result_api():
+#     try:
+#         # ------------------------------------------------------------
+#         # 1. READ REQUEST BODY
+#         # ------------------------------------------------------------
+#         raw = frappe.request.data
+#         print("RAW BODY:", raw)
+
+#         if not raw:
+#             frappe.local.response.http_status_code = 400
+#             return {
+#                 "status": 400,
+#                 "http_status": 400,
+#                 "message": "Empty request body"
+#             }
+
+#         # ------------------------------------------------------------
+#         # 2. LOAD JSON
+#         # ------------------------------------------------------------
+#         try:
+#             payload = json.loads(raw)
+#         except Exception as e:
+#             frappe.local.response.http_status_code = 400
+#             return {
+#                 "status": 400,
+#                 "http_status": 400,
+#                 "message": "Invalid JSON body",
+#                 "error": str(e)
+#             }
+
+#         print("FULL PAYLOAD:", payload)
+
+#         # ------------------------------------------------------------
+#         # 3. ACCEPT ALL POSSIBLE FORMATS
+#         #
+#         # Supported:
+#         #
+#         # 1. {
+#         #      "data": [{...}]
+#         #    }
+#         #
+#         # 2. {
+#         #      "data": {...}
+#         #    }
+#         #
+#         # 3. [
+#         #      {...}
+#         #    ]
+#         #
+#         # 4. {
+#         #      ...
+#         #    }
+#         # ------------------------------------------------------------
+#         item = None
+
+#         # Case 1 + Case 2
+#         if isinstance(payload, dict) and "data" in payload:
+#             data_block = payload.get("data")
+
+#             # {"data": [{...}]}
+#             if isinstance(data_block, list) and len(data_block) > 0:
+#                 item = data_block[0]
+
+#             # {"data": {...}}
+#             elif isinstance(data_block, dict):
+#                 item = data_block
+
+#         # Case 3 → direct list
+#         elif isinstance(payload, list) and len(payload) > 0:
+#             item = payload[0]
+
+#         # Case 4 → direct dict
+#         elif isinstance(payload, dict):
+#             item = payload
+
+#         if not item or not isinstance(item, dict):
+#             frappe.local.response.http_status_code = 400
+#             return {
+#                 "status": 400,
+#                 "http_status": 400,
+#                 "message": "Invalid request payload format"
+#             }
+
+#         print("ITEM:", item)
+#         print("AVAILABLE KEYS:", list(item.keys()))
+
+#         # ------------------------------------------------------------
+#         # 4. DATETIME FIXER
+#         # ------------------------------------------------------------
+#         def fix_datetime(dt):
+#             if not dt:
+#                 return None
+
+#             try:
+#                 return get_datetime(dt).strftime("%Y-%m-%d %H:%M:%S")
+#             except Exception:
+#                 return None
+
+#         # ------------------------------------------------------------
+#         # 5. ACCEPT ALL candidateId KEY FORMATS
+#         # ------------------------------------------------------------
+#         candidate_id = (
+#             item.get("candidateId")
+#             or item.get("candidate_id")
+#             or item.get("CandidateId")
+#             or item.get("candidateID")
+#             or item.get("candidateid")
+#         )
+
+#         percentage = item.get("overAllPercentageScore")
+
+#         print("FINAL candidate_id:", candidate_id)
+
+#         if not candidate_id:
+#             frappe.local.response.http_status_code = 422
+#             return {
+#                 "status": 422,
+#                 "http_status": 422,
+#                 "message": "candidateId missing"
+#             }
+
+#         # ------------------------------------------------------------
+#         # 6. CHECK DOCTYPE
+#         # ------------------------------------------------------------
+#         if "APSRF" in candidate_id:
+#             application_doctype = "Scholarship Recruitment Form"
+#             result_doctype = "MeritTrac Test Result"
+
+#             # update_application_status_and_send_mail(
+#             #     candidate_id,
+#             #     percentage
+#             # )
+
+#         elif "APFFRF" in candidate_id:
+#             application_doctype = "Field Registration Form"
+#             result_doctype = "Field MeritTrac Test Result"
+
+#         else:
+#             frappe.local.response.http_status_code = 400
+#             return {
+#                 "status": 400,
+#                 "http_status": 400,
+#                 "message": f"Unknown candidate ID prefix: {candidate_id}"
+#             }
+
+#         print("Candidate ID:", candidate_id)
+#         print("Application Doctype:", application_doctype)
+#         print("Result Doctype:", result_doctype)
+
+#         # ------------------------------------------------------------
+#         # 7. INSERT RESULT DOC
+#         # ------------------------------------------------------------
+#         test_doc = frappe.get_doc({
+#             "doctype": result_doctype,
+#             "applicant_id": candidate_id,
+#             "score_percentile": item.get("overAllPercentageScore"),
+#             "attempt_id": item.get("attemptId"),
+#             "assessment_id": item.get("assessmentId"),
+#             "attempt_status": item.get("attempt_status"),
+#             "score_report": item.get("TnReport"),
+#             "total_score": item.get("score"),
+#             "max_score": item.get("maxScore"),
+#             "total_questions": item.get("totalQuestion"),
+#             "total_attempted": item.get("totalAttempted"),
+#             "updated_at": fix_datetime(item.get("updatedAt")),
+#             "created_at": fix_datetime(item.get("createdAt"))
+#         })
+
+#         print("Before Insert")
+#         print("Doctype:", result_doctype)
+#         print("Candidate ID:", candidate_id)
+
+#         test_doc.insert(ignore_permissions=True)
+#         frappe.db.commit()
+
+#         print("After Insert")
+#         print("Inserted Document Name:", test_doc.name)
+
+#         # ------------------------------------------------------------
+#         # 8. SUCCESS RESPONSE
+#         # ------------------------------------------------------------
+#         frappe.local.response.http_status_code = 200
+
+#         return {
+#             "status": 200,
+#             "http_status": 200,
+#             "message": "Data inserted successfully",
+#             "data": {
+#                 "candidateId": candidate_id,
+#                 "application_doctype": application_doctype,
+#                 "result_doctype": result_doctype,
+#                 "inserted_docname": test_doc.name
+#             }
+#         }
+
+#     except Exception as e:
+#         frappe.log_error(
+#             frappe.get_traceback(),
+#             "TEST_RESULT_API_ERROR"
+#         )
+
+#         frappe.local.response.http_status_code = 500
+
+#         return {
+#             "status": 500,
+#             "http_status": 500,
+#             "message": str(e)
+#         }
+
 import json
 import frappe
 from frappe.utils import get_datetime
@@ -286,8 +498,15 @@ from frappe.utils import get_datetime
 @frappe.whitelist(allow_guest=True)
 def test_result_api():
     try:
+        # ------------------------------------------------------------
+        # 1. READ REQUEST BODY
+        # ------------------------------------------------------------
         raw = frappe.request.data
-        print("RAW BODY:", raw)
+
+        frappe.log_error(
+            message=f"RAW BODY: {raw}",
+            title="MERIT_TRAC_DEBUG"
+        )
 
         if not raw:
             frappe.local.response.http_status_code = 400
@@ -296,9 +515,18 @@ def test_result_api():
                 "http_status": 400,
                 "message": "Empty request body"
             }
+
+        # ------------------------------------------------------------
+        # 2. LOAD JSON
+        # ------------------------------------------------------------
         try:
             payload = json.loads(raw)
         except Exception as e:
+            frappe.log_error(
+                message=str(e),
+                title="MERIT_TRAC_JSON_ERROR"
+            )
+
             frappe.local.response.http_status_code = 400
             return {
                 "status": 400,
@@ -307,22 +535,48 @@ def test_result_api():
                 "error": str(e)
             }
 
-        print("FULL PAYLOAD:", payload)
-        data_block = payload.get("data")
+        frappe.log_error(
+            message=f"FULL PAYLOAD: {payload}",
+            title="MERIT_TRAC_PAYLOAD"
+        )
 
-        if not isinstance(data_block, list) or len(data_block) == 0:
+        # ------------------------------------------------------------
+        # 3. ACCEPT ALL POSSIBLE FORMATS
+        # ------------------------------------------------------------
+        item = None
+
+        if isinstance(payload, dict) and "data" in payload:
+            data_block = payload.get("data")
+
+            if isinstance(data_block, list) and len(data_block) > 0:
+                item = data_block[0]
+
+            elif isinstance(data_block, dict):
+                item = data_block
+
+        elif isinstance(payload, list) and len(payload) > 0:
+            item = payload[0]
+
+        elif isinstance(payload, dict):
+            item = payload
+
+        if not item or not isinstance(item, dict):
+            frappe.log_error(
+                message=f"Invalid Payload: {payload}",
+                title="MERIT_TRAC_INVALID_PAYLOAD"
+            )
+
             frappe.local.response.http_status_code = 400
             return {
                 "status": 400,
                 "http_status": 400,
-                "message": "data must be a non-empty list"
+                "message": "Invalid request payload format"
             }
 
-        # Taking first record
-        item = data_block[0]
-
-        print("ITEM:", item)
-        print("AVAILABLE KEYS:", list(item.keys()))
+        frappe.log_error(
+            message=f"ITEM: {item}",
+            title="MERIT_TRAC_ITEM"
+        )
 
         # ------------------------------------------------------------
         # 4. DATETIME FIXER
@@ -339,9 +593,20 @@ def test_result_api():
         # ------------------------------------------------------------
         # 5. GET candidate_id
         # ------------------------------------------------------------
-        candidate_id = item.get("candidateId")
-        percentage= item.get("overAllPercentageScore")
-        print("FINAL candidate_id:", candidate_id)
+        candidate_id = (
+            item.get("candidateId")
+            or item.get("candidate_id")
+            or item.get("CandidateId")
+            or item.get("candidateID")
+            or item.get("candidateid")
+        )
+
+        percentage = item.get("overAllPercentageScore")
+
+        frappe.log_error(
+            message=f"Candidate ID: {candidate_id}",
+            title="MERIT_TRAC_CANDIDATE_ID"
+        )
 
         if not candidate_id:
             frappe.local.response.http_status_code = 422
@@ -352,12 +617,11 @@ def test_result_api():
             }
 
         # ------------------------------------------------------------
-        # 6. CHECK DOCTYPE BASED ON candidate_id
+        # 6. CHECK DOCTYPE
         # ------------------------------------------------------------
         if "APSRF" in candidate_id:
             application_doctype = "Scholarship Recruitment Form"
             result_doctype = "MeritTrac Test Result"
-            update_application_status_and_send_mail(candidate_id, percentage)
 
         elif "APFFRF" in candidate_id:
             application_doctype = "Field Registration Form"
@@ -371,9 +635,14 @@ def test_result_api():
                 "message": f"Unknown candidate ID prefix: {candidate_id}"
             }
 
-        print("Candidate ID:", candidate_id)
-        print("Application Doctype:", application_doctype)
-        print("Result Doctype:", result_doctype)
+        frappe.log_error(
+            message=f"""
+Candidate ID: {candidate_id}
+Application Doctype: {application_doctype}
+Result Doctype: {result_doctype}
+            """,
+            title="MERIT_TRAC_DOCTYPE"
+        )
 
         # ------------------------------------------------------------
         # 7. INSERT RESULT DOC
@@ -394,15 +663,21 @@ def test_result_api():
             "created_at": fix_datetime(item.get("createdAt"))
         })
 
-        print("Before Insert")
-        print("Doctype:", result_doctype)
-        print("Candidate ID:", candidate_id)
+        frappe.log_error(
+            message=f"""
+Doctype: {result_doctype}
+Candidate ID: {candidate_id}
+            """,
+            title="MERIT_TRAC_BEFORE_INSERT"
+        )
 
         test_doc.insert(ignore_permissions=True)
         frappe.db.commit()
 
-        print("After Insert")
-        print("Inserted Document Name:", test_doc.name)
+        frappe.log_error(
+            message=f"Inserted Document Name: {test_doc.name}",
+            title="MERIT_TRAC_AFTER_INSERT"
+        )
 
         # ------------------------------------------------------------
         # SUCCESS RESPONSE
@@ -423,8 +698,8 @@ def test_result_api():
 
     except Exception as e:
         frappe.log_error(
-            frappe.get_traceback(),
-            "TEST_RESULT_API_ERROR"
+            message=frappe.get_traceback(),
+            title="TEST_RESULT_API_ERROR"
         )
 
         frappe.local.response.http_status_code = 500
@@ -434,165 +709,186 @@ def test_result_api():
             "http_status": 500,
             "message": str(e)
         }
-    
 
 
 
 def update_application_status_and_send_mail(candidate_id, percentage):
+    try:
+        frappe.log_error(
+            message=f"""
+Candidate ID: {candidate_id}
+Percentage: {percentage}
+            """,
+            title="MERIT_TRAC_UPDATE_START"
+        )
 
-    # ------------------------------------------------------------
-    # 1. FETCH SRF DETAILS
-    # ------------------------------------------------------------
-    srf = frappe.db.get_value(
-        "Scholarship Recruitment Form",
-        {"name": candidate_id},
-        ["name", "full_name_as_per_aadhar", "email", "srt_mail"],
-        as_dict=True
-    )
+        # ------------------------------------------------------------
+        # 1. FETCH SRF DETAILS
+        # ------------------------------------------------------------
+        srf = frappe.db.get_value(
+            "Scholarship Recruitment Form",
+            {"name": candidate_id},
+            ["name", "full_name_as_per_aadhar", "email", "srt_mail"],
+            as_dict=True
+        )
 
-    if not srf:
+        frappe.log_error(
+            message=f"SRF DATA: {srf}",
+            title="MERIT_TRAC_SRF_FETCH"
+        )
+
+        if not srf:
+            frappe.log_error(
+                message=f"No SRF found for Candidate ID: {candidate_id}",
+                title="MERIT_TRAC_SRF_NOT_FOUND"
+            )
+
+            return {
+                "status": 200,
+                "http_status": 200,
+                "message": "Data inserted (No SRF found for candidate)",
+                "data": []
+            }
+
+        # ------------------------------------------------------------
+        # 2. DETERMINE PASS / FAIL
+        # ------------------------------------------------------------
+        try:
+            passed = (
+                percentage is not None
+                and float(percentage) >= 50
+            )
+        except Exception:
+            passed = False
+
+        application_status = "Round One" if passed else "Test Reject"
+
+        frappe.log_error(
+            message=f"""
+Passed: {passed}
+Application Status: {application_status}
+            """,
+            title="MERIT_TRAC_STATUS_CHECK"
+        )
+
+        # ------------------------------------------------------------
+        # 3. UPDATE APPLICATION STATUS
+        # ------------------------------------------------------------
+        srf_name = srf.get("name")
+
+        srf_doc = frappe.get_doc(
+            "Scholarship Recruitment Form",
+            srf_name
+        )
+
+        srf_doc.application_status = application_status
+        srf_doc.save(ignore_permissions=True)
+
+        frappe.log_error(
+            message=f"""
+SRF Updated Successfully
+SRF Name: {srf_name}
+New Status: {application_status}
+            """,
+            title="MERIT_TRAC_SRF_UPDATED"
+        )
+
+        # ------------------------------------------------------------
+        # 4. APPLICANT DETAILS
+        # ------------------------------------------------------------
+        applicant_name = (
+            srf.get("full_name_as_per_aadhar")
+            or "Applicant"
+        )
+
+        applicant_email = srf.get("email")
+
+        sender_email = (
+            srf.get("srt_mail")
+            if srf.get("srt_mail")
+            else "tech4socialsector@azimpremjifoundation.org"
+        )
+
+        frappe.log_error(
+            message=f"""
+Applicant Name: {applicant_name}
+Applicant Email: {applicant_email}
+Sender Email: {sender_email}
+            """,
+            title="MERIT_TRAC_APPLICANT_DETAILS"
+        )
+
+        # ------------------------------------------------------------
+        # 5. FAIL EMAIL TEMPLATE
+        # ------------------------------------------------------------
+        fail_email_html = f"""
+        Dear {applicant_name},
+
+        Thank you for your interest in the opportunities
+        with the Azim Premji Scholarship Initiative.
+
+        Unfortunately, we will not be able to take your
+        application forward at this point of time.
+
+        Regards,
+        People Function
+        Azim Premji Foundation
+        """
+
+        # ------------------------------------------------------------
+        # 6. SEND MAIL
+        # ------------------------------------------------------------
+        if applicant_email:
+            try:
+                if passed:
+                    frappe.log_error(
+                        message=f"PASS Candidate: {candidate_id}",
+                        title="MERIT_TRAC_PASS_MAIL"
+                    )
+
+                else:
+                    frappe.sendmail(
+                        sender=sender_email,
+                        recipients=[applicant_email],
+                        subject=f"Azim Premji Scholarship – Your Application, {applicant_name}",
+                        message=fail_email_html,
+                        delayed=False,
+                        reference_doctype="Scholarship Recruitment Form",
+                        reference_name=candidate_id
+                    )
+
+                    frappe.log_error(
+                        message=f"FAIL Mail Sent to: {applicant_email}",
+                        title="MERIT_TRAC_FAIL_MAIL_SENT"
+                    )
+
+            except Exception as mail_error:
+                frappe.log_error(
+                    message=str(mail_error),
+                    title="MERIT_TRAC_MAIL_ERROR"
+                )
+
+        frappe.db.commit()
+
+        # ------------------------------------------------------------
+        # 7. FINAL RESPONSE
+        # ------------------------------------------------------------
         return {
             "status": 200,
             "http_status": 200,
-            "message": "Data inserted (No SRF found for candidate)",
-            "data": []
+            "message": "Application status updated and mail processed",
+            "application_status": application_status
         }
 
-    # ------------------------------------------------------------
-    # 2. DETERMINE PASS / FAIL
-    # ------------------------------------------------------------
-    try:
-        passed = (
-            percentage is not None
-            and float(percentage) >= 50
+    except Exception as e:
+        frappe.log_error(
+            message=frappe.get_traceback(),
+            title="MERIT_TRAC_UPDATE_ERROR"
         )
-    except Exception:
-        passed = False
 
-    application_status = "Round One" if passed else "Test Reject"
-
-    # ------------------------------------------------------------
-    # 3. UPDATE APPLICATION STATUS
-    # ------------------------------------------------------------
-    srf_name = srf.get("name")
-
-    srf_doc = frappe.get_doc(
-        "Scholarship Recruitment Form",
-        srf_name
-    )
-
-    srf_doc.application_status = application_status
-    srf_doc.save(ignore_permissions=True)
-
-    # ------------------------------------------------------------
-    # 4. APPLICANT DETAILS
-    # ------------------------------------------------------------
-    applicant_name = (
-        srf.get("full_name_as_per_aadhar")
-        or "Applicant"
-    )
-
-    applicant_email = srf.get("email")
-
-    sender_email = (
-        srf.get("srt_mail")
-        if srf.get("srt_mail")
-        else "tech4socialsector@azimpremjifoundation.org"
-    )
-
-    # ------------------------------------------------------------
-    # 5. FAIL EMAIL TEMPLATE
-    # ------------------------------------------------------------
-    fail_email_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    </head>
-
-    <body style="margin:0; padding:20px; background:#ffffff;
-                 font-family:'Segoe UI', sans-serif;
-                 color:#333; line-height:1.6;">
-
-        <p style="font-size:16px;">
-            Dear {applicant_name},
-        </p>
-
-        <p style="font-size:16px;">
-            Thank you for your interest in the opportunities
-            with the Azim Premji Scholarship Initiative.
-            We appreciate the time and effort you have invested
-            in exploring an opportunity with us.
-        </p>
-
-        <p style="font-size:16px;">
-            After careful consideration of your candidature,
-            unfortunately, we will not be able to take your
-            application forward at this point of time.
-        </p>
-
-        <p style="font-size:16px;">
-            We would like to thank you for your time,
-            and we wish you the very best!
-        </p>
-
-        <p style="font-size:16px;">
-            Regards,<br>
-            People Function<br>
-            Azim Premji Foundation
-        </p>
-
-    </body>
-    </html>
-    """
-
-    # ------------------------------------------------------------
-    # 6. SEND MAIL
-    # ------------------------------------------------------------
-    if applicant_email:
-        try:
-            if passed:
-                print("PASS Candidate - Mail can be sent here")
-
-                # Uncomment if pass email template exists
-                # frappe.sendmail(
-                #     sender=sender_email,
-                #     recipients=[applicant_email],
-                #     subject=f"Azim Premji Scholarship – Your Application, {applicant_name}",
-                #     message=pass_email_html,
-                #     delayed=False,
-                #     reference_doctype="Scholarship Recruitment Form",
-                #     reference_name=candidate_id
-                # )
-
-            else:
-                frappe.sendmail(
-                    sender=sender_email,
-                    recipients=[applicant_email],
-                    subject=f"Azim Premji Scholarship – Your Application, {applicant_name}",
-                    message=fail_email_html,
-                    delayed=False,
-                    reference_doctype="Scholarship Recruitment Form",
-                    reference_name=candidate_id
-                )
-
-                print("FAIL Mail Sent")
-
-        except Exception as mail_error:
-            frappe.log_error(
-                f"Mail error: {mail_error}",
-                "MERIT_TRAC_MAIL_ERROR"
-            )
-
-    frappe.db.commit()
-
-    # ------------------------------------------------------------
-    # 7. FINAL RESPONSE
-    # ------------------------------------------------------------
-    return {
-        "status": 200,
-        "http_status": 200,
-        "message": "Application status updated and mail processed",
-        "application_status": application_status
-    }
+        return {
+            "status": 500,
+            "http_status": 500,
+            "message": str(e)
+        }
+    
