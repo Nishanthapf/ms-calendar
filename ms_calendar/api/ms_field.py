@@ -271,7 +271,7 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
 
     print("DEBUG → Token OK")
 
-    # -------------------------
+    
     # GET ALL ROOMS (PAGINATED)
     # -------------------------
     rooms = []
