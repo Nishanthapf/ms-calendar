@@ -712,183 +712,183 @@ Candidate ID: {candidate_id}
 
 
 
-# def update_application_status_and_send_mail(candidate_id, percentage):
-#     try:
-#         frappe.log_error(
-#             message=f"""
-# Candidate ID: {candidate_id}
-# Percentage: {percentage}
-#             """,
-#             title="MERIT_TRAC_UPDATE_START"
-#         )
+def update_application_status_and_send_mail(candidate_id, percentage):
+    try:
+        frappe.log_error(
+            message=f"""
+Candidate ID: {candidate_id}
+Percentage: {percentage}
+            """,
+            title="MERIT_TRAC_UPDATE_START"
+        )
 
-#         # ------------------------------------------------------------
-#         # 1. FETCH SRF DETAILS
-#         # ------------------------------------------------------------
-#         srf = frappe.db.get_value(
-#             "Scholarship Recruitment Form",
-#             {"name": candidate_id},
-#             ["name", "full_name_as_per_aadhar", "email", "srt_mail"],
-#             as_dict=True
-#         )
+        # ------------------------------------------------------------
+        # 1. FETCH SRF DETAILS
+        # ------------------------------------------------------------
+        srf = frappe.db.get_value(
+            "Scholarship Recruitment Form",
+            {"name": candidate_id},
+            ["name", "full_name_as_per_aadhar", "email", "srt_mail"],
+            as_dict=True
+        )
 
-#         frappe.log_error(
-#             message=f"SRF DATA: {srf}",
-#             title="MERIT_TRAC_SRF_FETCH"
-#         )
+        frappe.log_error(
+            message=f"SRF DATA: {srf}",
+            title="MERIT_TRAC_SRF_FETCH"
+        )
 
-#         if not srf:
-#             frappe.log_error(
-#                 message=f"No SRF found for Candidate ID: {candidate_id}",
-#                 title="MERIT_TRAC_SRF_NOT_FOUND"
-#             )
+        if not srf:
+            frappe.log_error(
+                message=f"No SRF found for Candidate ID: {candidate_id}",
+                title="MERIT_TRAC_SRF_NOT_FOUND"
+            )
 
-#             return {
-#                 "status": 200,
-#                 "http_status": 200,
-#                 "message": "Data inserted (No SRF found for candidate)",
-#                 "data": []
-#             }
+            return {
+                "status": 200,
+                "http_status": 200,
+                "message": "Data inserted (No SRF found for candidate)",
+                "data": []
+            }
 
-#         # ------------------------------------------------------------
-#         # 2. DETERMINE PASS / FAIL
-#         # ------------------------------------------------------------
-#         try:
-#             passed = (
-#                 percentage is not None
-#                 and float(percentage) >= 50
-#             )
-#         except Exception:
-#             passed = False
+        # ------------------------------------------------------------
+        # 2. DETERMINE PASS / FAIL
+        # ------------------------------------------------------------
+        try:
+            passed = (
+                percentage is not None
+                and float(percentage) >= 50
+            )
+        except Exception:
+            passed = False
 
-#         application_status = "Round One" if passed else "Test Reject"
+        application_status = "Round One" if passed else "Test Reject"
 
-#         frappe.log_error(
-#             message=f"""
-# Passed: {passed}
-# Application Status: {application_status}
-#             """,
-#             title="MERIT_TRAC_STATUS_CHECK"
-#         )
+        frappe.log_error(
+            message=f"""
+Passed: {passed}
+Application Status: {application_status}
+            """,
+            title="MERIT_TRAC_STATUS_CHECK"
+        )
 
-#         # ------------------------------------------------------------
-#         # 3. UPDATE APPLICATION STATUS
-#         # ------------------------------------------------------------
-#         srf_name = srf.get("name")
+        # ------------------------------------------------------------
+        # 3. UPDATE APPLICATION STATUS
+        # ------------------------------------------------------------
+        srf_name = srf.get("name")
 
-#         srf_doc = frappe.get_doc(
-#             "Scholarship Recruitment Form",
-#             srf_name
-#         )
+        srf_doc = frappe.get_doc(
+            "Scholarship Recruitment Form",
+            srf_name
+        )
 
-#         srf_doc.application_status = application_status
-#         srf_doc.save(ignore_permissions=True)
+        srf_doc.application_status = application_status
+        srf_doc.save(ignore_permissions=True)
 
-#         frappe.log_error(
-#             message=f"""
-# SRF Updated Successfully
-# SRF Name: {srf_name}
-# New Status: {application_status}
-#             """,
-#             title="MERIT_TRAC_SRF_UPDATED"
-#         )
+        frappe.log_error(
+            message=f"""
+SRF Updated Successfully
+SRF Name: {srf_name}
+New Status: {application_status}
+            """,
+            title="MERIT_TRAC_SRF_UPDATED"
+        )
 
-#         # ------------------------------------------------------------
-#         # 4. APPLICANT DETAILS
-#         # ------------------------------------------------------------
-#         applicant_name = (
-#             srf.get("full_name_as_per_aadhar")
-#             or "Applicant"
-#         )
+        # ------------------------------------------------------------
+        # 4. APPLICANT DETAILS
+        # ------------------------------------------------------------
+        applicant_name = (
+            srf.get("full_name_as_per_aadhar")
+            or "Applicant"
+        )
 
-#         applicant_email = srf.get("email")
+        applicant_email = srf.get("email")
 
-#         sender_email = (
-#             srf.get("srt_mail")
-#             if srf.get("srt_mail")
-#             else "tech4socialsector@azimpremjifoundation.org"
-#         )
+        sender_email = (
+            srf.get("srt_mail")
+            if srf.get("srt_mail")
+            else "tech4socialsector@azimpremjifoundation.org"
+        )
 
-#         frappe.log_error(
-#             message=f"""
-# Applicant Name: {applicant_name}
-# Applicant Email: {applicant_email}
-# Sender Email: {sender_email}
-#             """,
-#             title="MERIT_TRAC_APPLICANT_DETAILS"
-#         )
+        frappe.log_error(
+            message=f"""
+Applicant Name: {applicant_name}
+Applicant Email: {applicant_email}
+Sender Email: {sender_email}
+            """,
+            title="MERIT_TRAC_APPLICANT_DETAILS"
+        )
 
-#         # ------------------------------------------------------------
-#         # 5. FAIL EMAIL TEMPLATE
-#         # ------------------------------------------------------------
-#         fail_email_html = f"""
-#         Dear {applicant_name},
+        # ------------------------------------------------------------
+        # 5. FAIL EMAIL TEMPLATE
+        # ------------------------------------------------------------
+        fail_email_html = f"""
+        Dear {applicant_name},
 
-#         Thank you for your interest in the opportunities
-#         with the Azim Premji Scholarship Initiative.
+        Thank you for your interest in the opportunities
+        with the Azim Premji Scholarship Initiative.
 
-#         Unfortunately, we will not be able to take your
-#         application forward at this point of time.
+        Unfortunately, we will not be able to take your
+        application forward at this point of time.
 
-#         Regards,
-#         People Function
-#         Azim Premji Foundation
-#         """
+        Regards,
+        People Function
+        Azim Premji Foundation
+        """
 
-#         # ------------------------------------------------------------
-#         # 6. SEND MAIL
-#         # ------------------------------------------------------------
-#         if applicant_email:
-#             try:
-#                 if passed:
-#                     frappe.log_error(
-#                         message=f"PASS Candidate: {candidate_id}",
-#                         title="MERIT_TRAC_PASS_MAIL"
-#                     )
+        # ------------------------------------------------------------
+        # 6. SEND MAIL
+        # ------------------------------------------------------------
+        if applicant_email:
+            try:
+                if passed:
+                    frappe.log_error(
+                        message=f"PASS Candidate: {candidate_id}",
+                        title="MERIT_TRAC_PASS_MAIL"
+                    )
 
-#                 else:
-#                     frappe.sendmail(
-#                         sender=sender_email,
-#                         recipients=[applicant_email],
-#                         subject=f"Azim Premji Scholarship – Your Application, {applicant_name}",
-#                         message=fail_email_html,
-#                         delayed=False,
-#                         reference_doctype="Scholarship Recruitment Form",
-#                         reference_name=candidate_id
-#                     )
+                else:
+                    frappe.sendmail(
+                        sender=sender_email,
+                        recipients=[applicant_email],
+                        subject=f"Azim Premji Scholarship – Your Application, {applicant_name}",
+                        message=fail_email_html,
+                        delayed=False,
+                        reference_doctype="Scholarship Recruitment Form",
+                        reference_name=candidate_id
+                    )
 
-#                     frappe.log_error(
-#                         message=f"FAIL Mail Sent to: {applicant_email}",
-#                         title="MERIT_TRAC_FAIL_MAIL_SENT"
-#                     )
+                    frappe.log_error(
+                        message=f"FAIL Mail Sent to: {applicant_email}",
+                        title="MERIT_TRAC_FAIL_MAIL_SENT"
+                    )
 
-#             except Exception as mail_error:
-#                 frappe.log_error(
-#                     message=str(mail_error),
-#                     title="MERIT_TRAC_MAIL_ERROR"
-#                 )
+            except Exception as mail_error:
+                frappe.log_error(
+                    message=str(mail_error),
+                    title="MERIT_TRAC_MAIL_ERROR"
+                )
 
-#         frappe.db.commit()
+        frappe.db.commit()
 
-#         # ------------------------------------------------------------
-#         # 7. FINAL RESPONSE
-#         # ------------------------------------------------------------
-#         return {
-#             "status": 200,
-#             "http_status": 200,
-#             "message": "Application status updated and mail processed",
-#             "application_status": application_status
-#         }
+        # ------------------------------------------------------------
+        # 7. FINAL RESPONSE
+        # ------------------------------------------------------------
+        return {
+            "status": 200,
+            "http_status": 200,
+            "message": "Application status updated and mail processed",
+            "application_status": application_status
+        }
 
-#     except Exception as e:
-#         frappe.log_error(
-#             message=frappe.get_traceback(),
-#             title="MERIT_TRAC_UPDATE_ERROR"
-#         )
+    except Exception as e:
+        frappe.log_error(
+            message=frappe.get_traceback(),
+            title="MERIT_TRAC_UPDATE_ERROR"
+        )
 
-#         return {
-#             "status": 500,
-#             "http_status": 500,
-#             "message": str(e)
-#         }
+        return {
+            "status": 500,
+            "http_status": 500,
+            "message": str(e)
+        }
     
