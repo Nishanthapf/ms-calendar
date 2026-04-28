@@ -862,7 +862,7 @@ Please find the details of the interview below.</p>
     res.raise_for_status()
     event_id = res.json()["id"]
 
-    # ----------------------------------------
+    
     # ATTACH FILES  (CV / feedback form)
     # Attached to the event so interviewers can access them from the calendar.
     # ----------------------------------------
