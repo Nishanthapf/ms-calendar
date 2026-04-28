@@ -2,6 +2,31 @@ import frappe, requests
 from datetime import timedelta
 from frappe.utils import get_datetime
 
+# ── Feedback URL lookup: (role lowercase, round lowercase) → URL ─────────────
+_FEEDBACK_URL_MAP = {
+    # URLs include {app_id} and {applicant_name} — filled at runtime
+    # School Teacher
+    ("school teacher", "recruiter round"): "https://careers.frappe.cloud/recruiter-assessment-form-feed-back-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    ("school teacher", "round one"):       "https://careers.frappe.cloud/school-teacher-functional-feedback/new?app_id={app_id}&applicant_name={applicant_name}",
+    ("school teacher", "round two"):       "https://careers.frappe.cloud/demo-lesson-observation-feedback-form-feed-back-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    ("school teacher", "round three"):     "https://careers.frappe.cloud/leader-final-feedback/new?app_id={app_id}&applicant_name={applicant_name}",
+
+    # Resource Person
+    ("resource person", "recruiter round"): "https://careers.frappe.cloud/recruiter-assessment-form-feed-back-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    ("resource person", "round one"):       "https://careers.frappe.cloud/educational-capacity-interview---feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    ("resource person", "round two"):       "https://careers.frappe.cloud/leader-final-feedback/new?app_id={app_id}&applicant_name={applicant_name}",
+
+    # Livelihood Resource Person
+    ("livelihood resource person", "recruiter round"): "https://careers.frappe.cloud/livelihoods-recruiter-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    ("livelihood resource person", "round one"):       "https://careers.frappe.cloud/livelihoods-functional-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    ("livelihood resource person", "round two"):       "https://careers.frappe.cloud/livelihoods-final-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+
+    # Health Resource Person
+    ("health resource person", "recruiter round"): "https://careers.frappe.cloud/health-recruitment-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    ("health resource person", "round one"):       "https://careers.frappe.cloud/health-functional-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    ("health resource person", "round two"):       "https://careers.frappe.cloud/health-final-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+}
+
 @frappe.whitelist()
 def get_schedule_free_slots(interviewer_emails, interview_date):
     """
@@ -429,11 +454,14 @@ def create_interview_event(event_title,
     is_round2          = ("round two"  in round_raw or round_raw == "round 2")
     is_round3          = ("round three" in round_raw or round_raw == "round 3")
 
-    # ── Feedback URL: taken directly from the Feedback Form Link field ──────
+    # ── Feedback URL: resolved entirely in backend (3-level priority) ──────────
+    # Priority 1 → value passed from JS (or manually filled on the form)
+    # Priority 2 → feedback_form_link stored on the Field Interview Schedule record in DB
+    # Priority 3 → role + round lookup from _FEEDBACK_URL_MAP
     _demo_checked = str(demo_feed_back_form or "0").strip().lower() in ("1", "true", "yes")
     feedback_url  = str(feedback_form_link or "").strip()
 
-    # If JS didn't pass the value (old cloud JS), read it directly from the DB
+    # Priority 2: read from Field Interview Schedule record in DB
     if not feedback_url and application_id:
         try:
             _fis = frappe.get_all(
@@ -451,22 +479,48 @@ def create_interview_event(event_title,
         except Exception:
             pass
 
+    # Priority 3: auto-resolve from role + round lookup table
+    if not feedback_url:
+        from urllib.parse import quote as _quote
+        _role_key  = str(Applicants_Role or "").strip().lower()
+        _round_key = str(Interview_round or "").strip().lower()
+        _template  = _FEEDBACK_URL_MAP.get((_role_key, _round_key), "")
+        if _template:
+            feedback_url = _template.format(
+                app_id=_quote(str(application_id or ""), safe=""),
+                applicant_name=_quote(str(Applicants_name or ""), safe="")
+            )
+
+    # For Priority 1 & 2 URLs (manually filled), append params if not already present
+    if feedback_url and "app_id=" not in feedback_url:
+        from urllib.parse import quote as _quote
+        _sep = "&" if "?" in feedback_url else "?"
+        feedback_url = (
+            f"{feedback_url}{_sep}"
+            f"app_id={_quote(str(application_id or ''), safe='')}"
+            f"&applicant_name={_quote(str(Applicants_name or ''), safe='')}"
+        )
+
     # Ensure absolute URL so Outlook doesn't treat it as a relative path
     if feedback_url and not feedback_url.startswith("http"):
         feedback_url = "https://" + feedback_url
     demo_feedback_html = ""
 
-    feedback_html_block = (
-        f'<p><b>Feedback Form Link:</b><br>'
-        f'<a href="{feedback_url}" target="_blank" '
-        f'style="display:inline-block;margin-top:6px;padding:8px 18px;'
-        f'background-color:#1d4ed8;color:#ffffff;text-decoration:none;'
-        f'border-radius:4px;font-weight:600;font-size:13px;">'
-        f'Click Here to Open Feedback Form</a><br>'
-        f'<span style="font-size:11px;color:#6b7280;word-break:break-all;">'
-        f'Or copy this link: {feedback_url}</span></p>'
-        if feedback_url else ""
-    )
+    if feedback_url:
+        from urllib.parse import unquote as _unquote
+        _feedback_display = _unquote(feedback_url)   # human-readable for display
+        feedback_html_block = (
+            f'<p><b>Feedback Form Link:</b><br>'
+            f'<a href="{feedback_url}" target="_blank" '
+            f'style="display:inline-block;margin-top:6px;padding:8px 18px;'
+            f'background-color:#1d4ed8;color:#ffffff;text-decoration:none;'
+            f'border-radius:4px;font-weight:600;font-size:13px;">'
+            f'Click Here to Open Feedback Form</a><br>'
+            f'<span style="font-size:11px;color:#6b7280;word-break:break-all;">'
+            f'Or copy this link: {_feedback_display}</span></p>'
+        )
+    else:
+        feedback_html_block = ""
 
     if display_mode.lower() == "face-to-face" and (address or Map_location):
         venue_row = ""
