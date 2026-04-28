@@ -434,6 +434,11 @@ def create_interview_event(event_title,
     feedback_url  = str(feedback_form_link or "").strip()
     demo_feedback_html = ""
 
+    feedback_html_block = (
+        f'<p><b>Feedback form link:</b> <a href="{feedback_url}" target="_blank">Click here</a></p>'
+        if feedback_url else ""
+    )
+
     if display_mode.lower() == "face-to-face" and (address or Map_location):
         venue_row = ""
         if address:
@@ -625,7 +630,7 @@ def create_interview_event(event_title,
             _frf_doctype = (
                 "Field Registration Form"
                 if frappe.db.exists("DocType", "Field Registration Form")
-                else "Field Registration Form1"
+                else "Field Registration Form"
             )
             if not frappe.db.exists(_frf_doctype, application_id):
                 frappe.log_error(
@@ -640,23 +645,28 @@ def create_interview_event(event_title,
                 raise Exception("srf not loaded, skipping auto-attach")
 
             # Determine which fields to attach based on round
-            if is_round1:
-                auto_attach_fields = ["recruiter_round_feedback_form", "resume_upload"]
+            # application_forms is always attached for all rounds
+            if is_recruiter_round:
+                auto_attach_fields = ["resume_upload", "application_forms"]
+            elif is_round1:
+                auto_attach_fields = ["resume_upload", "recruiter_round_feedback_form", "application_forms"]
             elif is_round2:
                 auto_attach_fields = [
+                    "resume_upload",
                     "recruiter_round_feedback_form",
                     "round_one_feedback_from",
-                    "resume_upload"
+                    "application_forms"
                 ]
             elif is_round3:
                 auto_attach_fields = [
+                    "resume_upload",
                     "recruiter_round_feedback_form",
                     "round_one_feedback_from",
                     "round_two_feedback_form",
-                    "resume_upload"
+                    "application_forms"
                 ]
             else:
-                auto_attach_fields = []
+                auto_attach_fields = ["application_forms"]
 
             for field in auto_attach_fields:
                 web_path = getattr(srf, field, None)
@@ -730,8 +740,7 @@ Please find the details of the interview below.</p>
 {Map_html}
 {Note_to_interviewer_html}
 
-<p><b>Feedback form link:</b>
-<a href="{feedback_url}" target="_blank">Click here</a></p>
+{feedback_html_block}
 
 {demo_feedback_html}
 
@@ -787,8 +796,7 @@ Please find the details of the interview below.</p>
 {Map_html}
 {Note_to_interviewer_html}
 
-<p><b>Feedback form link:</b>
-<a href="{feedback_url}" target="_blank">Click here</a></p>
+{feedback_html_block}
 
 <p>Regards,<br>People Function</p>
 """
@@ -816,7 +824,7 @@ Please find the details of the interview below.</p>
             meeting_info="",
             phone_info=phone_info_html,
             Map_html=map_html,
-            feedback_url=feedback_url,
+            feedback_html_block=feedback_html_block,
             demo_feedback_html=demo_feedback_html,
             Note_to_interviewer_html=note_to_interviewer_html
         )
@@ -838,7 +846,7 @@ Please find the details of the interview below.</p>
             meeting_info="",
             phone_info=phone_info_html,
             Map_html=map_html,
-            feedback_url=feedback_url,
+            feedback_html_block=feedback_html_block,
             Note_to_interviewer_html=note_to_interviewer_html
         )
 
@@ -1006,7 +1014,7 @@ Please find the details of the interview below.</p>
             meeting_info=meeting_html,
             phone_info=phone_info_html,
             Map_html=map_html,
-            feedback_url=feedback_url,
+            feedback_html_block=feedback_html_block,
             demo_feedback_html=demo_feedback_html,
             Note_to_interviewer_html=note_to_interviewer_html
         )
@@ -1027,7 +1035,7 @@ Please find the details of the interview below.</p>
             meeting_info=meeting_html,
             phone_info=phone_info_html,
             Map_html=map_html,
-            feedback_url=feedback_url,
+            feedback_html_block=feedback_html_block,
             Note_to_interviewer_html=note_to_interviewer_html
         )
 
@@ -1094,38 +1102,47 @@ Please find the details of the interview below.</p>
         candidate_advice_html=candidate_advice_html,
     )
 
-    # Send candidate email via MS Graph so FROM shows the organizer's real name
-    # Requires Mail.Send application permission in Azure AD app registration.
-    # Falls back to frappe.sendmail if that permission is not yet granted.
-    try:
-        send_mail_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/sendMail"
-        mail_payload = {
-            "message": {
-                "subject": candidate_email_subject,
-                "body": {"contentType": "HTML", "content": candidate_email_body},
-                "toRecipients": [
-                    {"emailAddress": {"address": interviewee_email}}
-                ],
-                "ccRecipients": [
-                    {"emailAddress": {"address": Organizer_email}}
-                ]
-            },
-            "saveToSentItems": True
-        }
-        send_res = requests.post(send_mail_url, headers=headers, json=mail_payload)
-        send_res.raise_for_status()
-    except Exception as mail_err:
-        try:
-            frappe.log_error(title="sendMail 403 fallback", message=str(mail_err))
-        except Exception:
-            pass  # never let log_error crash the flow
-        frappe.sendmail(
-            recipients=[interviewee_email, Organizer_email],
-            sender=Organizer_email,
-            subject=candidate_email_subject,
-            message=candidate_email_body,
-            delayed=False
+    # Send candidate email — always use frappe.sendmail (reliable fallback)
+    if not interviewee_email:
+        frappe.log_error(
+            f"Candidate email (attendees) is empty for doc {doc_name}. Skipping candidate email.",
+            "Candidate Email Skipped"
         )
+    else:
+        try:
+            send_mail_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/sendMail"
+            mail_payload = {
+                "message": {
+                    "subject": candidate_email_subject,
+                    "body": {"contentType": "HTML", "content": candidate_email_body},
+                    "toRecipients": [
+                        {"emailAddress": {"address": interviewee_email}}
+                    ],
+                    "ccRecipients": [
+                        {"emailAddress": {"address": Organizer_email}}
+                    ]
+                },
+                "saveToSentItems": True
+            }
+            send_res = requests.post(send_mail_url, headers=headers, json=mail_payload)
+            send_res.raise_for_status()
+        except Exception as mail_err:
+            try:
+                frappe.log_error(title="sendMail fallback", message=str(mail_err))
+            except Exception:
+                pass
+            try:
+                frappe.sendmail(
+                    recipients=[interviewee_email, Organizer_email],
+                    subject=candidate_email_subject,
+                    message=candidate_email_body,
+                    delayed=False
+                )
+            except Exception as fallback_err:
+                frappe.log_error(
+                    f"Candidate email fallback also failed: {fallback_err}",
+                    "Candidate Email Error"
+                )
 
     # Save event_id to the document so reschedule can cancel it later
     if doc_name:
