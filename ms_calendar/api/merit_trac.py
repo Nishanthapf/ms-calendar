@@ -838,17 +838,41 @@ Sender Email: {sender_email}
         # 5. FAIL EMAIL TEMPLATE
         # ------------------------------------------------------------
         fail_email_html = f"""
-        Dear {applicant_name},
+                               <!DOCTYPE html>
+                        <html>
+                        <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        </head>
 
-        Thank you for your interest in the opportunities
-        with the Azim Premji Scholarship Initiative.
+                        <body style="margin:0; padding:20px; background:#ffffff; font-family:'Segoe UI', sans-serif; color:#333; line-height:1.6;">
 
-        Unfortunately, we will not be able to take your
-        application forward at this point of time.
+                        <p style="font-size:16px; margin:0 0 20px 0;">
+                        Dear {applicant_name},
+                        </p>
 
-        Regards,
-        People Function
-        Azim Premji Foundation
+                        <p style="font-size:16px; margin:0 0 20px 0;">
+                        Thank you for your interest in the opportunities with the Azim Premji Scholarship Initiative.
+                        We appreciate the time and effort you have invested in exploring an opportunity with us.
+                        </p>
+
+                        <p style="font-size:16px; margin:0 0 20px 0;">
+                        After careful consideration of your candidature, unfortunately, we will not be able to
+                        take your application forward at this point of time.
+                        </p>
+
+                        <p style="font-size:16px; margin:0 0 25px 0;">
+                        We would like to thank you for your time, and we wish you the very best!
+                        </p>
+
+                        <p style="font-size:16px; margin:0 0 40px 0;">
+                        Regards,<br>
+                        People Function<br>
+                        Azim Premji Foundation
+                        </p>
+
+                        </body>
+                        </html>
         """
 
         # ------------------------------------------------------------
