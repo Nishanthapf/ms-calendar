@@ -828,7 +828,7 @@ def create_interview_event(event_title,
     # ----------------------------------------
     # ROUND 1 TEMPLATES
     # ----------------------------------------
-    # ── INTERVIEWER TEMPLATE (Round 1) ──────────────────────────────────────
+    # ── INTERVIEWER TEMPLATE (Round 1) 
     round1_interviewer_template = """
 <p>Hi,</p>
 
