@@ -742,24 +742,21 @@ def create_interview_event(event_title,
             if not srf:
                 raise Exception("srf not loaded, skipping auto-attach")
 
-            # If resume was already manually attached via candidate_cv__resume,
-            # skip resume_upload to avoid sending two resumes
-            _has_manual_resume = len(final_files) > 0
-
             # Determine which fields to attach based on round
+            # resume_upload is NOT auto-attached — resume comes from candidate_cv__resume on the form
             # application_forms is always attached for all rounds
             if is_recruiter_round:
-                auto_attach_fields = ([] if _has_manual_resume else ["resume_upload"]) + ["application_forms"]
+                auto_attach_fields = ["application_forms"]
             elif is_round1:
-                auto_attach_fields = ([] if _has_manual_resume else ["resume_upload"]) + ["recruiter_round_feedback_form", "application_forms"]
+                auto_attach_fields = ["recruiter_round_feedback_form", "application_forms"]
             elif is_round2:
-                auto_attach_fields = ([] if _has_manual_resume else ["resume_upload"]) + [
+                auto_attach_fields = [
                     "recruiter_round_feedback_form",
                     "round_one_feedback_from",
                     "application_forms"
                 ]
             elif is_round3:
-                auto_attach_fields = ([] if _has_manual_resume else ["resume_upload"]) + [
+                auto_attach_fields = [
                     "recruiter_round_feedback_form",
                     "round_one_feedback_from",
                     "round_two_feedback_form",
