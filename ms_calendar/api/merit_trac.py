@@ -638,7 +638,7 @@ def test_result_api():
         if str(candidate_id).startswith("APSRF"):
             application_doctype = "Scholarship Recruitment Form"
             result_doctype = "MeritTrac Test Result"
-
+            update_application_status_and_send_mail_scholarship(candidate_id, percentage)
         elif str(candidate_id).startswith("APFFRF"):
             application_doctype = "Field Registration Form"
             result_doctype = "Field MeritTrac Test Result"
@@ -653,10 +653,10 @@ def test_result_api():
 
         frappe.log_error(
             message=f"""
-Candidate ID: {candidate_id}
-Application Doctype: {application_doctype}
-Result Doctype: {result_doctype}
-            """,
+                    Candidate ID: {candidate_id}
+                    Application Doctype: {application_doctype}
+                    Result Doctype: {result_doctype}
+                                """,
             title="MERIT_TRAC_DOCTYPE"
         )
 
@@ -728,7 +728,7 @@ Candidate ID: {candidate_id}
         }
 
 @frappe.whitelist(allow_guest=True)
-def update_application_status_and_send_mail(candidate_id, percentage):
+def update_application_status_and_send_mail_scholarship(candidate_id, percentage):
     try:
         frappe.log_error(
             message=f"""
@@ -908,3 +908,271 @@ Sender Email: {sender_email}
             "message": str(e)
         }
     
+
+
+
+@frappe.whitelist(allow_guest=True)
+def update_application_status_and_send_mail_field(candidate_id, percentage):
+    try:
+        frappe.log_error(
+            message=f"""
+Candidate ID: {candidate_id}
+Percentage: {percentage}
+            """,
+            title="MERIT_TRAC_UPDATE_START"
+        )
+
+        # ------------------------------------------------------------
+        # 1. FETCH FIELD REGISTRATION FORM DETAILS
+        # ------------------------------------------------------------
+        frf = frappe.db.get_value(
+            "Field Registration Form",
+            {"name": candidate_id},
+            [
+                "name",
+                "full_name_aadhaar",
+                "email_address",
+                "field_mail",
+                "native_state",
+                "role"
+            ],
+            as_dict=True
+        )
+
+        frappe.log_error(
+            message=f"FRF DATA: {frf}",
+            title="MERIT_TRAC_FRF_FETCH"
+        )
+
+        if not frf:
+            frappe.log_error(
+                message=f"No FRF found for Candidate ID: {candidate_id}",
+                title="MERIT_TRAC_FRF_NOT_FOUND"
+            )
+
+            return {
+                "status": 200,
+                "http_status": 200,
+                "message": "Data inserted (No FRF found for candidate)",
+                "data": []
+            }
+
+        # ------------------------------------------------------------
+        # 2. DETERMINE PASS / FAIL
+        # ------------------------------------------------------------
+        try:
+            passed = (
+                percentage is not None
+                and float(percentage) >= 50
+            )
+        except Exception:
+            passed = False
+
+        application_status = "Round One" if passed else "Test Reject"
+
+        frappe.log_error(
+            message=f"""
+Passed: {passed}
+Application Status: {application_status}
+            """,
+            title="MERIT_TRAC_STATUS_CHECK"
+        )
+
+        # ------------------------------------------------------------
+        # 3. UPDATE APPLICATION STATUS
+        # ------------------------------------------------------------
+        frf_name = frf.get("name")
+
+        frf_doc = frappe.get_doc(
+            "Field Registration Form",
+            frf_name
+        )
+
+        frf_doc.application_status = application_status
+        frf_doc.save(ignore_permissions=True)
+
+        frappe.log_error(
+            message=f"""
+FRF Updated Successfully
+FRF Name: {frf_name}
+New Status: {application_status}
+            """,
+            title="MERIT_TRAC_FRF_UPDATED"
+        )
+
+        # ------------------------------------------------------------
+        # 4. APPLICANT DETAILS
+        # ------------------------------------------------------------
+        applicant_name = (
+            frf.get("full_name_aadhaar")
+            or "Candidate"
+        )
+
+        applicant_role = (
+            frf.get("role")
+            or "Applicant"
+        )
+
+        applicant_email = frf.get("email_address")
+
+        sender_email = (
+            frf.get("field_mail")
+            if frf.get("field_mail")
+            else "tech4socialsector@azimpremjifoundation.org"
+        )
+
+        applicant_state = (
+            frf.get("native_state") or ""
+        ).strip()
+
+        frappe.log_error(
+            message=f"""
+Applicant Name: {applicant_name}
+Applicant Role: {applicant_role}
+Applicant Email: {applicant_email}
+Sender Email: {sender_email}
+State: {applicant_state}
+            """,
+            title="MERIT_TRAC_APPLICANT_DETAILS"
+        )
+
+        # ------------------------------------------------------------
+        # 5. STATE EMAIL MAPPING
+        # ------------------------------------------------------------
+        state_email_map = {
+            "Chhattisgarh": "recruitment.chhattisgarh@azimpremjifoundation.org",
+            "Karnataka": "recruitment.karnataka@azimpremjifoundation.org",
+            "Madhya Pradesh": "recruitment.madhyapradesh@azimpremjifoundation.org",
+            "Puducherry": "recruitment.puducherry@azimpremjifoundation.org",
+            "Rajasthan": "recruitment.rajasthan@azimpremjifoundation.org",
+            "Telangana": "recruitment.telangana@azimpremjifoundation.org",
+            "Uttarakhand": "recruitment.uttarakhand@azimpremjifoundation.org",
+            "Jharkhand": "recruitment.jharkhand@azimpremjifoundation.org"
+        }
+
+        state_team_email = state_email_map.get(
+            applicant_state,
+            "recruitment.karnataka@azimpremjifoundation.org"
+        )
+
+        # ------------------------------------------------------------
+        # 6. PASS EMAIL TEMPLATE
+        # ------------------------------------------------------------
+        pass_email_html = f"""
+Dear {applicant_name},
+
+Thank you for your interest in exploring career opportunities with Azim Premji Foundation.
+
+We are pleased to inform you that you have successfully cleared the written test conducted recently.
+Congratulations on reaching the next stage of our selection process!
+
+A member of our recruitment team will get in touch with you via your registered email ID or contact number
+within the next two weeks to share details about the next steps.
+
+In case of any queries, please reach out to your respective State team:
+
+State: {applicant_state}
+Email ID: {state_team_email}
+
+For more information about our work and the recruitment process, please visit:
+www.azimpremjifoundation.org
+
+We appreciate your effort and wish you the very best for the next phase.
+
+Warm regards,
+
+Recruitment Team
+Azim Premji Foundation
+        """
+
+        # ------------------------------------------------------------
+        # 7. FAIL EMAIL TEMPLATE (UPDATED)
+        # ------------------------------------------------------------
+        fail_email_html = f"""
+Dear {applicant_name},
+
+Thank you for taking the time to appear for the written test conducted by Azim Premji Foundation.
+
+After a careful review of your performance, we regret to inform you that you have not been shortlisted for the next stage of the selection process.
+
+Please note that the test results are final, and we will be unable to consider any requests for re-evaluation. However, we encourage you to reapply for relevant opportunities after a period of one year from the date of this test.
+
+For any further queries, you may write to us at:
+recruitment@azimpremjifoundation.org
+
+We appreciate your interest in the Foundation and wish you the very best in your future endeavors.
+
+Warm regards,
+
+Recruitment Team
+Azim Premji Foundation
+        """
+
+        # ------------------------------------------------------------
+        # 8. SEND MAIL
+        # ------------------------------------------------------------
+        if applicant_email:
+            try:
+                if passed:
+                    frappe.sendmail(
+                        sender=sender_email,
+                        recipients=[applicant_email],
+                        subject=f"Congratulations – Shortlisted for Next Round at Azim Premji Foundation {applicant_role} Position",
+                        message=pass_email_html,
+                        delayed=False,
+                        reference_doctype="Field Registration Form",
+                        reference_name=candidate_id
+                    )
+
+                    frappe.log_error(
+                        message=f"PASS Mail Sent to: {applicant_email}",
+                        title="MERIT_TRAC_PASS_MAIL_SENT"
+                    )
+
+                else:
+                    frappe.sendmail(
+                        sender=sender_email,
+                        recipients=[applicant_email],
+                        subject=f"Result of Written Test for {applicant_role} Position – Azim Premji Foundation",
+                        message=fail_email_html,
+                        delayed=False,
+                        reference_doctype="Field Registration Form",
+                        reference_name=candidate_id
+                    )
+
+                    frappe.log_error(
+                        message=f"FAIL Mail Sent to: {applicant_email}",
+                        title="MERIT_TRAC_FAIL_MAIL_SENT"
+                    )
+
+            except Exception as mail_error:
+                frappe.log_error(
+                    message=str(mail_error),
+                    title="MERIT_TRAC_MAIL_ERROR"
+                )
+
+        frappe.db.commit()
+
+        # ------------------------------------------------------------
+        # 9. FINAL RESPONSE
+        # ------------------------------------------------------------
+        return {
+            "status": 200,
+            "http_status": 200,
+            "message": "Application status updated and mail processed",
+            "application_status": application_status
+        }
+
+    except Exception as e:
+        frappe.log_error(
+            message=frappe.get_traceback(),
+            title="MERIT_TRAC_UPDATE_ERROR"
+        )
+
+        return {
+            "status": 500,
+            "http_status": 500,
+            "message": str(e)
+        }
+    
+
