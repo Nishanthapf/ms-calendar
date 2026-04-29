@@ -280,6 +280,12 @@ from datetime import datetime, timedelta
 
 
 
+
+import json
+import frappe
+from frappe.utils import get_datetime
+
+
 # @frappe.whitelist(allow_guest=True)
 # def test_result_api():
 #     try:
@@ -287,7 +293,11 @@ from datetime import datetime, timedelta
 #         # 1. READ REQUEST BODY
 #         # ------------------------------------------------------------
 #         raw = frappe.request.data
-#         print("RAW BODY:", raw)
+
+#         frappe.log_error(
+#             message=f"RAW BODY: {raw}",
+#             title="MERIT_TRAC_DEBUG"
+#         )
 
 #         if not raw:
 #             frappe.local.response.http_status_code = 400
@@ -303,6 +313,11 @@ from datetime import datetime, timedelta
 #         try:
 #             payload = json.loads(raw)
 #         except Exception as e:
+#             frappe.log_error(
+#                 message=str(e),
+#                 title="MERIT_TRAC_JSON_ERROR"
+#             )
+
 #             frappe.local.response.http_status_code = 400
 #             return {
 #                 "status": 400,
@@ -311,52 +326,37 @@ from datetime import datetime, timedelta
 #                 "error": str(e)
 #             }
 
-#         print("FULL PAYLOAD:", payload)
+#         frappe.log_error(
+#             message=f"FULL PAYLOAD: {payload}",
+#             title="MERIT_TRAC_PAYLOAD"
+#         )
 
 #         # ------------------------------------------------------------
 #         # 3. ACCEPT ALL POSSIBLE FORMATS
-#         #
-#         # Supported:
-#         #
-#         # 1. {
-#         #      "data": [{...}]
-#         #    }
-#         #
-#         # 2. {
-#         #      "data": {...}
-#         #    }
-#         #
-#         # 3. [
-#         #      {...}
-#         #    ]
-#         #
-#         # 4. {
-#         #      ...
-#         #    }
 #         # ------------------------------------------------------------
 #         item = None
 
-#         # Case 1 + Case 2
 #         if isinstance(payload, dict) and "data" in payload:
 #             data_block = payload.get("data")
 
-#             # {"data": [{...}]}
 #             if isinstance(data_block, list) and len(data_block) > 0:
 #                 item = data_block[0]
 
-#             # {"data": {...}}
 #             elif isinstance(data_block, dict):
 #                 item = data_block
 
-#         # Case 3 → direct list
 #         elif isinstance(payload, list) and len(payload) > 0:
 #             item = payload[0]
 
-#         # Case 4 → direct dict
 #         elif isinstance(payload, dict):
 #             item = payload
 
 #         if not item or not isinstance(item, dict):
+#             frappe.log_error(
+#                 message=f"Invalid Payload: {payload}",
+#                 title="MERIT_TRAC_INVALID_PAYLOAD"
+#             )
+
 #             frappe.local.response.http_status_code = 400
 #             return {
 #                 "status": 400,
@@ -364,8 +364,10 @@ from datetime import datetime, timedelta
 #                 "message": "Invalid request payload format"
 #             }
 
-#         print("ITEM:", item)
-#         print("AVAILABLE KEYS:", list(item.keys()))
+#         frappe.log_error(
+#             message=f"ITEM: {item}",
+#             title="MERIT_TRAC_ITEM"
+#         )
 
 #         # ------------------------------------------------------------
 #         # 4. DATETIME FIXER
@@ -380,7 +382,7 @@ from datetime import datetime, timedelta
 #                 return None
 
 #         # ------------------------------------------------------------
-#         # 5. ACCEPT ALL candidateId KEY FORMATS
+#         # 5. GET candidate_id
 #         # ------------------------------------------------------------
 #         candidate_id = (
 #             item.get("candidateId")
@@ -392,7 +394,10 @@ from datetime import datetime, timedelta
 
 #         percentage = item.get("overAllPercentageScore")
 
-#         print("FINAL candidate_id:", candidate_id)
+#         frappe.log_error(
+#             message=f"Candidate ID: {candidate_id}",
+#             title="MERIT_TRAC_CANDIDATE_ID"
+#         )
 
 #         if not candidate_id:
 #             frappe.local.response.http_status_code = 422
@@ -409,11 +414,6 @@ from datetime import datetime, timedelta
 #             application_doctype = "Scholarship Recruitment Form"
 #             result_doctype = "MeritTrac Test Result"
 
-#             # update_application_status_and_send_mail(
-#             #     candidate_id,
-#             #     percentage
-#             # )
-
 #         elif "APFFRF" in candidate_id:
 #             application_doctype = "Field Registration Form"
 #             result_doctype = "Field MeritTrac Test Result"
@@ -426,9 +426,14 @@ from datetime import datetime, timedelta
 #                 "message": f"Unknown candidate ID prefix: {candidate_id}"
 #             }
 
-#         print("Candidate ID:", candidate_id)
-#         print("Application Doctype:", application_doctype)
-#         print("Result Doctype:", result_doctype)
+#         frappe.log_error(
+#             message=f"""
+# Candidate ID: {candidate_id}
+# Application Doctype: {application_doctype}
+# Result Doctype: {result_doctype}
+#             """,
+#             title="MERIT_TRAC_DOCTYPE"
+#         )
 
 #         # ------------------------------------------------------------
 #         # 7. INSERT RESULT DOC
@@ -449,18 +454,24 @@ from datetime import datetime, timedelta
 #             "created_at": fix_datetime(item.get("createdAt"))
 #         })
 
-#         print("Before Insert")
-#         print("Doctype:", result_doctype)
-#         print("Candidate ID:", candidate_id)
+#         frappe.log_error(
+#             message=f"""
+# Doctype: {result_doctype}
+# Candidate ID: {candidate_id}
+#             """,
+#             title="MERIT_TRAC_BEFORE_INSERT"
+#         )
 
 #         test_doc.insert(ignore_permissions=True)
 #         frappe.db.commit()
 
-#         print("After Insert")
-#         print("Inserted Document Name:", test_doc.name)
+#         frappe.log_error(
+#             message=f"Inserted Document Name: {test_doc.name}",
+#             title="MERIT_TRAC_AFTER_INSERT"
+#         )
 
 #         # ------------------------------------------------------------
-#         # 8. SUCCESS RESPONSE
+#         # SUCCESS RESPONSE
 #         # ------------------------------------------------------------
 #         frappe.local.response.http_status_code = 200
 
@@ -478,8 +489,8 @@ from datetime import datetime, timedelta
 
 #     except Exception as e:
 #         frappe.log_error(
-#             frappe.get_traceback(),
-#             "TEST_RESULT_API_ERROR"
+#             message=frappe.get_traceback(),
+#             title="TEST_RESULT_API_ERROR"
 #         )
 
 #         frappe.local.response.http_status_code = 500
@@ -489,6 +500,7 @@ from datetime import datetime, timedelta
 #             "http_status": 500,
 #             "message": str(e)
 #         }
+
 
 import json
 import frappe
@@ -601,7 +613,11 @@ def test_result_api():
             or item.get("candidateid")
         )
 
-        percentage = item.get("overAllPercentageScore")
+        percentage = (
+            item.get("overAllPercentageScore")
+            or item.get("overallPercentageScore")
+            or item.get("overall_percentage_score")
+        )
 
         frappe.log_error(
             message=f"Candidate ID: {candidate_id}",
@@ -617,13 +633,13 @@ def test_result_api():
             }
 
         # ------------------------------------------------------------
-        # 6. CHECK DOCTYPE
+        # 6. CHECK DOCTYPE (FIXED VERSION)
         # ------------------------------------------------------------
-        if "APSRF" in candidate_id:
+        if str(candidate_id).startswith("APSRF"):
             application_doctype = "Scholarship Recruitment Form"
             result_doctype = "MeritTrac Test Result"
 
-        elif "APFFRF" in candidate_id:
+        elif str(candidate_id).startswith("APFFRF"):
             application_doctype = "Field Registration Form"
             result_doctype = "Field MeritTrac Test Result"
 
@@ -650,7 +666,7 @@ Result Doctype: {result_doctype}
         test_doc = frappe.get_doc({
             "doctype": result_doctype,
             "applicant_id": candidate_id,
-            "score_percentile": item.get("overAllPercentageScore"),
+            "score_percentile": percentage,
             "attempt_id": item.get("attemptId"),
             "assessment_id": item.get("assessmentId"),
             "attempt_status": item.get("attempt_status"),
@@ -665,6 +681,7 @@ Result Doctype: {result_doctype}
 
         frappe.log_error(
             message=f"""
+Before Insert
 Doctype: {result_doctype}
 Candidate ID: {candidate_id}
             """,
@@ -710,8 +727,7 @@ Candidate ID: {candidate_id}
             "message": str(e)
         }
 
-
-
+@frappe.whitelist(allow_guest=True)
 def update_application_status_and_send_mail(candidate_id, percentage):
     try:
         frappe.log_error(
