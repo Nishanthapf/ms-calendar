@@ -504,23 +504,38 @@ def create_interview_event(event_title,
     # Ensure absolute URL so Outlook doesn't treat it as a relative path
     if feedback_url and not feedback_url.startswith("http"):
         feedback_url = "https://" + feedback_url
+
+    # Build demo feedback URL separately when checkbox is checked
+    demo_feedback_url = ""
+    if _demo_checked:
+        from urllib.parse import quote as _quote
+        demo_feedback_url = (
+            "https://careers.frappe.cloud/demo-lesson-observation-feedback-form-feed-back-form/new"
+            f"?app_id={_quote(str(application_id or ''), safe='')}"
+            f"&applicant_name={_quote(str(Applicants_name or ''), safe='')}"
+        )
     demo_feedback_html = ""
 
-    if feedback_url:
-        from urllib.parse import unquote as _unquote
-        _feedback_display = _unquote(feedback_url)   # human-readable for display
-        feedback_html_block = (
-            f'<p><b>Feedback Form Link:</b><br>'
-            f'<a href="{feedback_url}" target="_blank" '
+    from urllib.parse import unquote as _unquote
+
+    def _link_block(url, label):
+        display = _unquote(url)
+        return (
+            f'<p><b>{label}:</b><br>'
+            f'<a href="{url}" target="_blank" '
             f'style="display:inline-block;margin-top:6px;padding:8px 18px;'
             f'background-color:#1d4ed8;color:#ffffff;text-decoration:none;'
             f'border-radius:4px;font-weight:600;font-size:13px;">'
             f'Click Here to Open Feedback Form</a><br>'
             f'<span style="font-size:11px;color:#6b7280;word-break:break-all;">'
-            f'Or copy this link: {_feedback_display}</span></p>'
+            f'Or copy this link: {display}</span></p>'
         )
-    else:
-        feedback_html_block = ""
+
+    feedback_html_block = ""
+    if feedback_url:
+        feedback_html_block += _link_block(feedback_url, "Feedback Form Link")
+    if demo_feedback_url:
+        feedback_html_block += _link_block(demo_feedback_url, "Demo Lesson Observation Feedback Form")
 
     if display_mode.lower() == "face-to-face" and (address or Map_location):
         venue_row = ""
@@ -728,21 +743,20 @@ def create_interview_event(event_title,
                 raise Exception("srf not loaded, skipping auto-attach")
 
             # Determine which fields to attach based on round
+            # resume_upload is NOT auto-attached — resume comes from candidate_cv__resume on the form
             # application_forms is always attached for all rounds
             if is_recruiter_round:
-                auto_attach_fields = ["resume_upload", "application_forms"]
+                auto_attach_fields = ["application_forms"]
             elif is_round1:
-                auto_attach_fields = ["resume_upload", "recruiter_round_feedback_form", "application_forms"]
+                auto_attach_fields = ["recruiter_round_feedback_form", "application_forms"]
             elif is_round2:
                 auto_attach_fields = [
-                    "resume_upload",
                     "recruiter_round_feedback_form",
                     "round_one_feedback_from",
                     "application_forms"
                 ]
             elif is_round3:
                 auto_attach_fields = [
-                    "resume_upload",
                     "recruiter_round_feedback_form",
                     "round_one_feedback_from",
                     "round_two_feedback_form",
@@ -750,6 +764,9 @@ def create_interview_event(event_title,
                 ]
             else:
                 auto_attach_fields = ["application_forms"]
+
+            # Track filenames already added (from manual attachments) to avoid duplicates
+            _already_added = {fname.lower() for fname, _ in final_files}
 
             for field in auto_attach_fields:
                 web_path = getattr(srf, field, None)
@@ -790,8 +807,14 @@ def create_interview_event(event_title,
                     )
                     continue
 
+                # Skip if this file was already added (avoid duplicate resume)
+                if f_name.lower() in _already_added:
+                    continue
+
                 with open(f_path, "rb") as fh:
-                    final_files.append((f_name, base64.b64encode(fh.read()).decode()))
+                    file_bytes = fh.read()
+                final_files.append((f_name, base64.b64encode(file_bytes).decode()))
+                _already_added.add(f_name.lower())
 
         except Exception as e:
             frappe.log_error(
@@ -802,7 +825,7 @@ def create_interview_event(event_title,
     # ----------------------------------------
     # ROUND 1 TEMPLATES
     # ----------------------------------------
-    # ── INTERVIEWER TEMPLATE (Round 1) ──────────────────────────────────────
+    # ── INTERVIEWER TEMPLATE (Round 1) 
     round1_interviewer_template = """
 <p>Hi,</p>
 
