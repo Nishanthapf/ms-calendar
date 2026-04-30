@@ -1,4 +1,4 @@
-import frappe, requests
+import frappe, requests, io, base64
 from datetime import timedelta
 from frappe.utils import get_datetime
 
@@ -395,7 +395,8 @@ def create_interview_event(event_title,
                            demo_feed_back_form=0,
                            doc_name=None,
                            ms_event_id=None,
-                           feedback_form_link=None):
+                           feedback_form_link=None,
+                           demo_feedback_interviewers_email=None):
 
     import re
     import ast
@@ -436,7 +437,15 @@ def create_interview_event(event_title,
     round_label        = str(Interview_round).strip()
     display_mode       = (interview_mode or "").strip() or ("Online" if is_online == 1 else "Face-to-Face")
     mode_is_online     = (is_online == 1) or (display_mode.lower() == "online")
-    candidate_phone    = candidate_phone or ""
+    candidate_phone    = (candidate_phone or "").strip()
+    # Fallback: fetch phone from application record if not passed from JS
+    if not candidate_phone and application_id:
+        try:
+            candidate_phone = frappe.db.get_value(
+                "Field Registration Form1", application_id, "phone_number"
+            ) or ""
+        except Exception:
+            candidate_phone = ""
 
     # Phone number HTML for interviewer email (Phone mode only)
     phone_info_html = (
@@ -519,81 +528,43 @@ def create_interview_event(event_title,
     from urllib.parse import unquote as _unquote
 
     def _link_block(url, label):
-        display = _unquote(url)
         return (
             f'<p><b>{label}:</b><br>'
             f'<a href="{url}" target="_blank" '
             f'style="display:inline-block;margin-top:6px;padding:8px 18px;'
             f'background-color:#1d4ed8;color:#ffffff;text-decoration:none;'
             f'border-radius:4px;font-weight:600;font-size:13px;">'
-            f'Click Here to Open Feedback Form</a><br>'
-            f'<span style="font-size:11px;color:#6b7280;word-break:break-all;">'
-            f'Or copy this link: {display}</span></p>'
+            f'Click Here to Open Feedback Form</a></p>'
         )
 
     feedback_html_block = ""
     if feedback_url:
         feedback_html_block += _link_block(feedback_url, "Feedback Form Link")
-    if demo_feedback_url:
-        feedback_html_block += _link_block(demo_feedback_url, "Demo Lesson Observation Feedback Form")
+    # demo_feedback_url is sent ONLY to the demo feedback interviewer via a
+    # separate email — it is intentionally excluded from feedback_html_block
+    # so that regular interviewers do not receive the demo link.
 
     if display_mode.lower() == "face-to-face" and (address or Map_location):
-        venue_row = ""
-        if address:
-            venue_row = f"""
-            <tr>
-              <td style="padding:4px 0 2px;">
-                <span style="font-size:12px;font-weight:600;color:#64748b;
-                             text-transform:uppercase;letter-spacing:0.05em;">
-                  Venue Address
-                </span>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:0 0 10px;">
-                <span style="font-size:14px;color:#1e293b;font-weight:500;">
-                  {address}
-                </span>
-              </td>
-            </tr>"""
-
-        map_btn = ""
+        from urllib.parse import quote as _qmap
         if Map_location:
-            map_btn = f"""
-            <tr>
-              <td style="padding:4px 0 0;">
-                <a href="{Map_location}" target="_blank"
-                   style="display:inline-block;padding:8px 18px;
-                          background:#1d4ed8;color:#ffffff;
-                          font-size:13px;font-weight:600;
-                          text-decoration:none;border-radius:6px;">
-                  &#128205; View on Google Maps
-                </a>
-              </td>
-            </tr>"""
-
-        map_html = f"""
-<table width="100%" cellpadding="0" cellspacing="0"
-       style="margin:16px 0;border-collapse:collapse;">
-  <tr>
-    <td style="background:#eff6ff;border-left:4px solid #1d4ed8;
-               border-radius:0 8px 8px 0;padding:14px 18px;">
-      <table width="100%" cellpadding="0" cellspacing="0">
-        <tr>
-          <td style="padding:0 0 8px;">
-            <span style="font-size:15px;font-weight:700;color:#1e3a8a;">
-              &#x1F3E2;&nbsp; Interview Venue
-            </span>
-          </td>
-        </tr>
-        {venue_row}
-        {map_btn}
-      </table>
-    </td>
-  </tr>
-</table>"""
+            _final_map_url = Map_location
+        elif address:
+            _final_map_url = "https://www.google.com/maps/search/?api=1&query=" + _qmap(address)
+        else:
+            _final_map_url = ""
+        if _final_map_url:
+            _map_link = (
+                f' <a href="{_final_map_url}" target="_blank">View on Google Maps</a>'
+            )
+        else:
+            _map_link = ""
+        # Candidate email: address + clickable map link
+        map_html = f"<p><b>Location:</b> {address}{_map_link}</p>"
+        # Interviewer email: address only, no map link
+        interviewer_location_html = f"<p><b>Location:</b> {address}</p>" if address else ""
     else:
         map_html = ""
+        interviewer_location_html = ""
 
     note_to_candidate_html = (
         f'<p><strong>For your information:</strong> {commands_to_candidate}</p>'
@@ -834,7 +805,6 @@ Please find the details of the interview below.</p>
 
 <p>
 <b>Date:</b> {interview_date_str}<br>
-(UTC+05:30) Asia/Calcutta<br>
 <b>Interview Mode:</b> {display_mode}<br>
 {meeting_info}
 {phone_info}
@@ -862,18 +832,30 @@ Please find the details of the interview below.</p>
 as per the details below:</p>
 
 <p><b>Interview Details</b></p>
-<ul>
-  <li><b>Interview Round:</b> {round_label}</li>
-  <li><b>Date:</b> {interview_date_str}</li>
-  <li><b>Time:</b> {interview_time_str} – {end_time_str} (UTC+05:30) Asia/Calcutta</li>
-  <li><b>Mode:</b> {display_mode}</li>
-</ul>
+<table style="border-collapse:collapse; width:auto;">
+  <tr>
+    <td style="padding:4px 12px 4px 0;"><b>Interview Round:</b></td>
+    <td style="padding:4px 0;">{round_label}</td>
+  </tr>
+  <tr>
+    <td style="padding:4px 12px 4px 0;"><b>Date:</b></td>
+    <td style="padding:4px 0;">{interview_date_str}</td>
+  </tr>
+  <tr>
+    <td style="padding:4px 12px 4px 0;"><b>Time:</b></td>
+    <td style="padding:4px 0;">{interview_time_str}</td>
+  </tr>
+  <tr>
+    <td style="padding:4px 12px 4px 0;"><b>Interview Mode:</b></td>
+    <td style="padding:4px 0;">{display_mode}</td>
+  </tr>
+</table>
 
 {candidate_mode_html}
 
-{Note_to_candidate_html}
-
 {candidate_advice_html}
+
+{Note_to_candidate_html}
 
 <p>We wish you all the best for your interview.</p>
 
@@ -890,7 +872,6 @@ Please find the details of the interview below.</p>
 
 <p>
 <b>Date:</b> {interview_date_str}<br>
-(UTC+05:30) Asia/Calcutta<br>
 <b>Interview Mode:</b> {display_mode}<br>
 {meeting_info}
 {phone_info}
@@ -911,7 +892,7 @@ Please find the details of the interview below.</p>
     # INITIAL EVENT BODY
     # ----------------------------------------
     if is_round1:
-        calendar_subject = f"Discussion With - {Applicants_name} ({Applicants_Role} Role) | {candidate_phone} | {display_mode}, Azim Premji Scholarship"
+        calendar_subject = f"Interview Scheduled – {round_label} for {Applicants_Role} {candidate_phone}"
         # initial_body = round1_interviewer_template.format(
         #     Interviewer_name=InterviewersName,
         #     when_str=when_str,
@@ -920,6 +901,7 @@ Please find the details of the interview below.</p>
         # )
         initial_body = round1_interviewer_template.format(
             Applicants_name=Applicants_name,
+
             Applicants_Role=Applicants_Role,
             interview_date_str=interview_date_str,
             display_mode=display_mode,
@@ -929,14 +911,14 @@ Please find the details of the interview below.</p>
             InterviewersName=InterviewersName,
             meeting_info="",
             phone_info=phone_info_html,
-            Map_html=map_html,
+            Map_html=interviewer_location_html,
             feedback_html_block=feedback_html_block,
             demo_feedback_html=demo_feedback_html,
             Note_to_interviewer_html=note_to_interviewer_html
         )
 
     else:
-        calendar_subject = f"Discussion With - {Applicants_name} ({Applicants_Role} Role) | {candidate_phone} | {display_mode}, Azim Premji Scholarship"
+        calendar_subject = f"Interview Scheduled – {round_label} for {Applicants_Role} {candidate_phone}"
         initial_body = round2_interviewer_template.format(
             Applicants_name=Applicants_name,
             Applicants_Role=Applicants_Role,
@@ -951,7 +933,7 @@ Please find the details of the interview below.</p>
             InterviewersName=InterviewersName,
             meeting_info="",
             phone_info=phone_info_html,
-            Map_html=map_html,
+            Map_html=interviewer_location_html,
             feedback_html_block=feedback_html_block,
             Note_to_interviewer_html=note_to_interviewer_html
         )
@@ -1092,16 +1074,38 @@ Please find the details of the interview below.</p>
 
     if _mode_lower == "online":
         candidate_advice_html = (
-            "<p>Please ensure you are available on time. "
-            "If you are attending online, be in a suitable environment "
+            "<p>If you are attending online, be in a suitable environment "
             "(quiet, well-lit, with minimal disturbance) for the interview "
             "and kindly test your internet connection, webcam, and microphone "
             "in advance.</p>"
         )
-    else:
+    elif _mode_lower == "phone":
         candidate_advice_html = (
-            "<p>Please ensure you are available on time and carry a copy of "
-            "your resume and any relevant documents.</p>"
+            "<p>Please ensure you are available on your registered phone number at the scheduled time.</p>"
+        )
+    else:  # Face-to-Face
+        candidate_advice_html = (
+            "<p>Kindly reach the venue <b>15 minutes prior</b> to the assigned time.</p>"
+            "<p><b>Travel Reimbursement Policy for Outstation Candidates:</b><br>"
+            "(Candidates need to book tickets on their own and then submit the tickets/bills "
+            "at the venue for reimbursement to their Bank Account)</p>"
+            "<ul>"
+            "<li>Up to a distance of 300 Km – Sleeper Class Train or Deluxe Non-AC Bus</li>"
+            "<li>Above 300 Km – 3rd AC Train or AC Sleeper Coach Bus</li>"
+            "<li>All local conveyance expenses will be reimbursed on actuals. "
+            "Supporting bills are required. Public transport or sharing autos to be preferred.</li>"
+            "</ul>"
+            "<p>All reimbursements will be done through bank transfer. "
+            "Candidates will be required to provide the following details:<br>"
+            "<em>(Please bring a photocopy of your Bank Passbook first page bearing the following)</em></p>"
+            "<ul>"
+            "<li>Beneficiary Name</li>"
+            "<li>Beneficiary Account Number</li>"
+            "<li>Beneficiary Bank Name</li>"
+            "<li>Bank IFSC Code</li>"
+            "</ul>"
+            "<p><em>Please note that all travel reimbursement will be made as per the "
+            "organisation's policy. Bills are compulsory for claim settlements.</em></p>"
         )
 
     # ----------------------------------------
@@ -1119,7 +1123,7 @@ Please find the details of the interview below.</p>
             InterviewersName=InterviewersName,
             meeting_info=meeting_html,
             phone_info=phone_info_html,
-            Map_html=map_html,
+            Map_html=interviewer_location_html,
             feedback_html_block=feedback_html_block,
             demo_feedback_html=demo_feedback_html,
             Note_to_interviewer_html=note_to_interviewer_html
@@ -1140,7 +1144,7 @@ Please find the details of the interview below.</p>
             InterviewersName=InterviewersName,
             meeting_info=meeting_html,
             phone_info=phone_info_html,
-            Map_html=map_html,
+            Map_html=interviewer_location_html,
             feedback_html_block=feedback_html_block,
             Note_to_interviewer_html=note_to_interviewer_html
         )
@@ -1191,9 +1195,88 @@ Please find the details of the interview below.</p>
             raise
 
     # ----------------------------------------
+    # EMAIL TO DEMO FEEDBACK INTERVIEWER(S)
+    # ----------------------------------------
+    # Only sent when demo checkbox is checked AND demo_feedback_interviewers_email is filled.
+    # These interviewers receive ONLY the demo feedback form link (not the regular feedback).
+    _demo_interviewer_list = [
+        e.strip()
+        for e in (demo_feedback_interviewers_email or "").split(",")
+        if e.strip()
+    ]
+
+    # Debug log — always written so we can verify the values
+    frappe.log_error(
+        f"Demo email debug | demo_feed_back_form={demo_feed_back_form!r} | "
+        f"_demo_checked={_demo_checked} | demo_feedback_url={demo_feedback_url!r} | "
+        f"demo_feedback_interviewers_email={demo_feedback_interviewers_email!r} | "
+        f"_demo_interviewer_list={_demo_interviewer_list}",
+        "Demo Feedback Debug"
+    )
+
+    if demo_feedback_url and _demo_interviewer_list:
+        _demo_subject = (
+            f"Interview Scheduled \u2013 {round_label} for {Applicants_Role} {candidate_phone}"
+        )
+        _demo_link_html = _link_block(demo_feedback_url, "Demo Lesson Observation Feedback Form")
+        _demo_body = (
+            "<p>Hi,</p>"
+            f"<p>An interview with <b>{Applicants_name}</b> for the role of "
+            f"<b>{Applicants_Role}</b> has been confirmed. "
+            "Please find the details below.</p>"
+            "<p>"
+            f"<b>Date:</b> {interview_date_str}<br>"
+            f"<b>Interview Mode:</b> {display_mode}<br>"
+            f"<b>Interview Round:</b> {round_label}<br>"
+            f"<b>Interview Time:</b> {interview_time_str} \u2013 {end_time_str}<br>"
+            "</p>"
+            + interviewer_location_html
+            + _demo_link_html
+            + "<p>Regards,<br>People Function</p>"
+        )
+        _demo_send_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/sendMail"
+        for _dmail in _demo_interviewer_list:
+            _dpayload = {
+                "message": {
+                    "subject": _demo_subject,
+                    "body": {"contentType": "HTML", "content": _demo_body},
+                    "toRecipients": [{"emailAddress": {"address": _dmail}}],
+                    "ccRecipients": [{"emailAddress": {"address": Organizer_email}}]
+                },
+                "saveToSentItems": True
+            }
+            _demo_graph_sent = False
+            try:
+                _dr = requests.post(_demo_send_url, headers=headers, json=_dpayload, timeout=30)
+                _dr.raise_for_status()
+                _demo_graph_sent = True
+            except Exception as _derr:
+                frappe.log_error(
+                    f"Demo feedback Graph email failed for {_dmail}: {_derr}",
+                    "Demo Feedback Email Error"
+                )
+
+            # Fallback: frappe.sendmail if Graph API failed
+            if not _demo_graph_sent:
+                try:
+                    frappe.sendmail(
+                        recipients=[_dmail],
+                        cc=[Organizer_email],
+                        sender=Organizer_email,
+                        subject=_demo_subject,
+                        message=_demo_body,
+                        delayed=False
+                    )
+                except Exception as _dfallback_err:
+                    frappe.log_error(
+                        f"Demo feedback fallback email also failed for {_dmail}: {_dfallback_err}",
+                        "Demo Feedback Email Fallback Error"
+                    )
+
+    # ----------------------------------------
     # EMAIL TO CANDIDATE
     # ----------------------------------------
-    candidate_email_subject = f"Interview Scheduled \u2013 {round_label} for {Applicants_Role} | {candidate_phone} | {display_mode}"
+    candidate_email_subject = f"Interview Scheduled \u2013 {round_label} for {Applicants_Role} {candidate_phone}"
 
     candidate_email_body = candidate_template.format(
         Applicants_name=Applicants_name,
@@ -1208,38 +1291,68 @@ Please find the details of the interview below.</p>
         candidate_advice_html=candidate_advice_html,
     )
 
-    # Send candidate email — always use frappe.sendmail (reliable fallback)
+    # Send candidate email — primary: Graph API (organizer email); fallback: frappe.sendmail
     if not interviewee_email:
         frappe.log_error(
             f"Candidate email (attendees) is empty for doc {doc_name}. Skipping candidate email.",
             "Candidate Email Skipped"
         )
     else:
-        try:
-            send_mail_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/sendMail"
-            mail_payload = {
-                "message": {
-                    "subject": candidate_email_subject,
-                    "body": {"contentType": "HTML", "content": candidate_email_body},
-                    "toRecipients": [
-                        {"emailAddress": {"address": interviewee_email}}
-                    ],
-                    "ccRecipients": [
-                        {"emailAddress": {"address": Organizer_email}}
-                    ]
-                },
-                "saveToSentItems": True
-            }
-            send_res = requests.post(send_mail_url, headers=headers, json=mail_payload)
-            send_res.raise_for_status()
-        except Exception as mail_err:
+        send_mail_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/sendMail"
+        mail_payload = {
+            "message": {
+                "subject": candidate_email_subject,
+                "body": {"contentType": "HTML", "content": candidate_email_body},
+                "toRecipients": [
+                    {"emailAddress": {"address": interviewee_email}}
+                ],
+                "ccRecipients": [
+                    {"emailAddress": {"address": Organizer_email}}
+                ]
+            },
+            "saveToSentItems": True
+        }
+        graph_sent = False
+        for attempt in range(2):
             try:
-                frappe.log_error(title="sendMail fallback", message=str(mail_err))
-            except Exception:
-                pass
+                send_res = requests.post(send_mail_url, headers=headers, json=mail_payload, timeout=30)
+                send_res.raise_for_status()
+                graph_sent = True
+                break
+            except Exception as mail_err:
+                if attempt == 0:
+                    # Refresh token and retry once
+                    try:
+                        retry_token = requests.post(
+                            f"https://login.microsoftonline.com/{creds.tenant_id.strip()}/oauth2/v2.0/token",
+                            data={
+                                "grant_type": "client_credentials",
+                                "client_id": creds.client_id.strip(),
+                                "client_secret": creds.get_password("client_secret"),
+                                "scope": "https://graph.microsoft.com/.default"
+                            }
+                        ).json().get("access_token", "")
+                        if retry_token:
+                            headers["Authorization"] = f"Bearer {retry_token}"
+                    except Exception:
+                        pass
+                else:
+                    try:
+                        resp_body = send_res.text if hasattr(send_res, "text") else str(mail_err)
+                    except Exception:
+                        resp_body = str(mail_err)
+                    frappe.log_error(
+                        f"Graph sendMail failed (both attempts): {resp_body}",
+                        "Candidate Email Graph Error"
+                    )
+
+        # Fallback: frappe.sendmail if Graph API failed
+        if not graph_sent:
             try:
                 frappe.sendmail(
-                    recipients=[interviewee_email, Organizer_email],
+                    recipients=[interviewee_email],
+                    cc=[Organizer_email],
+                    sender=Organizer_email,
                     subject=candidate_email_subject,
                     message=candidate_email_body,
                     delayed=False
@@ -1247,7 +1360,7 @@ Please find the details of the interview below.</p>
             except Exception as fallback_err:
                 frappe.log_error(
                     f"Candidate email fallback also failed: {fallback_err}",
-                    "Candidate Email Error"
+                    "Candidate Email Fallback Error"
                 )
 
     # Save event_id to the document so reschedule can cancel it later
@@ -1269,3 +1382,68 @@ Please find the details of the interview below.</p>
         "passcode":   join_passcode,
         "is_online":  is_online
     }
+
+
+# ── Assessment Upload Template Download ──────────────────────────────────────
+@frappe.whitelist()
+def download_assessment_template():
+    """Generate and return the Assessment Upload Template Excel file as base64."""
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    from openpyxl.worksheet.protection import SheetProtection
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Assessment Upload"
+
+    headers = [
+        "Candidate ID", "Job code", "Job Title", "Name", "Email ID",
+        "Contact Number", "Applied Subject", "Test Subject",
+        "Secured Score", "Total Score", "Percentage", "Remarks"
+    ]
+    ws.append(headers)
+
+    # Style header row
+    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    thin_border = Border(
+        left=Side(style="thin"), right=Side(style="thin"),
+        top=Side(style="thin"),  bottom=Side(style="thin")
+    )
+    for cell in ws[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = thin_border
+        # Lock header cells
+        cell.protection = openpyxl.styles.Protection(locked=True)
+
+    ws.row_dimensions[1].height = 30
+
+    # Unlock all data rows (row 2 onwards) so users can type in them
+    unlocked = openpyxl.styles.Protection(locked=False)
+    for row in ws.iter_rows(min_row=2, max_row=1000, min_col=1, max_col=len(headers)):
+        for cell in row:
+            cell.protection = unlocked
+
+    # Column widths
+    col_widths = [15, 12, 20, 20, 25, 18, 20, 20, 15, 12, 12, 20]
+    for i, width in enumerate(col_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = width
+
+    # Protect the sheet — header locked, data rows editable, no password needed
+    ws.protection = SheetProtection(
+        sheet=True,
+        selectLockedCells=False,
+        selectUnlockedCells=False,
+        password=""
+    )
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    file_b64 = base64.b64encode(output.read()).decode("utf-8")
+    return {"file_content": file_b64, "filename": "Assessment Upload Template.xlsx"}

@@ -149,40 +149,216 @@ frappe.pages['field-dashboard'].on_page_load = function (wrapper) {
 		}
 	});
 
-	// 3. Populate State dropdown from State doctype
-	frappe.call({
-		method: 'frappe.client.get_list',
-		args: { doctype: 'State', fields: ['name'], limit_page_length: 0 },
-		callback: function (r) {
-			(r.message || []).sort(function (a, b) { return a.name.localeCompare(b.name); })
-				.forEach(function (d) {
-					$stateFilter.append(`<option value="${d.name}">${d.name}</option>`);
-				});
-		}
+	// 3. Populate State dropdown — hardcoded list
+	[
+		"Andaman Nicobar Islands","Andhra Pradesh","Arunachal Pradesh","Assam","Bihar",
+		"Chandigarh","Chhattisgarh","Dadra and Nagar Haveli","Delhi","Goa","Gujarat",
+		"Haryana","Himachal Pradesh","Jammu and Kashmir","Jharkhand","Karnataka","Kerala",
+		"Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha",
+		"Puducherry","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura",
+		"Uttar Pradesh","Uttarakhand","West Bengal","Other"
+	].forEach(function (s) {
+		$stateFilter.append(`<option value="${s}">${s}</option>`);
 	});
 
-	// 4. Populate District dropdown from District doctype
-	frappe.call({
-		method: 'frappe.client.get_list',
-		args: { doctype: 'District', fields: ['name'], limit_page_length: 0 },
-		callback: function (r) {
-			(r.message || []).sort(function (a, b) { return a.name.localeCompare(b.name); })
-				.forEach(function (d) {
-					$distFilter.append(`<option value="${d.name}">${d.name}</option>`);
-				});
-		}
+	// 4. Populate District dropdown — hardcoded list
+	[
+		"Adilabad","Agar Malwa","Agra","Ahmadabad","Ahmadnagar","Aizawl","Ajmer","Akola",
+		"Alappuzha","Aligarh","Alipurduar","Alirajpur","Allahabad","Almora","Alwar","Ambala",
+		"Ambedkar Nagar","Amethi","Amravati","Amreli","Amritsar","Amroha","Anand","Anantapur",
+		"Anjaw","Anugul","Anuppur","Araria","Ariyalur","Arvalli","Arwal","Ashoknagar","Auraiya",
+		"Aurangabad","Azamgarh","Bagalkot","Bageshwar","Baghpat","Bahraich","Baksa","Balaghat",
+		"Balangir","Baleshwar","Ballia","Balod","Baloda Bazar","Balrampur","Banas Kantha","Banda",
+		"Bangalore","Bangalore Rural","Banka","Bankura","Banswara","Bara Banki","Baran",
+		"Barddhaman","Bareilly","Bargarh","Barmer","Barnala","Barpeta","Barwani","Bastar",
+		"Basti","Bathinda","Baudh","Begusarai","Belgaum","Bellary","Bemetara","Betul","Bhadohi",
+		"Bhadradri","Bhadrak","Bhagalpur","Bhandara","Bharatpur","Bharuch","Bhavnagar",
+		"Bhilwara","Bhind","Bhiwani","Bhojpur","Bhopal","Bid","Bidar","Bijapur","Bijnor",
+		"Bikaner","Bilaspur","Birbhum","Bishnupur","Biswanath","Bokaro","Bongaigaon","Botad",
+		"Budaun","Bulandshahr","Buldana","Bundi","Burhanpur","Buxar","Cachar","Central",
+		"Chamarajanagar","Chamba","Chamoli","Champawat","Champhai","Chandauli","Chandel",
+		"Chandrapur","Changlang","Charaideo","Charkhi Dadri","Chatra","Chennai","Chhatarpur",
+		"Chhindwara","Chhota Udepur","Chikkaballapura","Chikmagalur","Chirang","Chitradurga",
+		"Chitrakoot","Chittaurgarh","Chittoor","Churachandpur","Churu","Coimbatore","Cuddalore",
+		"Cuttack","Dakshin Bastar Dantewada","Dakshin Dinajpur","Dakshina Kannada","Damoh",
+		"Darbhanga","Darjiling","Darrang","Datia","Dausa","Davanagere","Debagarh","Dehradun",
+		"Deoghar","Deoria","Devbhoomi Dwarka","Dewas","Dhalai","Dhamtari","Dhanbad","Dhar",
+		"Dharmapuri","Dharwad","Dhaulpur","Dhemaji","Dhenkanal","Dhubri","Dhule","Dibang Valley",
+		"Dibrugarh","Dima Hasao","Dimapur","Dindigul","Dindori","Dohad","Dumka","Dungarpur",
+		"Durg","East","East District","East Garo Hills","East Godavari","East Jaintia Hills",
+		"East Kameng","East Khasi Hills","East Siang","Ernakulam","Erode","Etah","Etawah",
+		"Faizabad","Faridabad","Faridkot","Farrukhabad","Fatehabad","Fatehgarh Sahib","Fatehpur",
+		"Fazilka","Firozabad","Firozpur","Gadag","Gadchiroli","Gajapati","Gandhinagar","Ganjam",
+		"Garhwa","Garhwal","Gariyaband","Gautam Buddha Nagar","Gaya","Ghaziabad","Ghazipur",
+		"Gir Somnath","Giridih","Goalpara","Godda","Golaghat","Gomati","Gonda","Gondiya",
+		"Gopalganj","Gorakhpur","Gulbarga","Gumla","Guna","Guntur","Gurdaspur","Gurgaon",
+		"Gwalior","Hailakandi","Hamirpur","Hanumangarh","Haora","Hapur","Harda","Hardoi",
+		"Hardwar","Hassan","Hathras","Haveri","Hazaribagh","Hingoli","Hisar","Hojai",
+		"Hoshangabad","Hoshiarpur","Hugli","Hyderabad","Idukki","Imphal East","Imphal West",
+		"Indore","Jabalpur","Jagatsinghapur","Jagtial","Jaintia Hills","Jaipur","Jaisalmer",
+		"Jajapur","Jalandhar","Jalaun","Jalgaon","Jalna","Jalor","Jalpaiguri","Jamnagar",
+		"Jamtara","Jamui","Jangaon","Janjgir - Champa","Jashpur","Jaunpur","Jayashankar",
+		"Jehanabad","Jhabua","Jhajjar","Jhalawar","Jhansi","Jhargram","Jharsuguda","Jhunjhunun",
+		"Jind","Jiribam","Jodhpur","Jogulamba","Jorhat","Junagadh","Kabeerdham","Kachchh",
+		"Kaimur (Bhabua)","Kaithal","Kakching","Kalahandi","Kalimpong","Kamareddy","Kamjong",
+		"Kamrup","Kamrup Metropolitan","Kancheepuram","Kandhamal","Kangpokpi","Kangra",
+		"Kannauj","Kanniyakumari","Kannur","Kanpur Dehat","Kanpur Nagar","Kapurthala","Karauli",
+		"Karbi Anglong","Karimganj","Karimnagar","Karnal","Karur","Kasaragod","Kasganj",
+		"Katihar","Katni","Kaushambi","Kendrapara","Kendujhar","Khagaria","Khammam",
+		"Khandwa (East Nimar)","Khargone (West Nimar)","Kheda","Kheri","Khordha","Khowai",
+		"Khunti","Kinnaur","Kiphire","Kishanganj","Koch Bihar","Kodagu","Kodarma","Kohima",
+		"Kokrajhar","Kolar","Kolasib","Kolhapur","Kolkata","Kollam","Komaram Bheem","Kondagaon",
+		"Koppal","Koraput","Korba","Koriya","Kota","Kottayam","Kozhikode","Kra Daadi","Krishna",
+		"Krishnagiri","Kullu","Kurnool","Kurukshetra","Kurung Kumey","Kushinagar","Lahul Spiti",
+		"Lakhimpur","Lakhisarai","Lalitpur","Latehar","Latur","Lawngtlai","Lohardaga","Lohit",
+		"Longleng","Lower Dibang Valley","Lower Siang","Lower Subansiri","Lucknow","Ludhiana",
+		"Lunglei","Madhepura","Madhubani","Madurai","Mahabubabad","Mahasamund","Mahbubnagar",
+		"Mahendragarh","Mahesana","Mahisagar","Mahoba","Mahrajganj","Mainpuri","Majuli",
+		"Malappuram","Maldah","Malkangiri","Mamit","Mancherial","Mandi","Mandla","Mandsaur",
+		"Mandya","Mansa","Mathura","Mau","Mayurbhanj","Medak","Medchal-Malkajgiri","Meerut",
+		"Mewat","Mirzapur","Moga","Mokokchung","Mon","Moradabad","Morbi","Morena","Morigaon",
+		"Muktsar","Mumbai","Mumbai Suburban","Mungeli","Munger","Murshidabad","Muzaffarnagar",
+		"Muzaffarpur","Mysore","Nabarangapur","Nadia","Nagaon","Nagapattinam","Nagarkurnool",
+		"Nagaur","Nagpur","Nainital","Nalanda","Nalbari","Nalgonda","Namakkal","Namsai",
+		"Nanded","Nandurbar","Narayanpur","Narmada","Narsimhapur","Nashik","Navsari","Nawada",
+		"Nayagarh","Neemuch","New Delhi","Nirmal","Nizamabad","Noney","North","North  District",
+		"North East","North Garo Hills","North Goa","North Tripura","North Twenty Four Parganas",
+		"North West","Nuapada","Osmanabad","Pakur","Palakkad","Palamu","Palghar","Pali","Palwal",
+		"Panch Mahals","Panchkula","Panipat","Panna","Papum Pare","Parbhani","Paschim Bardhaman",
+		"Paschim Medinipur","Pashchim Champaran","Pashchimi Singhbhum","Patan","Pathanamthitta",
+		"Pathankot","Patiala","Patna","Peddapalli","Perambalur","Peren","Phek","Pherzawl",
+		"Pilibhit","Pithoragarh","Porbandar","Prakasam","Pratapgarh","Pudukkottai","Pune",
+		"Purba Bardhaman","Purba Medinipur","Purbi Champaran","Purbi Singhbhum","Puri","Purnia",
+		"Puruliya","Rae Bareli","Raichur","Raigarh","Raipur","Raisen","Rajanna","Rajgarh",
+		"Rajkot","Rajnandgaon","Rajsamand","Ramanagara","Ramanathapuram","Ramgarh","Rampur",
+		"Ranchi","Rangareddy","Ratlam","Ratnagiri","Rayagada","Rewa","Rewari","Ribhoi","Rohtak",
+		"Rohtas","Rudraprayag","Rupnagar","Sagar","Saharanpur","Saharsa","Sahibganj",
+		"Sahibzada Ajit Singh Nagar","Saiha","Salem","Samastipur","Sambalpur","Sambhal",
+		"Sangareddy","Sangli","Sangrur","Sant Kabir Nagar","Saraikela-Kharsawan","Saran",
+		"Satara","Satna","Sawai Madhopur","Sehore","Senapati","Seoni","Sepahijala","Serchhip",
+		"Shahdara","Shahdol","Shahid Bhagat Singh Nagar","Shahjahanpur","Shajapur","Shamli",
+		"Sheikhpura","Sheohar","Sheopur","Shimla","Shimoga","Shivpuri","Shrawasti","Siang",
+		"Siddharthnagar","Siddipet","Sidhi","Sikar","Simdega","Sindhudurg","Singrauli",
+		"Sirmaur","Sirohi","Sirsa","Sitamarhi","Sitapur","Sivaganga","Sivasagar","Siwan",
+		"Solan","Solapur","Sonbhadra","Sonipat","Sonitpur","South","South District",
+		"South East Delhi","South Garo Hills","South Goa","South Salamara-Mankachar",
+		"South Tripura","South Twenty Four Parganas","South West","South West Garo Hills",
+		"South West Khasi Hills","Sri Ganganagar","Sri Potti Sriramulu Nellore","Srikakulam",
+		"Subarnapur","Sukma","Sultanpur","Sundargarh","Supaul","Surajpur","Surat","Surendranagar",
+		"Surguja","Suryapet","Tamenglong","Tapi","Tarn Taran","Tawang","Tehri Garhwal",
+		"Tengnoupal","Thane","Thanjavur","The Dangs","The Nilgiris","Theni","Thiruvallur",
+		"Thiruvananthapuram","Thiruvarur","Thoothukkudi","Thoubal","Thrissur","Tikamgarh",
+		"Tinsukia","Tirap","Tiruchirappalli","Tirunelveli","Tiruppur","Tiruvannamalai","Tonk",
+		"Tuensang","Tumkur","Udaipur","Udalguri","Udham Singh Nagar","Udupi","Ujjain","Ukhrul",
+		"Umaria","Una","Unakoti","Unnao","Upper Siang","Upper Subansiri","Uttar Bastar Kanker",
+		"Uttar Dinajpur","Uttara Kannada","Uttarkashi","Vadodara","Vaishali","Valsad","Varanasi",
+		"Vellore","Vidisha","Vikarabad","Viluppuram","Virudhunagar","Visakhapatnam","Vizianagaram",
+		"Wanaparthy","Warangal Rural","Warangal Urban","Wardha","Washim","Wayanad","West",
+		"West District","West Garo Hills","West Godavari","West Jaintia Hills","West Kameng",
+		"West Karbi Anglong","West Khasi Hills","West Siang","West Tripura","Wokha","Y.S.R.",
+		"Yadadri","Yadgir","Yamunanagar","Yavatmal","Zunheboto"
+	].forEach(function (d) {
+		$distFilter.append(`<option value="${d}">${d}</option>`);
 	});
 
-	// 5. Populate Location dropdown from Field Location doctype
-	frappe.call({
-		method: 'frappe.client.get_list',
-		args: { doctype: 'Field Location', fields: ['name'], limit_page_length: 0 },
-		callback: function (r) {
-			(r.message || []).sort(function (a, b) { return a.name.localeCompare(b.name); })
-				.forEach(function (d) {
-					$locFilter.append(`<option value="${d.name}">${d.name}</option>`);
-				});
-		}
+	// 5. Populate Location dropdown — hardcoded full district list
+	[
+		"Adilabad","Agar Malwa","Agra","Ahmadabad","Ahmadnagar","Aizawl","Ajmer","Akola",
+		"Alappuzha","Aligarh","Alipurduar","Alirajpur","Allahabad","Almora","Alwar","Ambala",
+		"Ambedkar Nagar","Amethi","Amravati","Amreli","Amritsar","Amroha","Anand","Anantapur",
+		"Anjaw","Anugul","Anuppur","Araria","Ariyalur","Arvalli","Arwal","Ashoknagar","Auraiya",
+		"Aurangabad","Azamgarh","Bagalkot","Bageshwar","Baghpat","Bahraich","Baksa","Balaghat",
+		"Balangir","Baleshwar","Ballia","Balod","Baloda Bazar","Balrampur","Banas Kantha","Banda",
+		"Bangalore","Bangalore Rural","Banka","Bankura","Banswara","Bara Banki","Baran",
+		"Barddhaman","Bareilly","Bargarh","Barmer","Barnala","Barpeta","Barwani","Bastar",
+		"Basti","Bathinda","Baudh","Begusarai","Belgaum","Bellary","Bemetara","Betul","Bhadohi",
+		"Bhadradri","Bhadrak","Bhagalpur","Bhandara","Bharatpur","Bharuch","Bhavnagar",
+		"Bhilwara","Bhind","Bhiwani","Bhojpur","Bhopal","Bid","Bidar","Bijapur","Bijnor",
+		"Bikaner","Bilaspur","Birbhum","Bishnupur","Biswanath","Bokaro","Bongaigaon","Botad",
+		"Budaun","Bulandshahr","Buldana","Bundi","Burhanpur","Buxar","Cachar","Central",
+		"Chamarajanagar","Chamba","Chamoli","Champawat","Champhai","Chandauli","Chandel",
+		"Chandrapur","Changlang","Charaideo","Charkhi Dadri","Chatra","Chennai","Chhatarpur",
+		"Chhindwara","Chhota Udepur","Chikkaballapura","Chikmagalur","Chirang","Chitradurga",
+		"Chitrakoot","Chittaurgarh","Chittoor","Churachandpur","Churu","Coimbatore","Cuddalore",
+		"Cuttack","Dakshin Bastar Dantewada","Dakshin Dinajpur","Dakshina Kannada","Damoh",
+		"Darbhanga","Darjiling","Darrang","Datia","Dausa","Davanagere","Debagarh","Dehradun",
+		"Deoghar","Deoria","Devbhoomi Dwarka","Dewas","Dhalai","Dhamtari","Dhanbad","Dhar",
+		"Dharmapuri","Dharwad","Dhaulpur","Dhemaji","Dhenkanal","Dhubri","Dhule","Dibang Valley",
+		"Dibrugarh","Dima Hasao","Dimapur","Dindigul","Dindori","Dohad","Dumka","Dungarpur",
+		"Durg","East","East District","East Garo Hills","East Godavari","East Jaintia Hills",
+		"East Kameng","East Khasi Hills","East Siang","Ernakulam","Erode","Etah","Etawah",
+		"Faizabad","Faridabad","Faridkot","Farrukhabad","Fatehabad","Fatehgarh Sahib","Fatehpur",
+		"Fazilka","Firozabad","Firozpur","Gadag","Gadchiroli","Gajapati","Gandhinagar","Ganjam",
+		"Garhwa","Garhwal","Gariyaband","Gautam Buddha Nagar","Gaya","Ghaziabad","Ghazipur",
+		"Gir Somnath","Giridih","Goalpara","Godda","Golaghat","Gomati","Gonda","Gondiya",
+		"Gopalganj","Gorakhpur","Gulbarga","Gumla","Guna","Guntur","Gurdaspur","Gurgaon",
+		"Gwalior","Hailakandi","Hamirpur","Hanumangarh","Haora","Hapur","Harda","Hardoi",
+		"Hardwar","Hassan","Hathras","Haveri","Hazaribagh","Hingoli","Hisar","Hojai",
+		"Hoshangabad","Hoshiarpur","Hugli","Hyderabad","Idukki","Imphal East","Imphal West",
+		"Indore","Jabalpur","Jagatsinghapur","Jagtial","Jaintia Hills","Jaipur","Jaisalmer",
+		"Jajapur","Jalandhar","Jalaun","Jalgaon","Jalna","Jalor","Jalpaiguri","Jamnagar",
+		"Jamtara","Jamui","Jangaon","Janjgir - Champa","Jashpur","Jaunpur","Jayashankar",
+		"Jehanabad","Jhabua","Jhajjar","Jhalawar","Jhansi","Jhargram","Jharsuguda","Jhunjhunun",
+		"Jind","Jiribam","Jodhpur","Jogulamba","Jorhat","Junagadh","Kabeerdham","Kachchh",
+		"Kaimur (Bhabua)","Kaithal","Kakching","Kalahandi","Kalimpong","Kamareddy","Kamjong",
+		"Kamrup","Kamrup Metropolitan","Kancheepuram","Kandhamal","Kangpokpi","Kangra",
+		"Kannauj","Kanniyakumari","Kannur","Kanpur Dehat","Kanpur Nagar","Kapurthala","Karauli",
+		"Karbi Anglong","Karimganj","Karimnagar","Karnal","Karur","Kasaragod","Kasganj",
+		"Katihar","Katni","Kaushambi","Kendrapara","Kendujhar","Khagaria","Khammam",
+		"Khandwa (East Nimar)","Khargone (West Nimar)","Kheda","Kheri","Khordha","Khowai",
+		"Khunti","Kinnaur","Kiphire","Kishanganj","Koch Bihar","Kodagu","Kodarma","Kohima",
+		"Kokrajhar","Kolar","Kolasib","Kolhapur","Kolkata","Kollam","Komaram Bheem","Kondagaon",
+		"Koppal","Koraput","Korba","Koriya","Kota","Kottayam","Kozhikode","Kra Daadi","Krishna",
+		"Krishnagiri","Kullu","Kurnool","Kurukshetra","Kurung Kumey","Kushinagar","Lahul Spiti",
+		"Lakhimpur","Lakhisarai","Lalitpur","Latehar","Latur","Lawngtlai","Lohardaga","Lohit",
+		"Longleng","Lower Dibang Valley","Lower Siang","Lower Subansiri","Lucknow","Ludhiana",
+		"Lunglei","Madhepura","Madhubani","Madurai","Mahabubabad","Mahasamund","Mahbubnagar",
+		"Mahendragarh","Mahesana","Mahisagar","Mahoba","Mahrajganj","Mainpuri","Majuli",
+		"Malappuram","Maldah","Malkangiri","Mamit","Mancherial","Mandi","Mandla","Mandsaur",
+		"Mandya","Mansa","Mathura","Mau","Mayurbhanj","Medak","Medchal-Malkajgiri","Meerut",
+		"Mewat","Mirzapur","Moga","Mokokchung","Mon","Moradabad","Morbi","Morena","Morigaon",
+		"Muktsar","Mumbai","Mumbai Suburban","Mungeli","Munger","Murshidabad","Muzaffarnagar",
+		"Muzaffarpur","Mysore","Nabarangapur","Nadia","Nagaon","Nagapattinam","Nagarkurnool",
+		"Nagaur","Nagpur","Nainital","Nalanda","Nalbari","Nalgonda","Namakkal","Namsai",
+		"Nanded","Nandurbar","Narayanpur","Narmada","Narsimhapur","Nashik","Navsari","Nawada",
+		"Nayagarh","Neemuch","New Delhi","Nirmal","Nizamabad","Noney","North","North  District",
+		"North East","North Garo Hills","North Goa","North Tripura","North Twenty Four Parganas",
+		"North West","Nuapada","Osmanabad","Pakur","Palakkad","Palamu","Palghar","Pali","Palwal",
+		"Panch Mahals","Panchkula","Panipat","Panna","Papum Pare","Parbhani","Paschim Bardhaman",
+		"Paschim Medinipur","Pashchim Champaran","Pashchimi Singhbhum","Patan","Pathanamthitta",
+		"Pathankot","Patiala","Patna","Peddapalli","Perambalur","Peren","Phek","Pherzawl",
+		"Pilibhit","Pithoragarh","Porbandar","Prakasam","Pratapgarh","Pudukkottai","Pune",
+		"Purba Bardhaman","Purba Medinipur","Purbi Champaran","Purbi Singhbhum","Puri","Purnia",
+		"Puruliya","Rae Bareli","Raichur","Raigarh","Raipur","Raisen","Rajanna","Rajgarh",
+		"Rajkot","Rajnandgaon","Rajsamand","Ramanagara","Ramanathapuram","Ramgarh","Rampur",
+		"Ranchi","Rangareddy","Ratlam","Ratnagiri","Rayagada","Rewa","Rewari","Ribhoi","Rohtak",
+		"Rohtas","Rudraprayag","Rupnagar","Sagar","Saharanpur","Saharsa","Sahibganj",
+		"Sahibzada Ajit Singh Nagar","Saiha","Salem","Samastipur","Sambalpur","Sambhal",
+		"Sangareddy","Sangli","Sangrur","Sant Kabir Nagar","Saraikela-Kharsawan","Saran",
+		"Satara","Satna","Sawai Madhopur","Sehore","Senapati","Seoni","Sepahijala","Serchhip",
+		"Shahdara","Shahdol","Shahid Bhagat Singh Nagar","Shahjahanpur","Shajapur","Shamli",
+		"Sheikhpura","Sheohar","Sheopur","Shimla","Shimoga","Shivpuri","Shrawasti","Siang",
+		"Siddharthnagar","Siddipet","Sidhi","Sikar","Simdega","Sindhudurg","Singrauli",
+		"Sirmaur","Sirohi","Sirsa","Sitamarhi","Sitapur","Sivaganga","Sivasagar","Siwan",
+		"Solan","Solapur","Sonbhadra","Sonipat","Sonitpur","South","South District",
+		"South East Delhi","South Garo Hills","South Goa","South Salamara-Mankachar",
+		"South Tripura","South Twenty Four Parganas","South West","South West Garo Hills",
+		"South West Khasi Hills","Sri Ganganagar","Sri Potti Sriramulu Nellore","Srikakulam",
+		"Subarnapur","Sukma","Sultanpur","Sundargarh","Supaul","Surajpur","Surat","Surendranagar",
+		"Surguja","Suryapet","Tamenglong","Tapi","Tarn Taran","Tawang","Tehri Garhwal",
+		"Tengnoupal","Thane","Thanjavur","The Dangs","The Nilgiris","Theni","Thiruvallur",
+		"Thiruvananthapuram","Thiruvarur","Thoothukkudi","Thoubal","Thrissur","Tikamgarh",
+		"Tinsukia","Tirap","Tiruchirappalli","Tirunelveli","Tiruppur","Tiruvannamalai","Tonk",
+		"Tuensang","Tumkur","Udaipur","Udalguri","Udham Singh Nagar","Udupi","Ujjain","Ukhrul",
+		"Umaria","Una","Unakoti","Unnao","Upper Siang","Upper Subansiri","Uttar Bastar Kanker",
+		"Uttar Dinajpur","Uttara Kannada","Uttarkashi","Vadodara","Vaishali","Valsad","Varanasi",
+		"Vellore","Vidisha","Vikarabad","Viluppuram","Virudhunagar","Visakhapatnam","Vizianagaram",
+		"Wanaparthy","Warangal Rural","Warangal Urban","Wardha","Washim","Wayanad","West",
+		"West District","West Garo Hills","West Godavari","West Jaintia Hills","West Kameng",
+		"West Karbi Anglong","West Khasi Hills","West Siang","West Tripura","Wokha","Y.S.R.",
+		"Yadadri","Yadgir","Yamunanagar","Yavatmal","Zunheboto"
+	].forEach(function (loc) {
+		$locFilter.append(`<option value="${loc}">${loc}</option>`);
 	});
 
 	// Load counts based on active filters
@@ -201,7 +377,7 @@ frappe.pages['field-dashboard'].on_page_load = function (wrapper) {
 		frappe.call({
 			method: 'frappe.client.get_list',
 			args: {
-				doctype: 'Field Registration Form',
+				doctype: 'Field Registration Form1',
 				fields: ['name', 'application_status'],
 				filters: filters,
 				limit_page_length: 0,
