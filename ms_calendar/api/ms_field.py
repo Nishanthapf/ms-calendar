@@ -16,15 +16,19 @@ _FEEDBACK_URL_MAP = {
     ("resource person", "round one"):       "https://careers.frappe.cloud/educational-capacity-interview---feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
     ("resource person", "round two"):       "https://careers.frappe.cloud/leader-final-feedback/new?app_id={app_id}&applicant_name={applicant_name}",
 
-    # Livelihood Resource Person
-    ("livelihood resource person", "recruiter round"): "https://careers.frappe.cloud/livelihoods-recruiter-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
-    ("livelihood resource person", "round one"):       "https://careers.frappe.cloud/livelihoods-functional-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
-    ("livelihood resource person", "round two"):       "https://careers.frappe.cloud/livelihoods-final-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+}
 
-    # Health Resource Person
-    ("health resource person", "recruiter round"): "https://careers.frappe.cloud/health-recruitment-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
-    ("health resource person", "round one"):       "https://careers.frappe.cloud/health-functional-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
-    ("health resource person", "round two"):       "https://careers.frappe.cloud/health-final-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+# ── Feedback URL lookup by DEPARTMENT (fallback when role-based match not found) ──
+_FEEDBACK_URL_BY_DEPT_MAP = {
+    # Livelihood department
+    ("livelihood", "recruiter round"): "https://careers.frappe.cloud/livelihoods-recruiter-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    ("livelihood", "round one"):       "https://careers.frappe.cloud/livelihoods-functional-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    ("livelihood", "round two"):       "https://careers.frappe.cloud/livelihoods-final-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+
+    # Health department
+    ("health", "recruiter round"): "https://careers.frappe.cloud/health-recruitment-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    ("health", "round one"):       "https://careers.frappe.cloud/health-functional-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    ("health", "round two"):       "https://careers.frappe.cloud/health-final-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
 }
 
 @frappe.whitelist()
@@ -494,6 +498,17 @@ def create_interview_event(event_title,
         _role_key  = str(Applicants_Role or "").strip().lower()
         _round_key = str(Interview_round or "").strip().lower()
         _template  = _FEEDBACK_URL_MAP.get((_role_key, _round_key), "")
+
+        # Fallback: lookup by department when no role-based match found
+        if not _template:
+            try:
+                _dept_raw = frappe.db.get_value("Field Role", Applicants_Role, "role") or ""
+            except Exception:
+                _dept_raw = ""
+            _dept_key = _dept_raw.strip().lower()
+            if _dept_key:
+                _template = _FEEDBACK_URL_BY_DEPT_MAP.get((_dept_key, _round_key), "")
+
         if _template:
             feedback_url = _template.format(
                 app_id=_quote(str(application_id or ""), safe=""),
@@ -1204,15 +1219,6 @@ Please find the details of the interview below.</p>
         for e in (demo_feedback_interviewers_email or "").split(",")
         if e.strip()
     ]
-
-    # Debug log — always written so we can verify the values
-    frappe.log_error(
-        f"Demo email debug | demo_feed_back_form={demo_feed_back_form!r} | "
-        f"_demo_checked={_demo_checked} | demo_feedback_url={demo_feedback_url!r} | "
-        f"demo_feedback_interviewers_email={demo_feedback_interviewers_email!r} | "
-        f"_demo_interviewer_list={_demo_interviewer_list}",
-        "Demo Feedback Debug"
-    )
 
     if demo_feedback_url and _demo_interviewer_list:
         _demo_subject = (
