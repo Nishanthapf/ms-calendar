@@ -682,7 +682,7 @@ def create_interview_event(event_title,
         attendees.append({"emailAddress": {"address": i}, "type": "required"})
     # ----------------------------------------
     # ATTACHMENTS (PUBLIC + PRIVATE FIXED)
-    # ----------------------------------------
+    # --------------------------------------
     final_files = []
 
     if attachment_paths:
