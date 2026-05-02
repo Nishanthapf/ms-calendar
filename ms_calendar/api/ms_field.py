@@ -455,7 +455,7 @@ def create_interview_event(event_title,
     if not candidate_phone and application_id:
         try:
             candidate_phone = frappe.db.get_value(
-                "Field Registration Form1", application_id, "phone_number"
+                "Field Registration Form", application_id, "phone_number"
             ) or ""
         except Exception:
             candidate_phone = ""
@@ -507,13 +507,23 @@ def create_interview_event(event_title,
         _round_key = str(Interview_round or "").strip().lower()
         _template  = ""
 
-        # Resolve department: use value passed from JS, else fetch from Field Role table
+        # Resolve department — try all available sources in order
         _dept = str(department or "").strip().lower()
+        # Fallback 1: fetch department from Field Role table using role name
         if not _dept and Applicants_Role:
             try:
                 _dept = (frappe.db.get_value("Field Role", Applicants_Role, "role") or "").strip().lower()
             except Exception:
                 _dept = ""
+        # Fallback 2: infer department from role name keywords
+        if not _dept and Applicants_Role:
+            _rn = Applicants_Role.strip().lower()
+            if "health" in _rn:
+                _dept = "health"
+            elif "livelihood" in _rn or "cluster" in _rn or "market research" in _rn:
+                _dept = "livelihood"
+            elif "school teacher" in _rn or "resource person" in _rn:
+                _dept = "education"
 
         if _dept == "livelihood":
             _template = _LIVELIHOOD_FEEDBACK_URLS.get(_round_key, "")
