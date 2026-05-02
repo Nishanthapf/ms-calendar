@@ -2,33 +2,30 @@ import frappe, requests, io, base64
 from datetime import timedelta
 from frappe.utils import get_datetime
 
-# ── Feedback URL lookup: (role lowercase, round lowercase) → URL ─────────────
-_FEEDBACK_URL_MAP = {
-    # URLs include {app_id} and {applicant_name} — filled at runtime
-    # School Teacher
+# ── Feedback URL lookup by department ────────────────────────────────────────
+# Education: keyed by (role_lower, round_lower)
+_EDUCATION_FEEDBACK_URLS = {
     ("school teacher", "recruiter round"): "https://careers.frappe.cloud/recruiter-assessment-form-feed-back-form/new?app_id={app_id}&applicant_name={applicant_name}",
     ("school teacher", "round one"):       "https://careers.frappe.cloud/school-teacher-functional-feedback/new?app_id={app_id}&applicant_name={applicant_name}",
     ("school teacher", "round two"):       "https://careers.frappe.cloud/demo-lesson-observation-feedback-form-feed-back-form/new?app_id={app_id}&applicant_name={applicant_name}",
     ("school teacher", "round three"):     "https://careers.frappe.cloud/leader-final-feedback/new?app_id={app_id}&applicant_name={applicant_name}",
-
-    # Resource Person
     ("resource person", "recruiter round"): "https://careers.frappe.cloud/recruiter-assessment-form-feed-back-form/new?app_id={app_id}&applicant_name={applicant_name}",
     ("resource person", "round one"):       "https://careers.frappe.cloud/educational-capacity-interview---feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
     ("resource person", "round two"):       "https://careers.frappe.cloud/leader-final-feedback/new?app_id={app_id}&applicant_name={applicant_name}",
-
 }
 
-# ── Feedback URL lookup by DEPARTMENT (fallback when role-based match not found) ──
-_FEEDBACK_URL_BY_DEPT_MAP = {
-    # Livelihood department
-    ("livelihood", "recruiter round"): "https://careers.frappe.cloud/livelihoods-recruiter-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
-    ("livelihood", "round one"):       "https://careers.frappe.cloud/livelihoods-functional-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
-    ("livelihood", "round two"):       "https://careers.frappe.cloud/livelihoods-final-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+# Livelihood: keyed by round_lower
+_LIVELIHOOD_FEEDBACK_URLS = {
+    "recruiter round": "https://careers.frappe.cloud/livelihoods-recruiter-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    "round one":       "https://careers.frappe.cloud/livelihoods-functional-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    "round two":       "https://careers.frappe.cloud/livelihoods-final-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+}
 
-    # Health department
-    ("health", "recruiter round"): "https://careers.frappe.cloud/health-recruitment-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
-    ("health", "round one"):       "https://careers.frappe.cloud/health-functional-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
-    ("health", "round two"):       "https://careers.frappe.cloud/health-final-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+# Health: keyed by round_lower
+_HEALTH_FEEDBACK_URLS = {
+    "recruiter round": "https://careers.frappe.cloud/health-recruitment-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    "round one":       "https://careers.frappe.cloud/health-functional-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    "round two":       "https://careers.frappe.cloud/health-final-round-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
 }
 
 @frappe.whitelist()
@@ -504,24 +501,27 @@ def create_interview_event(event_title,
         except Exception:
             pass
 
-    # Priority 3: auto-resolve from role + round lookup table
+    # Priority 3: auto-resolve feedback URL by department
     if not feedback_url:
         from urllib.parse import quote as _quote
-        _role_key  = str(Applicants_Role or "").strip().lower()
         _round_key = str(Interview_round or "").strip().lower()
-        _template  = _FEEDBACK_URL_MAP.get((_role_key, _round_key), "")
+        _template  = ""
 
-        # Fallback: lookup by department when no role-based match found
-        if not _template:
-            # Use department passed from JS; if missing, fetch from Field Role table
-            _dept_key = str(department or "").strip().lower()
-            if not _dept_key and Applicants_Role:
-                try:
-                    _dept_key = (frappe.db.get_value("Field Role", Applicants_Role, "role") or "").strip().lower()
-                except Exception:
-                    _dept_key = ""
-            if _dept_key:
-                _template = _FEEDBACK_URL_BY_DEPT_MAP.get((_dept_key, _round_key), "")
+        # Resolve department: use value passed from JS, else fetch from Field Role table
+        _dept = str(department or "").strip().lower()
+        if not _dept and Applicants_Role:
+            try:
+                _dept = (frappe.db.get_value("Field Role", Applicants_Role, "role") or "").strip().lower()
+            except Exception:
+                _dept = ""
+
+        if _dept == "livelihood":
+            _template = _LIVELIHOOD_FEEDBACK_URLS.get(_round_key, "")
+        elif _dept == "health":
+            _template = _HEALTH_FEEDBACK_URLS.get(_round_key, "")
+        elif _dept == "education":
+            _role_key = str(Applicants_Role or "").strip().lower()
+            _template = _EDUCATION_FEEDBACK_URLS.get((_role_key, _round_key), "")
 
         if _template:
             feedback_url = _template.format(
