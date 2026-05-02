@@ -400,7 +400,8 @@ def create_interview_event(event_title,
                            doc_name=None,
                            ms_event_id=None,
                            feedback_form_link=None,
-                           demo_feedback_interviewers_email=None):
+                           demo_feedback_interviewers_email=None,
+                           department=None):
 
     import re
     import ast
@@ -419,7 +420,7 @@ def create_interview_event(event_title,
     except:
         is_online = 0
 
-    Organizer_email  = Organizer_email.strip()
+    Organizer_email  = (Organizer_email or "").strip()
     Applicants_name  = (Applicants_name or "").strip()
     Applicants_Role  = (Applicants_Role or "").strip()
     InterviewersName = (InterviewersName or "").strip()
@@ -427,6 +428,17 @@ def create_interview_event(event_title,
     address = address or ""
     commands_to_candidate = commands_to_candidate or ""
     commands_to_interviewer = commands_to_interviewer or ""
+
+    # Validate organizer email — must be a Microsoft 365 account (not Gmail/Yahoo etc.)
+    _invalid_domains = ("gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "live.com")
+    if not Organizer_email:
+        frappe.throw("Organizer Email is required. Please select a valid organizer before saving.")
+    if any(Organizer_email.lower().endswith("@" + d) for d in _invalid_domains):
+        frappe.throw(
+            f"Organizer Email <b>{Organizer_email}</b> is a personal email account. "
+            "Please use an official Azim Premji Foundation email (e.g., name@azimpremjifoundation.org). "
+            "Gmail and other personal accounts cannot be used to create Microsoft calendar events."
+        )
 
     # ----------------------------------------
     # Friendly date
@@ -501,11 +513,13 @@ def create_interview_event(event_title,
 
         # Fallback: lookup by department when no role-based match found
         if not _template:
-            try:
-                _dept_raw = frappe.db.get_value("Field Role", Applicants_Role, "role") or ""
-            except Exception:
-                _dept_raw = ""
-            _dept_key = _dept_raw.strip().lower()
+            # Use department passed from JS; if missing, fetch from Field Role table
+            _dept_key = str(department or "").strip().lower()
+            if not _dept_key and Applicants_Role:
+                try:
+                    _dept_key = (frappe.db.get_value("Field Role", Applicants_Role, "role") or "").strip().lower()
+                except Exception:
+                    _dept_key = ""
             if _dept_key:
                 _template = _FEEDBACK_URL_BY_DEPT_MAP.get((_dept_key, _round_key), "")
 
@@ -561,12 +575,11 @@ def create_interview_event(event_title,
 
     if display_mode.lower() == "face-to-face" and (address or Map_location):
         from urllib.parse import quote as _qmap
-        if Map_location:
-            _final_map_url = Map_location
-        elif address:
-            _final_map_url = "https://www.google.com/maps/search/?api=1&query=" + _qmap(address)
+        _search_text = (Map_location or address).strip()
+        if _search_text.startswith("http"):
+            _final_map_url = _search_text
         else:
-            _final_map_url = ""
+            _final_map_url = "https://www.google.com/maps/search/?api=1&query=" + _qmap(_search_text)
         if _final_map_url:
             _map_link = (
                 f' <a href="{_final_map_url}" target="_blank">View on Google Maps</a>'
