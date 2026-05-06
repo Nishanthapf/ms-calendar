@@ -8,10 +8,14 @@ _EDUCATION_FEEDBACK_URLS = {
     ("school teacher", "recruiter round"): "https://careers.frappe.cloud/recruiter-assessment-form-feed-back-form/new?app_id={app_id}&applicant_name={applicant_name}",
     ("school teacher", "round one"):       "https://careers.frappe.cloud/school-teacher-functional-feedback/new?app_id={app_id}&applicant_name={applicant_name}",
     ("school teacher", "round two"):       "https://careers.frappe.cloud/demo-lesson-observation-feedback-form-feed-back-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    
     ("school teacher", "round three"):     "https://careers.frappe.cloud/leader-final-feedback/new?app_id={app_id}&applicant_name={applicant_name}",
     ("resource person", "recruiter round"): "https://careers.frappe.cloud/recruiter-assessment-form-feed-back-form/new?app_id={app_id}&applicant_name={applicant_name}",
     ("resource person", "round one"):       "https://careers.frappe.cloud/educational-capacity-interview---feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
     ("resource person", "round two"):       "https://careers.frappe.cloud/leader-final-feedback/new?app_id={app_id}&applicant_name={applicant_name}",
+
+    ("associate resource person", "round two"):   "https://careers.frappe.cloud/campus-associate-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    ("associate resource person", "round three"): "https://careers.frappe.cloud/campus-associate-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
 }
 
 # Livelihood: keyed by round_lower
@@ -475,6 +479,10 @@ def create_interview_event(event_title,
     is_round1          = ("round one"  in round_raw or round_raw == "round 1")
     is_round2          = ("round two"  in round_raw or round_raw == "round 2")
     is_round3          = ("round three" in round_raw or round_raw == "round 3")
+    # Calibration Process + Associate Resource Person → interviewer-only email
+    is_calibration_arp = (
+        "calibration" in round_raw and "associate resource person" in role_raw
+    )
 
     # ── Feedback URL: resolved entirely in backend (3-level priority) ──────────
     # Priority 1 → value passed from JS (or manually filled on the form)
@@ -482,6 +490,22 @@ def create_interview_event(event_title,
     # Priority 3 → role + round lookup from _FEEDBACK_URL_MAP
     _demo_checked = str(demo_feed_back_form or "0").strip().lower() in ("1", "true", "yes")
     feedback_url  = str(feedback_form_link or "").strip()
+
+    # If JS failed to extract demo_feedback_interviewers_email (Table MultiSelect mapping issue),
+    # fetch it directly from the saved Field Interview Schedule document in the database.
+    if _demo_checked and not str(demo_feedback_interviewers_email or "").strip() and doc_name:
+        try:
+            _fis_doc = frappe.get_doc("Field Interview Schedule", doc_name)
+            _db_emails = [
+                row.interviewer_email
+                for row in (_fis_doc.demo_feedback_interviewers_email or [])
+                if row.interviewer_email
+            ]
+            if _db_emails:
+                demo_feedback_interviewers_email = ",".join(_db_emails)
+        except Exception as _dbe:
+            frappe.log_error(f"DB fallback for demo_feedback_interviewers_email failed: {_dbe}",
+                             "Demo Feedback DB Fallback")
 
     # Priority 2: read from Field Interview Schedule record in DB
     if not feedback_url and application_id:
@@ -505,25 +529,38 @@ def create_interview_event(event_title,
     if not feedback_url:
         from urllib.parse import quote as _quote
         _round_key = str(Interview_round or "").strip().lower()
+        # Normalize numeric aliases so dict keys always use written-out form
+        _rk_alias = {"round 1": "round one", "round1": "round one",
+                     "round 2": "round two", "round2": "round two",
+                     "round 3": "round three", "round3": "round three",
+                     "round 4": "round four", "round4": "round four"}
+        _round_key = _rk_alias.get(_round_key, _round_key)
         _template  = ""
 
-        # Resolve department — try all available sources in order
+        # Resolve department to one of the known keys: education / livelihood / health
+        _known_depts = ("education", "livelihood", "health")
         _dept = str(department or "").strip().lower()
-        # Fallback 1: fetch department from Field Role table using role name
-        if not _dept and Applicants_Role:
-            try:
-                _dept = (frappe.db.get_value("Field Role", Applicants_Role, "role") or "").strip().lower()
-            except Exception:
-                _dept = ""
-        # Fallback 2: infer department from role name keywords
-        if not _dept and Applicants_Role:
-            _rn = Applicants_Role.strip().lower()
+
+        # If the passed department value is not a recognised key (e.g. the form
+        # stores the role name like "Associate Resource Person" in the dept field),
+        # infer department from the role name keywords first, then try the DB.
+        if _dept not in _known_depts:
+            _rn = str(Applicants_Role or "").strip().lower()
             if "health" in _rn:
                 _dept = "health"
             elif "livelihood" in _rn or "cluster" in _rn or "market research" in _rn:
                 _dept = "livelihood"
             elif "school teacher" in _rn or "resource person" in _rn:
                 _dept = "education"
+
+        # Last resort: DB lookup on Field Role table
+        if _dept not in _known_depts and Applicants_Role:
+            try:
+                _db_dept = (frappe.db.get_value("Field Role", Applicants_Role, "role") or "").strip().lower()
+                if _db_dept in _known_depts:
+                    _dept = _db_dept
+            except Exception:
+                pass
 
         if _dept == "livelihood":
             _template = _LIVELIHOOD_FEEDBACK_URLS.get(_round_key, "")
@@ -754,7 +791,18 @@ def create_interview_event(event_title,
             # Determine which fields to attach based on round
             # resume_upload is NOT auto-attached — resume comes from candidate_cv__resume on the form
             # application_forms is always attached for all rounds
-            if is_recruiter_round:
+            if is_calibration_arp:
+                # Attach every PDF field that is filled on the applicant's record.
+                # Empty fields are silently skipped by the loop below.
+                auto_attach_fields = [
+                    "resume_upload",
+                    "application_forms",
+                    "recruiter_round_feedback_form",
+                    "round_one_feedback_from",
+                    "round_two_feedback_form",
+                    "round_tree_feedback_form",
+                ]
+            elif is_recruiter_round:
                 auto_attach_fields = ["application_forms"]
             elif is_round1:
                 auto_attach_fields = ["recruiter_round_feedback_form", "application_forms"]
@@ -926,10 +974,64 @@ Please find the details of the interview below.</p>
 <p>Regards,<br>People Function</p>
 """
 
+    # ── INTERVIEWER TEMPLATE (Calibration Process – Associate Resource Person) ──
+    calibration_arp_interviewer_template = """
+<p>Hi,</p>
+
+<p>Please find below the details for the upcoming <b>Calibration Process</b> interview
+with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
+
+<p>
+<b>Date:</b> {interview_date_str}<br>
+<b>Interview Mode:</b> {display_mode}<br>
+{meeting_info}
+{phone_info}
+<b>Interview Round:</b> {round_label}<br>
+<b>Interview Time:</b> {interview_time_str} – {end_time_str}<br>
+<b>Interviewers:</b> {InterviewersName}
+</p>
+
+{Map_html}
+
+<p>Kindly find the following documents attached for your reference
+(whichever are available for this candidate):</p>
+<ul>
+  <li>Resume</li>
+  <li>Application Form</li>
+  <li>Recruiter Round Feedback Form</li>
+  <li>Round One Feedback Form</li>
+  <li>Round Two Feedback Form</li>
+  <li>Round Three Feedback Form</li>
+</ul>
+
+{feedback_html_block}
+
+{Note_to_interviewer_html}
+
+<p>Regards,<br>People Function</p>
+"""
+
     # ----------------------------------------
     # INITIAL EVENT BODY
     # ----------------------------------------
-    if is_round1:
+    if is_calibration_arp:
+        calendar_subject = f"Calibration Process – {Applicants_Role} | {candidate_phone}"
+        initial_body = calibration_arp_interviewer_template.format(
+            Applicants_name=Applicants_name,
+            Applicants_Role=Applicants_Role,
+            interview_date_str=interview_date_str,
+            display_mode=display_mode,
+            round_label=round_label,
+            interview_time_str=interview_time_str,
+            end_time_str=end_time_str,
+            InterviewersName=InterviewersName,
+            meeting_info="",
+            phone_info=phone_info_html,
+            Map_html=interviewer_location_html,
+            feedback_html_block=feedback_html_block,
+            Note_to_interviewer_html=note_to_interviewer_html
+        )
+    elif is_round1:
         calendar_subject = f"Interview Scheduled – {round_label} for {Applicants_Role} {candidate_phone}"
         # initial_body = round1_interviewer_template.format(
         #     Interviewer_name=InterviewersName,
@@ -1112,14 +1214,16 @@ Please find the details of the interview below.</p>
 
     if _mode_lower == "online":
         candidate_advice_html = (
-            "<p>If you are attending online, be in a suitable environment "
-            "(quiet, well-lit, with minimal disturbance) for the interview "
-            "and kindly test your internet connection, webcam, and microphone "
-            "in advance.</p>"
+            "<p>For attending the interview through video conference on M S Teams, "
+            "please ensure you are in a suitable environment (quiet, well-lit, and with "
+            "minimal disturbance). Kindly test your internet connection, webcam, and "
+            "microphone in advance.</p>"
         )
     elif _mode_lower == "phone":
         candidate_advice_html = (
-            "<p>Please ensure you are available on your registered phone number at the scheduled time.</p>"
+            "<p>For attending the interview through phone, please ensure you are in a "
+            "suitable environment (quiet, and with minimal disturbance). "
+            "Be available for phone call</p>"
         )
     else:  # Face-to-Face
         candidate_advice_html = (
@@ -1128,28 +1232,47 @@ Please find the details of the interview below.</p>
             "(Candidates need to book tickets on their own and then submit the tickets/bills "
             "at the venue for reimbursement to their Bank Account)</p>"
             "<ul>"
-            "<li>Up to a distance of 300 Km – Sleeper Class Train or Deluxe Non-AC Bus</li>"
-            "<li>Above 300 Km – 3rd AC Train or AC Sleeper Coach Bus</li>"
+            "<li>Up to a distance of 300 Km – Sleeper Class Train or Deluxe Non – AC bus</li>"
+            "<li>Above 300 Km candidates – Candidate can travel by 3rd AC Train or AC Sleeper Coach Bus</li>"
             "<li>All local conveyance expenses will be reimbursed on actuals. "
             "Supporting bills are required. Public transport or sharing autos to be preferred.</li>"
             "</ul>"
             "<p>All reimbursements will be done through bank transfer. "
             "Candidates will be required to provide the following details:<br>"
-            "<em>(Please bring a photocopy of your Bank Passbook first page bearing the following)</em></p>"
+            "<em>(Please bring a Photocopy of your Bank Passbook First page bearing the following)</em></p>"
             "<ul>"
             "<li>Beneficiary Name</li>"
             "<li>Beneficiary Account Number</li>"
             "<li>Beneficiary Bank Name</li>"
             "<li>Bank IFSC Code</li>"
             "</ul>"
-            "<p><em>Please note that all travel reimbursement will be made as per the "
-            "organisation's policy. Bills are compulsory for claim settlements.</em></p>"
+            "<p><em>(Please note that all travel reimbursement will be made as per "
+            "organization's policy. Bills are compulsory for claim settlements)</em></p>"
+            "<p>If you are attending online, be in a suitable environment (quiet, well-lit, "
+            "with minimal disturbance) for the interview and kindly test your internet "
+            "connection, webcam, and microphone in advance.</p>"
         )
 
     # ----------------------------------------
     # FINAL EVENT BODY
     # ----------------------------------------
-    if is_round1:
+    if is_calibration_arp:
+        final_body = calibration_arp_interviewer_template.format(
+            Applicants_name=Applicants_name,
+            Applicants_Role=Applicants_Role,
+            interview_date_str=interview_date_str,
+            display_mode=display_mode,
+            round_label=round_label,
+            interview_time_str=interview_time_str,
+            end_time_str=end_time_str,
+            InterviewersName=InterviewersName,
+            meeting_info=meeting_html,
+            phone_info=phone_info_html,
+            Map_html=interviewer_location_html,
+            feedback_html_block=feedback_html_block,
+            Note_to_interviewer_html=note_to_interviewer_html
+        )
+    elif is_round1:
         final_body = round1_interviewer_template.format(
             Applicants_name=Applicants_name,
             Applicants_Role=Applicants_Role,
@@ -1304,93 +1427,96 @@ Please find the details of the interview below.</p>
 
     # ----------------------------------------
     # EMAIL TO CANDIDATE
+    # Skipped for Calibration Process + Associate Resource Person
+    # (only the interviewer receives an email in that scenario)
     # ----------------------------------------
-    candidate_email_subject = f"Interview Scheduled \u2013 {round_label} for {Applicants_Role} {candidate_phone}"
+    if not is_calibration_arp:
+        candidate_email_subject = f"Interview Scheduled \u2013 {round_label} for {Applicants_Role} {candidate_phone}"
 
-    candidate_email_body = candidate_template.format(
-        Applicants_name=Applicants_name,
-        Applicants_Role=Applicants_Role,
-        round_label=round_label,
-        interview_date_str=interview_date_str,
-        interview_time_str=interview_time_str,
-        end_time_str=end_time_str,
-        display_mode=display_mode,
-        candidate_mode_html=candidate_mode_html,
-        Note_to_candidate_html=note_to_candidate_html,
-        candidate_advice_html=candidate_advice_html,
-    )
-
-    # Send candidate email — primary: Graph API (organizer email); fallback: frappe.sendmail
-    if not interviewee_email:
-        frappe.log_error(
-            f"Candidate email (attendees) is empty for doc {doc_name}. Skipping candidate email.",
-            "Candidate Email Skipped"
+        candidate_email_body = candidate_template.format(
+            Applicants_name=Applicants_name,
+            Applicants_Role=Applicants_Role,
+            round_label=round_label,
+            interview_date_str=interview_date_str,
+            interview_time_str=interview_time_str,
+            end_time_str=end_time_str,
+            display_mode=display_mode,
+            candidate_mode_html=candidate_mode_html,
+            Note_to_candidate_html=note_to_candidate_html,
+            candidate_advice_html=candidate_advice_html,
         )
-    else:
-        send_mail_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/sendMail"
-        mail_payload = {
-            "message": {
-                "subject": candidate_email_subject,
-                "body": {"contentType": "HTML", "content": candidate_email_body},
-                "toRecipients": [
-                    {"emailAddress": {"address": interviewee_email}}
-                ],
-                "ccRecipients": [
-                    {"emailAddress": {"address": Organizer_email}}
-                ]
-            },
-            "saveToSentItems": True
-        }
-        graph_sent = False
-        for attempt in range(2):
-            try:
-                send_res = requests.post(send_mail_url, headers=headers, json=mail_payload, timeout=30)
-                send_res.raise_for_status()
-                graph_sent = True
-                break
-            except Exception as mail_err:
-                if attempt == 0:
-                    # Refresh token and retry once
-                    try:
-                        retry_token = requests.post(
-                            f"https://login.microsoftonline.com/{creds.tenant_id.strip()}/oauth2/v2.0/token",
-                            data={
-                                "grant_type": "client_credentials",
-                                "client_id": creds.client_id.strip(),
-                                "client_secret": creds.get_password("client_secret"),
-                                "scope": "https://graph.microsoft.com/.default"
-                            }
-                        ).json().get("access_token", "")
-                        if retry_token:
-                            headers["Authorization"] = f"Bearer {retry_token}"
-                    except Exception:
-                        pass
-                else:
-                    try:
-                        resp_body = send_res.text if hasattr(send_res, "text") else str(mail_err)
-                    except Exception:
-                        resp_body = str(mail_err)
-                    frappe.log_error(
-                        f"Graph sendMail failed (both attempts): {resp_body}",
-                        "Candidate Email Graph Error"
-                    )
 
-        # Fallback: frappe.sendmail if Graph API failed
-        if not graph_sent:
-            try:
-                frappe.sendmail(
-                    recipients=[interviewee_email],
-                    cc=[Organizer_email],
-                    sender=Organizer_email,
-                    subject=candidate_email_subject,
-                    message=candidate_email_body,
-                    delayed=False
-                )
-            except Exception as fallback_err:
-                frappe.log_error(
-                    f"Candidate email fallback also failed: {fallback_err}",
-                    "Candidate Email Fallback Error"
-                )
+        # Send candidate email — primary: Graph API (organizer email); fallback: frappe.sendmail
+        if not interviewee_email:
+            frappe.log_error(
+                f"Candidate email (attendees) is empty for doc {doc_name}. Skipping candidate email.",
+                "Candidate Email Skipped"
+            )
+        else:
+            send_mail_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/sendMail"
+            mail_payload = {
+                "message": {
+                    "subject": candidate_email_subject,
+                    "body": {"contentType": "HTML", "content": candidate_email_body},
+                    "toRecipients": [
+                        {"emailAddress": {"address": interviewee_email}}
+                    ],
+                    "ccRecipients": [
+                        {"emailAddress": {"address": Organizer_email}}
+                    ]
+                },
+                "saveToSentItems": True
+            }
+            graph_sent = False
+            for attempt in range(2):
+                try:
+                    send_res = requests.post(send_mail_url, headers=headers, json=mail_payload, timeout=30)
+                    send_res.raise_for_status()
+                    graph_sent = True
+                    break
+                except Exception as mail_err:
+                    if attempt == 0:
+                        # Refresh token and retry once
+                        try:
+                            retry_token = requests.post(
+                                f"https://login.microsoftonline.com/{creds.tenant_id.strip()}/oauth2/v2.0/token",
+                                data={
+                                    "grant_type": "client_credentials",
+                                    "client_id": creds.client_id.strip(),
+                                    "client_secret": creds.get_password("client_secret"),
+                                    "scope": "https://graph.microsoft.com/.default"
+                                }
+                            ).json().get("access_token", "")
+                            if retry_token:
+                                headers["Authorization"] = f"Bearer {retry_token}"
+                        except Exception:
+                            pass
+                    else:
+                        try:
+                            resp_body = send_res.text if hasattr(send_res, "text") else str(mail_err)
+                        except Exception:
+                            resp_body = str(mail_err)
+                        frappe.log_error(
+                            f"Graph sendMail failed (both attempts): {resp_body}",
+                            "Candidate Email Graph Error"
+                        )
+
+            # Fallback: frappe.sendmail if Graph API failed
+            if not graph_sent:
+                try:
+                    frappe.sendmail(
+                        recipients=[interviewee_email],
+                        cc=[Organizer_email],
+                        sender=Organizer_email,
+                        subject=candidate_email_subject,
+                        message=candidate_email_body,
+                        delayed=False
+                    )
+                except Exception as fallback_err:
+                    frappe.log_error(
+                        f"Candidate email fallback also failed: {fallback_err}",
+                        "Candidate Email Fallback Error"
+                    )
 
     # Save event_id to the document so reschedule can cancel it later
     if doc_name:
