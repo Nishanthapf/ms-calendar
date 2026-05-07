@@ -905,7 +905,7 @@ Please find the details of the interview below.</p>
 <p>Regards,<br>People Function</p>
 """
 
-    # ── CANDIDATE TEMPLATE (all rounds, mode-based) ──────────────────────────
+    # ── CANDIDATE TEMPLATE (all rounds, mode-based) ─────────────────────
     candidate_template = """
 <p>Dear {Applicants_name},</p>
 
