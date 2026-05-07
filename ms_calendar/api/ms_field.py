@@ -731,36 +731,25 @@ def create_interview_event(event_title,
         attachment_list = []
 
     for web_path in attachment_list:
-        file_doc = frappe.get_all(
+        _fd = frappe.get_all(
             "File",
             filters={"file_url": web_path},
-            fields=["file_url", "file_name", "is_private"]
+            fields=["name", "file_name"],
+            limit=1
         )
-
-        if not file_doc:
+        if not _fd:
             frappe.log_error(f"File Doc not found: {web_path}", "Interview Event File Error")
             continue
-
-        file_doc = file_doc[0]
-        file_name = file_doc.file_name
-
-        if file_doc.is_private:
-            file_path = frappe.get_site_path("private", "files", file_name)
-        else:
-            file_path = frappe.get_site_path("public", "files", file_name)
-
-        if not os.path.isfile(file_path):
-            frappe.log_error(f"File missing on disk: {file_path}", "Interview Event File Error")
+        try:
+            _f_obj = frappe.get_doc("File", _fd[0]["name"])
+            _f_bytes = _f_obj.get_content()
+            if len(_f_bytes) > 3 * 1024 * 1024:
+                frappe.log_error(f"File too large: {_fd[0]['file_name']}", "Interview Event File Error")
+                continue
+            final_files.append((_fd[0]["file_name"], base64.b64encode(_f_bytes).decode()))
+        except Exception as _fe:
+            frappe.log_error(f"Could not read attachment {web_path}: {_fe}", "Interview Event File Error")
             continue
-
-        if os.path.getsize(file_path) > 3 * 1024 * 1024:
-            frappe.log_error(f"File too large: {file_name}", "Interview Event File Error")
-            continue
-
-        with open(file_path, "rb") as f:
-            file_content = base64.b64encode(f.read()).decode()
-
-        final_files.append((file_name, file_content))
 
     # ----------------------------------------
     # AUTO-ATTACH FEEDBACK FORMS FROM Field Registration Form
@@ -774,7 +763,7 @@ def create_interview_event(event_title,
             _frf_doctype = (
                 "Field Registration Form"
                 if frappe.db.exists("DocType", "Field Registration Form")
-                else "Field Registration Form"
+                else "Field Registration Form1"
             )
             if not frappe.db.exists(_frf_doctype, application_id):
                 frappe.log_error(
@@ -830,48 +819,43 @@ def create_interview_event(event_title,
                 if not web_path:
                     continue
 
-                # Resolve physical path
-                f_docs = frappe.get_all(
+                _afd = frappe.get_all(
                     "File",
                     filters={"file_url": web_path},
-                    fields=["file_name", "is_private"],
+                    fields=["name", "file_name"],
                     limit=1
                 )
-                if f_docs:
-                    f_name = f_docs[0]["file_name"]
-                    f_private = f_docs[0]["is_private"]
-                else:
+                if not _afd:
                     # Fallback: derive filename from URL
-                    f_name = web_path.split("/")[-1]
-                    f_private = False
+                    _af_name = web_path.split("/")[-1]
+                    _afd = [{"name": None, "file_name": _af_name}]
 
-                if f_private:
-                    f_path = frappe.get_site_path("private", "files", f_name)
-                else:
-                    f_path = frappe.get_site_path("public", "files", f_name)
+                _af_fname = _afd[0]["file_name"]
 
-                if not os.path.isfile(f_path):
+                # Skip if this file was already added (avoid duplicates)
+                if _af_fname.lower() in _already_added:
+                    continue
+
+                try:
+                    if _afd[0]["name"]:
+                        _af_obj = frappe.get_doc("File", _afd[0]["name"])
+                    else:
+                        _af_obj = frappe.get_doc("File", {"file_url": web_path})
+                    _af_bytes = _af_obj.get_content()
+                    if len(_af_bytes) > 5 * 1024 * 1024:
+                        frappe.log_error(
+                            f"Auto-attach file too large: {_af_fname}",
+                            "Interview Auto-Attach Error"
+                        )
+                        continue
+                    final_files.append((_af_fname, base64.b64encode(_af_bytes).decode()))
+                    _already_added.add(_af_fname.lower())
+                except Exception as _afe:
                     frappe.log_error(
-                        f"Auto-attach file missing: {f_path} (field={field})",
+                        f"Auto-attach failed for field={field} url={web_path}: {_afe}",
                         "Interview Auto-Attach Error"
                     )
                     continue
-
-                if os.path.getsize(f_path) > 5 * 1024 * 1024:
-                    frappe.log_error(
-                        f"Auto-attach file too large: {f_name}",
-                        "Interview Auto-Attach Error"
-                    )
-                    continue
-
-                # Skip if this file was already added (avoid duplicate resume)
-                if f_name.lower() in _already_added:
-                    continue
-
-                with open(f_path, "rb") as fh:
-                    file_bytes = fh.read()
-                final_files.append((f_name, base64.b64encode(file_bytes).decode()))
-                _already_added.add(f_name.lower())
 
         except Exception as e:
             frappe.log_error(
