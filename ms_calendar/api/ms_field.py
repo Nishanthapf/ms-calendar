@@ -484,12 +484,55 @@ def create_interview_event(event_title,
         "calibration" in round_raw and "associate resource person" in role_raw
     )
 
-    # ── Feedback URL: resolved entirely in backend (3-level priority) ──────────
-    # Priority 1 → value passed from JS (or manually filled on the form)
-    # Priority 2 → feedback_form_link stored on the Field Interview Schedule record in DB
-    # Priority 3 → role + round lookup from _FEEDBACK_URL_MAP
+    # ── Feedback URL: resolved in backend (4-level priority) ────────────────────
+    # Priority 0 → direct role+round lookup in _EDUCATION_FEEDBACK_URLS (most reliable)
+    # Priority 1 → feedback_form_link passed from JS / manually filled on form
+    # Priority 2 → feedback_form_link stored in DB on the Field Interview Schedule
+    # Priority 3 → dept-keyed lookup for livelihood/health roles
     _demo_checked = str(demo_feed_back_form or "0").strip().lower() in ("1", "true", "yes")
-    feedback_url  = str(feedback_form_link or "").strip()
+
+    # Priority 0: direct education dict lookup by role + round (no dept needed)
+    _p0_role  = str(Applicants_Role or "").strip().lower()
+    _p0_round = str(Interview_round or "").strip().lower()
+    _p0_round = {"round 1": "round one", "round1": "round one",
+                 "round 2": "round two",  "round2": "round two",
+                 "round 3": "round three","round3": "round three",
+                 "round 4": "round four", "round4": "round four"}.get(_p0_round, _p0_round)
+    _p0_template = _EDUCATION_FEEDBACK_URLS.get((_p0_role, _p0_round), "")
+
+    # On cloud the Field Role document NAME may differ from the display label.
+    # Try fetching alternate label fields from the Field Role record.
+    if not _p0_template and Applicants_Role:
+        try:
+            for _fr_field in ("role_name", "title", "role"):
+                _fr_val = (frappe.db.get_value("Field Role", Applicants_Role, _fr_field) or "").strip().lower()
+                if _fr_val:
+                    _p0_template = _EDUCATION_FEEDBACK_URLS.get((_fr_val, _p0_round), "")
+                    if _p0_template:
+                        break
+        except Exception:
+            pass
+
+    # Keyword scan: only try when _p0_role has NO entry in the dict for ANY round
+    # (prevents "resource person" from false-matching "associate resource person").
+    _p0_in_dict = any(dk_r == _p0_role for (dk_r, _) in _EDUCATION_FEEDBACK_URLS)
+    if not _p0_template and _p0_role and not _p0_in_dict:
+        _p0_words = set(_p0_role.split())
+        for (_dk_role, _dk_round), _dk_url in _EDUCATION_FEEDBACK_URLS.items():
+            if _dk_round == _p0_round:
+                _dk_words = set(_dk_role.split())
+                if _dk_words and _dk_words.issubset(_p0_words):
+                    _p0_template = _dk_url
+                    break
+
+    if _p0_template:
+        from urllib.parse import quote as _p0q
+        feedback_url = _p0_template.format(
+            app_id=_p0q(str(application_id or ""), safe=""),
+            applicant_name=_p0q(str(Applicants_name or ""), safe="")
+        )
+    else:
+        feedback_url = str(feedback_form_link or "").strip()
 
     # If JS failed to extract demo_feedback_interviewers_email (Table MultiSelect mapping issue),
     # fetch it directly from the saved Field Interview Schedule document in the database.
@@ -775,7 +818,7 @@ def create_interview_event(event_title,
             _frf_doctype = (
                 "Field Registration Form"
                 if frappe.db.exists("DocType", "Field Registration Form")
-                else "Field Registration Form1"
+                else "Field Registration Form"
             )
             if not frappe.db.exists(_frf_doctype, application_id):
                 frappe.log_error(
