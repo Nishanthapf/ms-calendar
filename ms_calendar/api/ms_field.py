@@ -14,8 +14,9 @@ _EDUCATION_FEEDBACK_URLS = {
     ("resource person", "round one"):       "https://careers.frappe.cloud/educational-capacity-interview---feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
     ("resource person", "round two"):       "https://careers.frappe.cloud/leader-final-feedback/new?app_id={app_id}&applicant_name={applicant_name}",
 
-    ("associate resource person", "round two"):   "https://careers.frappe.cloud/campus-associate-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
-    ("associate resource person", "round three"): "https://careers.frappe.cloud/campus-associate-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    ("associate resource person", "round two"):          "https://careers.frappe.cloud/campus-associate-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    ("associate resource person", "round three"):        "https://careers.frappe.cloud/campus-associate-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    ("associate resource person", "calibration process"): "https://careers.frappe.cloud/campus-associate-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
 }
 
 # Livelihood: keyed by round_lower
@@ -1005,9 +1006,9 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
 <p>Regards,<br>People Function</p>
 """
 
-    # ----------------------------------------
+    # ------------------------------------
     # INITIAL EVENT BODY
-    # ----------------------------------------
+    # ------------------------------------
     if is_calibration_arp:
         calendar_subject = f"Calibration Process – {Applicants_Role} | {candidate_phone}"
         initial_body = calibration_arp_interviewer_template.format(
