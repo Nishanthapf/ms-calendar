@@ -484,66 +484,72 @@ def create_interview_event(event_title,
         "calibration" in round_raw and "associate resource person" in role_raw
     )
 
-    # ── Feedback URL: resolved in backend (4-level priority) ────────────────────
-    # Priority 0 → direct role+round lookup in _EDUCATION_FEEDBACK_URLS (most reliable)
-    # Priority 1 → feedback_form_link passed from JS / manually filled on form
-    # Priority 2 → feedback_form_link stored in DB on the Field Interview Schedule
-    # Priority 3 → dept-keyed lookup for livelihood/health roles
+    # ── Feedback URL resolution ──────────────────────────────────────────────────
     _demo_checked = str(demo_feed_back_form or "0").strip().lower() in ("1", "true", "yes")
 
-    # Priority 0: direct education dict lookup by role + round (no dept needed)
-    _p0_role  = str(Applicants_Role or "").strip().lower()
-    _p0_round = str(Interview_round or "").strip().lower()
-    _p0_round = {"round 1": "round one", "round1": "round one",
-                 "round 2": "round two",  "round2": "round two",
-                 "round 3": "round three","round3": "round three",
-                 "round 4": "round four", "round4": "round four"}.get(_p0_round, _p0_round)
-    _p0_template = _EDUCATION_FEEDBACK_URLS.get((_p0_role, _p0_round), "")
+    # Normalize round to written form
+    _round_norm = str(Interview_round or "").strip().lower()
+    _round_norm = {"round 1": "round one", "round1": "round one",
+                   "round 2": "round two",  "round2": "round two",
+                   "round 3": "round three","round3": "round three",
+                   "round 4": "round four", "round4": "round four"}.get(_round_norm, _round_norm)
 
-    # On cloud the Field Role document NAME may differ from the display label.
-    # Try fetching alternate label fields from the Field Role record.
-    if not _p0_template and Applicants_Role:
-        try:
-            for _fr_field in ("role_name", "title", "role"):
-                _fr_val = (frappe.db.get_value("Field Role", Applicants_Role, _fr_field) or "").strip().lower()
-                if _fr_val:
-                    _p0_template = _EDUCATION_FEEDBACK_URLS.get((_fr_val, _p0_round), "")
-                    if _p0_template:
-                        break
-        except Exception:
-            pass
+    # --- Department-based lookup (primary) ---
+    # department field on cloud stores the department name directly
+    # (e.g. "Associate Resource Person", "Education", "Livelihood", "Health")
+    _dept_raw  = str(department or "").strip().lower()
+    _role_raw2 = str(Applicants_Role or "").strip().lower()
 
-    # Keyword scan: only try when _p0_role has NO entry in the dict for ANY round
-    # (prevents "resource person" from false-matching "associate resource person").
-    _p0_in_dict = any(dk_r == _p0_role for (dk_r, _) in _EDUCATION_FEEDBACK_URLS)
-    if not _p0_template and _p0_role and not _p0_in_dict:
-        _p0_words = set(_p0_role.split())
-        for (_dk_role, _dk_round), _dk_url in _EDUCATION_FEEDBACK_URLS.items():
-            if _dk_round == _p0_round:
-                _dk_words = set(_dk_role.split())
-                if _dk_words and _dk_words.issubset(_p0_words):
-                    _p0_template = _dk_url
-                    break
+    from urllib.parse import quote as _fq
 
-    if _p0_template:
-        from urllib.parse import quote as _p0q
-        feedback_url = _p0_template.format(
-            app_id=_p0q(str(application_id or ""), safe=""),
-            applicant_name=_p0q(str(Applicants_name or ""), safe="")
-        )
-    else:
+    feedback_url = ""
+
+    if _dept_raw == "associate resource person" or "associate resource person" in _role_raw2:
+        # ARP: feedback for Round Two, Round Three, and Calibration Process
+        if _round_norm in ("round two", "round three", "calibration process"):
+            feedback_url = (
+                "https://careers.frappe.cloud/campus-associate-feedback-form/new"
+                f"?app_id={_fq(str(application_id or ''), safe='')}"
+                f"&applicant_name={_fq(str(Applicants_name or ''), safe='')}"
+            )
+
+    elif _dept_raw in ("education", "Education".lower()) or any(
+        k in _role_raw2 for k in ("school teacher", "resource person")
+    ):
+        _tmpl = _EDUCATION_FEEDBACK_URLS.get((_role_raw2, _round_norm), "")
+        if _tmpl:
+            feedback_url = _tmpl.format(
+                app_id=_fq(str(application_id or ""), safe=""),
+                applicant_name=_fq(str(Applicants_name or ""), safe="")
+            )
+
+    elif _dept_raw == "livelihood" or any(
+        k in _role_raw2 for k in ("livelihood", "cluster", "market research")
+    ):
+        _tmpl = _LIVELIHOOD_FEEDBACK_URLS.get(_round_norm, "")
+        if _tmpl:
+            feedback_url = _tmpl.format(
+                app_id=_fq(str(application_id or ""), safe=""),
+                applicant_name=_fq(str(Applicants_name or ""), safe="")
+            )
+
+    elif _dept_raw == "health" or "health" in _role_raw2:
+        _tmpl = _HEALTH_FEEDBACK_URLS.get(_round_norm, "")
+        if _tmpl:
+            feedback_url = _tmpl.format(
+                app_id=_fq(str(application_id or ""), safe=""),
+                applicant_name=_fq(str(Applicants_name or ""), safe="")
+            )
+
+    # Fallback to value passed from JS / stored on form
+    if not feedback_url:
         feedback_url = str(feedback_form_link or "").strip()
 
-    # Always-on debug log so we can trace exact values on cloud
+    # Debug log
     frappe.log_error(
-        f"[P0 Debug] role={repr(str(Applicants_Role or ''))} | "
-        f"p0_role={repr(_p0_role)} | "
-        f"round={repr(str(Interview_round or ''))} | "
-        f"p0_round={repr(_p0_round)} | "
-        f"p0_in_dict={_p0_in_dict} | "
-        f"p0_template={'SET' if _p0_template else 'EMPTY'} | "
-        f"feedback_url={'SET' if feedback_url else 'EMPTY'}",
-        "Feedback URL P0 Debug"
+        f"[FeedbackURL] dept={repr(_dept_raw)} | role={repr(_role_raw2)} | "
+        f"round={repr(_round_norm)} | url={'SET' if feedback_url else 'EMPTY'}",
+        "Feedback URL Debug"
     )
 
     # If JS failed to extract demo_feedback_interviewers_email (Table MultiSelect mapping issue),
@@ -579,69 +585,6 @@ def create_interview_event(event_title,
                 feedback_url = str(_fis[0]["feedback_form_link"]).strip()
         except Exception:
             pass
-
-    # Priority 3: auto-resolve feedback URL by department
-    if not feedback_url:
-        from urllib.parse import quote as _quote
-        _round_key = str(Interview_round or "").strip().lower()
-        # Normalize numeric aliases so dict keys always use written-out form
-        _rk_alias = {"round 1": "round one", "round1": "round one",
-                     "round 2": "round two", "round2": "round two",
-                     "round 3": "round three", "round3": "round three",
-                     "round 4": "round four", "round4": "round four"}
-        _round_key = _rk_alias.get(_round_key, _round_key)
-        _template  = ""
-
-        # Resolve department to one of the known keys: education / livelihood / health
-        _known_depts = ("education", "livelihood", "health")
-        _dept = str(department or "").strip().lower()
-
-        # If the passed department value is not a recognised key (e.g. the form
-        # stores the role name like "Associate Resource Person" in the dept field),
-        # infer department from the role name keywords first, then try the DB.
-        if _dept not in _known_depts:
-            _rn = str(Applicants_Role or "").strip().lower()
-            if "health" in _rn:
-                _dept = "health"
-            elif "livelihood" in _rn or "cluster" in _rn or "market research" in _rn:
-                _dept = "livelihood"
-            elif "school teacher" in _rn or "resource person" in _rn:
-                _dept = "education"
-
-        # Last resort: DB lookup on Field Role table
-        if _dept not in _known_depts and Applicants_Role:
-            try:
-                _db_dept = (frappe.db.get_value("Field Role", Applicants_Role, "role") or "").strip().lower()
-                if _db_dept in _known_depts:
-                    _dept = _db_dept
-            except Exception:
-                pass
-
-        if _dept == "livelihood":
-            _template = _LIVELIHOOD_FEEDBACK_URLS.get(_round_key, "")
-        elif _dept == "health":
-            _template = _HEALTH_FEEDBACK_URLS.get(_round_key, "")
-        elif _dept == "education":
-            _role_key = str(Applicants_Role or "").strip().lower()
-            _template = _EDUCATION_FEEDBACK_URLS.get((_role_key, _round_key), "")
-
-        if _template:
-            feedback_url = _template.format(
-                app_id=_quote(str(application_id or ""), safe=""),
-                applicant_name=_quote(str(Applicants_name or ""), safe="")
-            )
-
-        # Safety net: if dept detection failed for any reason, try the education
-        # dict directly using the exact role name + round — no dept check needed.
-        if not feedback_url and Applicants_Role:
-            _direct = _EDUCATION_FEEDBACK_URLS.get(
-                (str(Applicants_Role or "").strip().lower(), _round_key), ""
-            )
-            if _direct:
-                feedback_url = _direct.format(
-                    app_id=_quote(str(application_id or ""), safe=""),
-                    applicant_name=_quote(str(Applicants_name or ""), safe="")
-                )
 
     # For Priority 1 & 2 URLs (manually filled), append params if not already present
     if feedback_url and "app_id=" not in feedback_url:
