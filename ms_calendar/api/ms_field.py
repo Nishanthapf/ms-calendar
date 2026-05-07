@@ -534,6 +534,18 @@ def create_interview_event(event_title,
     else:
         feedback_url = str(feedback_form_link or "").strip()
 
+    # Always-on debug log so we can trace exact values on cloud
+    frappe.log_error(
+        f"[P0 Debug] role={repr(str(Applicants_Role or ''))} | "
+        f"p0_role={repr(_p0_role)} | "
+        f"round={repr(str(Interview_round or ''))} | "
+        f"p0_round={repr(_p0_round)} | "
+        f"p0_in_dict={_p0_in_dict} | "
+        f"p0_template={'SET' if _p0_template else 'EMPTY'} | "
+        f"feedback_url={'SET' if feedback_url else 'EMPTY'}",
+        "Feedback URL P0 Debug"
+    )
+
     # If JS failed to extract demo_feedback_interviewers_email (Table MultiSelect mapping issue),
     # fetch it directly from the saved Field Interview Schedule document in the database.
     if _demo_checked and not str(demo_feedback_interviewers_email or "").strip() and doc_name:
