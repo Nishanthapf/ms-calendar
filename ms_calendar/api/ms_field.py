@@ -373,7 +373,7 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
             "is_available": available
         })
 
-    print("===================== DEBUG END =====================\n")
+    print("===================== DEBUG END ===================\n")
     return {"rooms": final}
 
 
