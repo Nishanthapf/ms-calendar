@@ -2,7 +2,7 @@ import frappe, requests, io, base64
 from datetime import timedelta
 from frappe.utils import get_datetime
 
-# ── Feedback URL lookup by department ────────────────────────────────────────
+# ── Feedback URL lookup by department ──────────────────────────────────
 # Education: keyed by (role_lower, round_lower)
 _EDUCATION_FEEDBACK_URLS = {
     ("school teacher", "recruiter round"): "https://careers.frappe.cloud/recruiter-assessment-form-feed-back-form/new?app_id={app_id}&applicant_name={applicant_name}",
