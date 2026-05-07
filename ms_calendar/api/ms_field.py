@@ -576,6 +576,18 @@ def create_interview_event(event_title,
                 applicant_name=_quote(str(Applicants_name or ""), safe="")
             )
 
+        # Safety net: if dept detection failed for any reason, try the education
+        # dict directly using the exact role name + round — no dept check needed.
+        if not feedback_url and Applicants_Role:
+            _direct = _EDUCATION_FEEDBACK_URLS.get(
+                (str(Applicants_Role or "").strip().lower(), _round_key), ""
+            )
+            if _direct:
+                feedback_url = _direct.format(
+                    app_id=_quote(str(application_id or ""), safe=""),
+                    applicant_name=_quote(str(Applicants_name or ""), safe="")
+                )
+
     # For Priority 1 & 2 URLs (manually filled), append params if not already present
     if feedback_url and "app_id=" not in feedback_url:
         from urllib.parse import quote as _quote
