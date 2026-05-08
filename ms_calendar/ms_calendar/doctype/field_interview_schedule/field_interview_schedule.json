@@ -63,7 +63,7 @@
             "label": "Feedback form"
         },
         {
-            "default": "Recruiter Round",
+            "default": "",
             "fieldname": "interview_round",
             "fieldtype": "Select",
             "label": "Interview Round",
