@@ -1,246 +1,246 @@
 {
- "actions": [],
- "allow_rename": 1,
- "autoname": "format:FINVID{###}",
- "creation": "2025-01-01 00:00:00.000000",
- "custom": 1,
- "doctype": "DocType",
- "engine": "InnoDB",
- "field_order": [
-  "application_id",
-  "applicants_name",
-  "candidate_cv__resume",
-  "feedback_form",
-  "interview_round",
-  "role",
-  "department",
-  "phone_no",
-  "feedback_form_link",
-  "organizer_email",
-  "column_break_ydgz",
-  "interview_date",
-  "interviewer_email",
-  "check_availability",
-  "interview_type",
-  "interview_mode",
-  "google_map",
-  "location",
-  "demo_feed_back_form",
-  "demo_feedback_interviewers_email",
-  "available_slots_section",
-  "available_slots",
-  "schedule_interview_section",
-  "event_title",
-  "attendees",
-  "column_break_qwyn",
-  "start_time",
-  "end_time",
-  "check_available_room",
-  "room_email",
-  "meeting_room",
-  "column_break_cvny",
-  "ms_event_id"
- ],
- "fields": [
-  {
-   "fieldname": "application_id",
-   "fieldtype": "Data",
-   "label": "Application ID"
-  },
-  {
-   "fieldname": "applicants_name",
-   "fieldtype": "Data",
-   "label": "Applicant's Name"
-  },
-  {
-   "fieldname": "candidate_cv__resume",
-   "fieldtype": "Attach",
-   "label": "Candidate CV / Resume"
-  },
-  {
-   "fieldname": "feedback_form",
-   "fieldtype": "Attach",
-   "label": "Feedback form"
-  },
-  {
-   "default": "Recruiter Round",
-   "fieldname": "interview_round",
-   "fieldtype": "Select",
-   "label": "Interview Round",
-   "options": "Recruiter Round\nRound One\nRound Two\nRound Three\nCalibration Process"
-  },
-  {
-   "fieldname": "role",
-   "fieldtype": "Data",
-   "label": "Role"
-  },
-  {
-   "fieldname": "department",
-   "fieldtype": "Data",
-   "label": "Department"
-  },
-  {
-   "fieldname": "phone_no",
-   "fieldtype": "Data",
-   "label": "Phone No"
-  },
-  {
-   "fieldname": "feedback_form_link",
-   "fieldtype": "Data",
-   "label": "Feedback Form Link"
-  },
-  {
-   "fieldname": "organizer_email",
-   "fieldtype": "Data",
-   "label": "Organizer Email"
-  },
-  {
-   "fieldname": "column_break_ydgz",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "interview_date",
-   "fieldtype": "Date",
-   "label": "Interview Date"
-  },
-  {
-   "fieldname": "interviewer_email",
-   "fieldtype": "Table MultiSelect",
-   "label": "Interviewer's Email",
-   "options": "Interviewer Email Child"
-  },
-  {
-   "fieldname": "check_availability",
-   "fieldtype": "Button",
-   "label": "Check interview availability"
-  },
-  {
-   "fieldname": "interview_type",
-   "fieldtype": "Check",
-   "label": "Is this a virtual call ?"
-  },
-  {
-   "fieldname": "interview_mode",
-   "fieldtype": "Select",
-   "label": "Interview Mode",
-   "options": "Online\nFace-to-Face\nPhone"
-  },
-  {
-   "depends_on": "eval: doc.interview_mode==\"Face-to-Face\"",
-   "fieldname": "google_map",
-   "fieldtype": "Data",
-   "label": "Google Map"
-  },
-  {
-   "depends_on": "eval: doc.interview_mode==\"Face-to-Face\"",
-   "fieldname": "location",
-   "fieldtype": "Small Text",
-   "label": "Location Address"
-  },
-  {
-   "fieldname": "demo_feed_back_form",
-   "fieldtype": "Check",
-   "label": "Demo Feed back Form"
-  },
-  {
-   "depends_on": "eval: doc.demo_feed_back_form==1",
-   "fieldname": "demo_feedback_interviewers_email",
-   "fieldtype": "Table MultiSelect",
-   "label": "Demo Feedback Interviewer's Email",
-   "options": "Interviewer Email Child"
-  },
-  {
-   "fieldname": "available_slots_section",
-   "fieldtype": "Section Break",
-   "label": "Available slots"
-  },
-  {
-   "fieldname": "available_slots",
-   "fieldtype": "HTML",
-   "label": "Available slots"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "schedule_interview_section",
-   "fieldtype": "Section Break",
-   "label": "Schedule interview"
-  },
-  {
-   "fieldname": "event_title",
-   "fieldtype": "Data",
-   "label": "Event Title"
-  },
-  {
-   "fieldname": "attendees",
-   "fieldtype": "Data",
-   "label": "Candidate Email"
-  },
-  {
-   "fieldname": "column_break_qwyn",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "start_time",
-   "fieldtype": "Time",
-   "label": "Start Time"
-  },
-  {
-   "fieldname": "end_time",
-   "fieldtype": "Time",
-   "label": "End Time"
-  },
-  {
-   "fieldname": "check_available_room",
-   "fieldtype": "Button",
-   "label": "Check Available Room"
-  },
-  {
-   "fieldname": "room_email",
-   "fieldtype": "Data",
-   "label": "Room Email"
-  },
-  {
-   "fieldname": "meeting_room",
-   "fieldtype": "Data",
-   "label": "Selected Meeting Rooms / Venue"
-  },
-  {
-   "fieldname": "column_break_cvny",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "ms_event_id",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "MS Event ID",
-   "read_only": 1
-  }
- ],
- "grid_page_length": 50,
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2026-05-07 00:00:00.000000",
- "modified_by": "Administrator",
- "module": "Ms Calendar",
- "name": "Field Interview Schedule",
- "naming_rule": "Expression (old style)",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "row_format": "Dynamic",
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": []
+    "actions": [],
+    "allow_rename": 1,
+    "autoname": "format:FINVID{###}",
+    "creation": "2025-01-01 00:00:00.000000",
+    "custom": 1,
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "application_id",
+        "applicants_name",
+        "candidate_cv__resume",
+        "feedback_form",
+        "interview_round",
+        "role",
+        "department",
+        "phone_no",
+        "feedback_form_link",
+        "organizer_email",
+        "column_break_ydgz",
+        "interview_date",
+        "interviewer_email",
+        "check_availability",
+        "interview_type",
+        "interview_mode",
+        "google_map",
+        "location",
+        "demo_feed_back_form",
+        "demo_feedback_interviewers_email",
+        "available_slots_section",
+        "available_slots",
+        "schedule_interview_section",
+        "event_title",
+        "attendees",
+        "column_break_qwyn",
+        "start_time",
+        "end_time",
+        "check_available_room",
+        "room_email",
+        "meeting_room",
+        "column_break_cvny",
+        "ms_event_id"
+    ],
+    "fields": [
+        {
+            "fieldname": "application_id",
+            "fieldtype": "Data",
+            "label": "Application ID"
+        },
+        {
+            "fieldname": "applicants_name",
+            "fieldtype": "Data",
+            "label": "Applicant's Name"
+        },
+        {
+            "fieldname": "candidate_cv__resume",
+            "fieldtype": "Attach",
+            "label": "Candidate CV / Resume"
+        },
+        {
+            "fieldname": "feedback_form",
+            "fieldtype": "Attach",
+            "label": "Feedback form"
+        },
+        {
+            "default": "Recruiter Round",
+            "fieldname": "interview_round",
+            "fieldtype": "Select",
+            "label": "Interview Round",
+            "options": "Recruiter Round\nRound One\nRound Two\nRound Three\nCalibration Process"
+        },
+        {
+            "fieldname": "role",
+            "fieldtype": "Data",
+            "label": "Role"
+        },
+        {
+            "fieldname": "department",
+            "fieldtype": "Data",
+            "label": "Department"
+        },
+        {
+            "fieldname": "phone_no",
+            "fieldtype": "Data",
+            "label": "Phone No"
+        },
+        {
+            "fieldname": "feedback_form_link",
+            "fieldtype": "Data",
+            "label": "Feedback Form Link"
+        },
+        {
+            "fieldname": "organizer_email",
+            "fieldtype": "Data",
+            "label": "Organizer Email"
+        },
+        {
+            "fieldname": "column_break_ydgz",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "interview_date",
+            "fieldtype": "Date",
+            "label": "Interview Date"
+        },
+        {
+            "fieldname": "interviewer_email",
+            "fieldtype": "Table MultiSelect",
+            "label": "Interviewer's Email",
+            "options": "Interviewer Email Child"
+        },
+        {
+            "fieldname": "check_availability",
+            "fieldtype": "Button",
+            "label": "Check interview availability"
+        },
+        {
+            "fieldname": "interview_type",
+            "fieldtype": "Check",
+            "label": "Is this a virtual call ?"
+        },
+        {
+            "fieldname": "interview_mode",
+            "fieldtype": "Select",
+            "label": "Interview Mode",
+            "options": "Online\nFace-to-Face\nPhone"
+        },
+        {
+            "depends_on": "eval: doc.interview_mode==\"Face-to-Face\"",
+            "fieldname": "google_map",
+            "fieldtype": "Data",
+            "label": "Google Map"
+        },
+        {
+            "depends_on": "eval: doc.interview_mode==\"Face-to-Face\"",
+            "fieldname": "location",
+            "fieldtype": "Small Text",
+            "label": "Location Address"
+        },
+        {
+            "fieldname": "demo_feed_back_form",
+            "fieldtype": "Check",
+            "label": "Demo Feed back Form"
+        },
+        {
+            "depends_on": "eval: doc.demo_feed_back_form==1",
+            "fieldname": "demo_feedback_interviewers_email",
+            "fieldtype": "Table MultiSelect",
+            "label": "Demo Feedback Interviewer's Email",
+            "options": "Interviewer Email Child"
+        },
+        {
+            "fieldname": "available_slots_section",
+            "fieldtype": "Section Break",
+            "label": "Available slots"
+        },
+        {
+            "fieldname": "available_slots",
+            "fieldtype": "HTML",
+            "label": "Available slots"
+        },
+        {
+            "collapsible": 1,
+            "fieldname": "schedule_interview_section",
+            "fieldtype": "Section Break",
+            "label": "Schedule interview"
+        },
+        {
+            "fieldname": "event_title",
+            "fieldtype": "Data",
+            "label": "Event Title"
+        },
+        {
+            "fieldname": "attendees",
+            "fieldtype": "Data",
+            "label": "Candidate Email"
+        },
+        {
+            "fieldname": "column_break_qwyn",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "start_time",
+            "fieldtype": "Time",
+            "label": "Start Time"
+        },
+        {
+            "fieldname": "end_time",
+            "fieldtype": "Time",
+            "label": "End Time"
+        },
+        {
+            "fieldname": "check_available_room",
+            "fieldtype": "Button",
+            "label": "Check Available Room"
+        },
+        {
+            "fieldname": "room_email",
+            "fieldtype": "Data",
+            "label": "Room Email"
+        },
+        {
+            "fieldname": "meeting_room",
+            "fieldtype": "Data",
+            "label": "Selected Meeting Rooms / Venue"
+        },
+        {
+            "fieldname": "column_break_cvny",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "ms_event_id",
+            "fieldtype": "Data",
+            "hidden": 1,
+            "label": "MS Event ID",
+            "read_only": 1
+        }
+    ],
+    "grid_page_length": 50,
+    "index_web_pages_for_search": 1,
+    "links": [],
+    "modified": "2026-05-07 00:00:00.000000",
+    "modified_by": "Administrator",
+    "module": "Ms Calendar",
+    "name": "Field Interview Schedule",
+    "naming_rule": "Expression (old style)",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "share": 1,
+            "write": 1
+        }
+    ],
+    "row_format": "Dynamic",
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "states": []
 }
