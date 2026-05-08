@@ -506,8 +506,13 @@ def create_interview_event(event_title,
     feedback_url = ""
 
     if _dept_raw == "associate resource person" or "associate resource person" in _role_raw2:
-        # ARP: feedback for Round Two, Round Three, and Calibration Process
-        if _round_norm in ("round two", "round three", "calibration process"):
+        if _round_norm in ("recruiter round",):
+            feedback_url = (
+                "https://careers.frappe.cloud/recruiter-assessment-form-feed-back-form/new"
+                f"?app_id={_fq(str(application_id or ''), safe='')}"
+                f"&applicant_name={_fq(str(Applicants_name or ''), safe='')}"
+            )
+        elif _round_norm in ("round one", "round two", "round three", "calibration process"):
             feedback_url = (
                 "https://careers.frappe.cloud/campus-associate-feedback-form/new"
                 f"?app_id={_fq(str(application_id or ''), safe='')}"
@@ -1545,15 +1550,36 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
                 "saveToSentItems": True
             }
             _fb_graph_sent = False
-            try:
-                _fb_r = requests.post(_fb_send_url, headers=headers, json=_fb_payload, timeout=30)
-                _fb_r.raise_for_status()
-                _fb_graph_sent = True
-            except Exception as _fb_err:
-                frappe.log_error(
-                    f"Feedback link email (Graph) failed for {_imail}: {_fb_err}",
-                    "Interviewer Feedback Email Error"
-                )
+            for _fb_attempt in range(2):
+                try:
+                    _fb_r = requests.post(_fb_send_url, headers=headers, json=_fb_payload, timeout=30)
+                    _fb_r.raise_for_status()
+                    _fb_graph_sent = True
+                    break
+                except Exception as _fb_err:
+                    if _fb_attempt == 0:
+                        try:
+                            _fb_retry_token = requests.post(
+                                f"https://login.microsoftonline.com/{creds.tenant_id.strip()}/oauth2/v2.0/token",
+                                data={
+                                    "grant_type": "client_credentials",
+                                    "client_id": creds.client_id.strip(),
+                                    "client_secret": creds.get_password("client_secret"),
+                                    "scope": "https://graph.microsoft.com/.default"
+                                }
+                            ).json().get("access_token", "")
+                            if _fb_retry_token:
+                                headers["Authorization"] = f"Bearer {_fb_retry_token}"
+                        except Exception:
+                            pass
+                    else:
+                        try:
+                            frappe.log_error(
+                                title="Interviewer Feedback Email Error",
+                                message=f"Feedback link email (Graph) failed for {_imail}: {_fb_err}"
+                            )
+                        except Exception:
+                            pass
 
             if not _fb_graph_sent:
                 try:
@@ -1566,10 +1592,13 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
                         delayed=False
                     )
                 except Exception as _fb_fallback_err:
-                    frappe.log_error(
-                        f"Feedback link email (fallback) failed for {_imail}: {_fb_fallback_err}",
-                        "Interviewer Feedback Email Fallback Error"
-                    )
+                    try:
+                        frappe.log_error(
+                            title="Interviewer Feedback Email Fallback Error",
+                            message=f"Feedback link email (fallback) failed for {_imail}: {_fb_fallback_err}"
+                        )
+                    except Exception:
+                        pass
 
     # Save event_id to the document so reschedule can cancel it later
     if doc_name:
