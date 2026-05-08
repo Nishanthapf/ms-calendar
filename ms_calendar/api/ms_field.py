@@ -1513,6 +1513,64 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
                         "Candidate Email Fallback Error"
                     )
 
+    # ----------------------------------------
+    # EMAIL FEEDBACK LINK TO EACH INTERVIEWER
+    # Sent only when a feedback_url exists for the role + round combination.
+    # ----------------------------------------
+    if feedback_url and interviewer_list:
+        _fb_subject = (
+            f"Feedback Form – {round_label} for {Applicants_Role} {candidate_phone}"
+        )
+        _fb_body = (
+            "<p>Hi,</p>"
+            f"<p>Please find the feedback form link below for the interview with "
+            f"<b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>"
+            "<p>"
+            f"<b>Interview Round:</b> {round_label}<br>"
+            f"<b>Date:</b> {interview_date_str}<br>"
+            f"<b>Interview Time:</b> {interview_time_str} – {end_time_str}"
+            "</p>"
+            + _link_block(feedback_url, "Feedback Form Link")
+            + "<p>Regards,<br>People Function</p>"
+        )
+        _fb_send_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/sendMail"
+        for _imail in interviewer_list:
+            _fb_payload = {
+                "message": {
+                    "subject": _fb_subject,
+                    "body": {"contentType": "HTML", "content": _fb_body},
+                    "toRecipients": [{"emailAddress": {"address": _imail}}],
+                    "ccRecipients": [{"emailAddress": {"address": Organizer_email}}]
+                },
+                "saveToSentItems": True
+            }
+            _fb_graph_sent = False
+            try:
+                _fb_r = requests.post(_fb_send_url, headers=headers, json=_fb_payload, timeout=30)
+                _fb_r.raise_for_status()
+                _fb_graph_sent = True
+            except Exception as _fb_err:
+                frappe.log_error(
+                    f"Feedback link email (Graph) failed for {_imail}: {_fb_err}",
+                    "Interviewer Feedback Email Error"
+                )
+
+            if not _fb_graph_sent:
+                try:
+                    frappe.sendmail(
+                        recipients=[_imail],
+                        cc=[Organizer_email],
+                        sender=Organizer_email,
+                        subject=_fb_subject,
+                        message=_fb_body,
+                        delayed=False
+                    )
+                except Exception as _fb_fallback_err:
+                    frappe.log_error(
+                        f"Feedback link email (fallback) failed for {_imail}: {_fb_fallback_err}",
+                        "Interviewer Feedback Email Fallback Error"
+                    )
+
     # Save event_id to the document so reschedule can cancel it later
     if doc_name:
         try:
