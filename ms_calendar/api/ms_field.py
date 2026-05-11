@@ -1422,53 +1422,11 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
             raise
 
     # ----------------------------------------
-    # EMAIL TO INTERVIEWERS
-    # ----------------------------------------
-    # Attendees were added with sendUpdates=none so no Outlook invite fires.
-    # We send a custom email to each interviewer explicitly.
-    _iview_send_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/sendMail"
-    for _imail in interviewer_list:
-        _ipayload = {
-            "message": {
-                "subject": calendar_subject,
-                "body": {"contentType": "HTML", "content": final_body},
-                "toRecipients": [{"emailAddress": {"address": _imail}}],
-                "ccRecipients": [{"emailAddress": {"address": Organizer_email}}]
-            },
-            "saveToSentItems": True
-        }
-        _igraph_sent = False
-        try:
-            _ir = requests.post(_iview_send_url, headers=headers, json=_ipayload, timeout=30)
-            _ir.raise_for_status()
-            _igraph_sent = True
-        except Exception as _ierr:
-            try:
-                frappe.log_error(title="Interviewer Email Error", message=str(_ierr)[:2000])
-            except Exception:
-                pass
-        if not _igraph_sent:
-            try:
-                frappe.sendmail(
-                    recipients=[_imail],
-                    cc=[Organizer_email],
-                    sender=Organizer_email,
-                    subject=calendar_subject,
-                    message=final_body,
-                    delayed=False
-                )
-            except Exception as _ifallback:
-                try:
-                    frappe.log_error(title="Interviewer Email Fallback Error", message=str(_ifallback)[:2000])
-                except Exception:
-                    pass
-
-    # ----------------------------------------
     # EMAIL TO DEMO FEEDBACK INTERVIEWER(S)
     # ----------------------------------------
     # Only sent when demo checkbox is checked AND demo_feedback_interviewers_email is filled.
     # These interviewers receive ONLY the demo feedback form link (not the regular feedback).
-    # Exclude anyone already in interviewer_list (they already got the full email above).
+    # Exclude anyone already in interviewer_list (calendar invite already delivered to them).
     _already_emailed = set(interviewer_list)
     _demo_interviewer_list = [
         e.strip()
