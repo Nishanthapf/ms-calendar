@@ -16,7 +16,7 @@ _EDUCATION_FEEDBACK_URLS = {
 
     ("associate resource person", "round two"):          "https://careers.frappe.cloud/campus-associate-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
     ("associate resource person", "round three"):        "https://careers.frappe.cloud/campus-associate-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
-    ("associate resource person", "calibration process"): "https://careers.frappe.cloud/campus-associate-feedback-form/new?app_id={app_id}&applicant_name={applicant_name}",
+    ("associate resource person", "calibration process"): "https://careers.frappe.cloud/calibration-process/new?app_id={app_id}&applicant_name={applicant_name}",
 }
 
 # Livelihood: keyed by round_lower
@@ -353,14 +353,23 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
     # -------------------------
     # GET AVAILABILITY IN BATCHES
     # -------------------------
+    # Pick context user from Organizer Email records (avoids hardcoded account)
+    _org_records = frappe.get_all("Organizer Email", fields=["name"], limit=5)
+    _context_user = None
+    for _rec in _org_records:
+        _u = (_rec.get("name") or "").strip()
+        if _u and "@" in _u and not any(_u.lower().endswith("@" + d) for d in ("gmail.com", "yahoo.com", "hotmail.com", "outlook.com")):
+            _context_user = _u
+            break
+    if not _context_user:
+        frappe.throw("No valid Organizer Email found. Please add an organisation email in the Organizer Email doctype.")
+
     MAX_BATCH = 20
     schedule_url = (
-        "https://graph.microsoft.com/v1.0/"
-        "users/health.fellowship@azimpremjifoundation.org/calendar/getSchedule"
+        f"https://graph.microsoft.com/v1.0/users/{_context_user}/calendar/getSchedule"
     )
 
     schedule_map = {}
-    total_batches = (len(room_emails) + MAX_BATCH - 1) // MAX_BATCH
 
     for i in range(0, len(room_emails), MAX_BATCH):
         batch = room_emails[i:i + MAX_BATCH]
@@ -371,12 +380,23 @@ def get_org_rooms_and_availability(interview_date, start_time, end_time):
             "availabilityViewInterval": 30
         }
 
-        resp = requests.post(
-            schedule_url,
-            headers={**headers, "Content-Type": "application/json"},
-            json=body
-        )
-        resp.raise_for_status()
+        try:
+            resp = requests.post(
+                schedule_url,
+                headers={**headers, "Content-Type": "application/json"},
+                json=body
+            )
+            resp.raise_for_status()
+        except requests.exceptions.HTTPError as _he:
+            frappe.log_error(
+                f"getSchedule failed for context user {_context_user}: {_he}",
+                "Room Availability Error"
+            )
+            frappe.throw(
+                f"Could not check room availability. The organiser account "
+                f"<b>{_context_user}</b> does not have calendar access permissions in Microsoft 365. "
+                "Please contact your IT administrator."
+            )
 
         for item in resp.json().get("value", []):
             schedule_map[item["scheduleId"].lower()] = item.get("scheduleItems", [])
@@ -548,9 +568,15 @@ def create_interview_event(event_title,
                 f"?app_id={_fq(str(application_id or ''), safe='')}"
                 f"&applicant_name={_fq(str(Applicants_name or ''), safe='')}"
             )
-        elif _round_norm in ("round one", "round two", "round three", "calibration process"):
+        elif _round_norm in ("round one", "round two", "round three"):
             feedback_url = (
                 "https://careers.frappe.cloud/campus-associate-feedback-form/new"
+                f"?app_id={_fq(str(application_id or ''), safe='')}"
+                f"&applicant_name={_fq(str(Applicants_name or ''), safe='')}"
+            )
+        elif _round_norm == "calibration process":
+            feedback_url = (
+                "https://careers.frappe.cloud/calibration-process/new"
                 f"?app_id={_fq(str(application_id or ''), safe='')}"
                 f"&applicant_name={_fq(str(Applicants_name or ''), safe='')}"
             )
@@ -588,11 +614,13 @@ def create_interview_event(event_title,
         feedback_url = str(feedback_form_link or "").strip()
 
     # Debug log
-    frappe.log_error(
-        f"[FeedbackURL] dept={repr(_dept_raw)} | role={repr(_role_raw2)} | "
-        f"round={repr(_round_norm)} | url={'SET' if feedback_url else 'EMPTY'}",
-        "Feedback URL Debug"
-    )
+    try:
+        frappe.log_error(
+            title="Feedback URL Debug",
+            message=f"dept={repr(_dept_raw)} | role={repr(_role_raw2)} | round={repr(_round_norm)} | url={'SET' if feedback_url else 'EMPTY'}"
+        )
+    except Exception:
+        pass
 
     # If JS failed to extract demo_feedback_interviewers_email (Table MultiSelect mapping issue),
     # fetch it directly from the saved Field Interview Schedule document in the database.
@@ -607,8 +635,10 @@ def create_interview_event(event_title,
             if _db_emails:
                 demo_feedback_interviewers_email = ",".join(_db_emails)
         except Exception as _dbe:
-            frappe.log_error(f"DB fallback for demo_feedback_interviewers_email failed: {_dbe}",
-                             "Demo Feedback DB Fallback")
+            try:
+                frappe.log_error(title="Demo Feedback DB Fallback", message=str(_dbe)[:2000])
+            except Exception:
+                pass
 
     # Priority 2: read from Field Interview Schedule record in DB
     if not feedback_url and application_id:
@@ -761,8 +791,8 @@ def create_interview_event(event_title,
     # ----------------------------------------
     # ATTENDEES
     # ----------------------------------------
-    interviewer_list = [i.strip() for i in (interviewer_emails or "").split(",") if i.strip()]
-    room_list = [r.strip() for r in (room_emails or "").split(",") if r.strip()]
+    interviewer_list = list(dict.fromkeys([i.strip() for i in (interviewer_emails or "").split(",") if i.strip()]))
+    room_list = list(dict.fromkeys([r.strip() for r in (room_emails or "").split(",") if r.strip()]))
 
     attendees = []
     for r in room_list:
@@ -1413,10 +1443,10 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
             _ir.raise_for_status()
             _igraph_sent = True
         except Exception as _ierr:
-            frappe.log_error(
-                f"Interviewer Graph email failed for {_imail}: {_ierr}",
-                "Interviewer Email Error"
-            )
+            try:
+                frappe.log_error(title="Interviewer Email Error", message=str(_ierr)[:2000])
+            except Exception:
+                pass
         if not _igraph_sent:
             try:
                 frappe.sendmail(
@@ -1428,20 +1458,22 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
                     delayed=False
                 )
             except Exception as _ifallback:
-                frappe.log_error(
-                    f"Interviewer fallback email failed for {_imail}: {_ifallback}",
-                    "Interviewer Email Fallback Error"
-                )
+                try:
+                    frappe.log_error(title="Interviewer Email Fallback Error", message=str(_ifallback)[:2000])
+                except Exception:
+                    pass
 
     # ----------------------------------------
     # EMAIL TO DEMO FEEDBACK INTERVIEWER(S)
     # ----------------------------------------
     # Only sent when demo checkbox is checked AND demo_feedback_interviewers_email is filled.
     # These interviewers receive ONLY the demo feedback form link (not the regular feedback).
+    # Exclude anyone already in interviewer_list (they already got the full email above).
+    _already_emailed = set(interviewer_list)
     _demo_interviewer_list = [
         e.strip()
         for e in (demo_feedback_interviewers_email or "").split(",")
-        if e.strip()
+        if e.strip() and e.strip() not in _already_emailed
     ]
 
     if demo_feedback_url and _demo_interviewer_list:
@@ -1481,10 +1513,10 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
                 _dr.raise_for_status()
                 _demo_graph_sent = True
             except Exception as _derr:
-                frappe.log_error(
-                    f"Demo feedback Graph email failed for {_dmail}: {_derr}",
-                    "Demo Feedback Email Error"
-                )
+                try:
+                    frappe.log_error(title="Demo Feedback Email Error", message=str(_derr)[:2000])
+                except Exception:
+                    pass
 
             # Fallback: frappe.sendmail if Graph API failed
             if not _demo_graph_sent:
@@ -1498,10 +1530,10 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
                         delayed=False
                     )
                 except Exception as _dfallback_err:
-                    frappe.log_error(
-                        f"Demo feedback fallback email also failed for {_dmail}: {_dfallback_err}",
-                        "Demo Feedback Email Fallback Error"
-                    )
+                    try:
+                        frappe.log_error(title="Demo Feedback Email Fallback Error", message=str(_dfallback_err)[:2000])
+                    except Exception:
+                        pass
 
     # ----------------------------------------
     # EMAIL TO CANDIDATE
@@ -1574,10 +1606,10 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
                             resp_body = send_res.text if hasattr(send_res, "text") else str(mail_err)
                         except Exception:
                             resp_body = str(mail_err)
-                        frappe.log_error(
-                            f"Graph sendMail failed (both attempts): {resp_body}",
-                            "Candidate Email Graph Error"
-                        )
+                        try:
+                            frappe.log_error(title="Candidate Email Graph Error", message=str(resp_body)[:2000])
+                        except Exception:
+                            pass
 
             # Fallback: frappe.sendmail if Graph API failed
             if not graph_sent:
@@ -1591,10 +1623,10 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
                         delayed=False
                     )
                 except Exception as fallback_err:
-                    frappe.log_error(
-                        f"Candidate email fallback also failed: {fallback_err}",
-                        "Candidate Email Fallback Error"
-                    )
+                    try:
+                        frappe.log_error(title="Candidate Email Fallback Error", message=str(fallback_err)[:2000])
+                    except Exception:
+                        pass
 
 
     # Save event_id to the document so reschedule can cancel it later
