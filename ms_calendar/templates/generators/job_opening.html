@@ -1,0 +1,149 @@
+{% extends "templates/web.html" %}
+
+{% block page_content %}
+<div class="job-opening-page" style="font-family: 'Inter', sans-serif; background: #f7f8fa; min-height: 100vh;">
+
+  <!-- Header Banner -->
+  <div style="background: #1a3c6e; padding: 40px 0 30px 0;">
+    <div class="container-lg">
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <div>
+          <span style="background: {{ '#27ae60' if status == 'Open' else '#888' }}; color: #fff; border-radius: 20px; padding: 4px 16px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;">
+            {{ status }}
+          </span>
+          <h1 style="color: #fff; font-size: 2rem; font-weight: 700; margin: 12px 0 4px 0;">{{ job_title }}</h1>
+          <p style="color: #b0c4de; font-size: 14px; margin: 0;">Posted {{ posted_on }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container-lg" style="padding: 40px 16px;">
+    <div class="row">
+
+      <!-- Left: Description -->
+      <div class="col-lg-8">
+        <div style="background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 24px;">
+          <h3 style="color: #1a3c6e; font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; border-bottom: 2px solid #e8edf5; padding-bottom: 12px;">About the Role</h3>
+          <div style="color: #444; line-height: 1.8; font-size: 15px;">
+            {{ description or "" }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Details Card -->
+      <div class="col-lg-4">
+        <div style="background: #fff; border-radius: 12px; padding: 28px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 24px; position: sticky; top: 20px;">
+
+          <h3 style="color: #1a3c6e; font-size: 1rem; font-weight: 700; margin-bottom: 20px; border-bottom: 2px solid #e8edf5; padding-bottom: 12px;">Job Details</h3>
+
+          <table style="width: 100%; border-collapse: collapse;">
+            {% if designation %}
+            <tr>
+              <td style="padding: 8px 0; color: #888; font-size: 13px; width: 40%; vertical-align: top;">Designation</td>
+              <td style="padding: 8px 0; color: #222; font-size: 14px; font-weight: 600;">{{ designation }}</td>
+            </tr>
+            {% endif %}
+            {% if location %}
+            <tr>
+              <td style="padding: 8px 0; color: #888; font-size: 13px; vertical-align: top;">Location</td>
+              <td style="padding: 8px 0; color: #222; font-size: 14px; font-weight: 600;">{{ location }}</td>
+            </tr>
+            {% endif %}
+            {% if unit %}
+            <tr>
+              <td style="padding: 8px 0; color: #888; font-size: 13px; vertical-align: top;">Unit</td>
+              <td style="padding: 8px 0; color: #222; font-size: 14px; font-weight: 600;">{{ unit }}</td>
+            </tr>
+            {% endif %}
+            {% if department %}
+            <tr>
+              <td style="padding: 8px 0; color: #888; font-size: 13px; vertical-align: top;">Sub Unit</td>
+              <td style="padding: 8px 0; color: #222; font-size: 14px; font-weight: 600;">{{ department }}</td>
+            </tr>
+            {% endif %}
+            {% if employment_type %}
+            <tr>
+              <td style="padding: 8px 0; color: #888; font-size: 13px; vertical-align: top;">Employment Type</td>
+              <td style="padding: 8px 0; color: #222; font-size: 14px; font-weight: 600;">{{ employment_type }}</td>
+            </tr>
+            {% endif %}
+            {% if closes_on %}
+            <tr>
+              <td style="padding: 8px 0; color: #888; font-size: 13px; vertical-align: top;">Closes On</td>
+              <td style="padding: 8px 0; color: #e74c3c; font-size: 14px; font-weight: 600;">{{ closes_on }}</td>
+            </tr>
+            {% endif %}
+            {% if publish_applications_received and no_of_applications %}
+            <tr>
+              <td style="padding: 8px 0; color: #888; font-size: 13px; vertical-align: top;">Applications</td>
+              <td style="padding: 8px 0; color: #222; font-size: 14px; font-weight: 600;">{{ no_of_applications }}</td>
+            </tr>
+            {% endif %}
+          </table>
+
+          {%- if status == "Open" -%}
+          <div style="margin-top: 24px;">
+            <a href="{{ job_application_route if (job_application_route and job_application_route.startswith('http')) else ('/' + (job_application_route or 'job_application') + '/new?job_title=' + name) }}"
+              class="apf-btn-apply"
+              style="display: block; text-align: center; background: #1a3c6e; color: #fff; border-radius: 8px; padding: 14px 24px; font-size: 15px; font-weight: 700; text-decoration: none; letter-spacing: 0.3px; transition: background 0.2s;">
+              Apply Now
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                style="vertical-align: middle; margin-left: 6px;">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </a>
+          </div>
+          {%- endif -%}
+
+        </div>
+
+        <div style="text-align: center; margin-top: 8px;">
+          <a href="/jobs" style="color: #1a3c6e; font-size: 14px; text-decoration: none;">
+            ← Back to all openings
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="background: #1a3c6e; color: #b0c4de; padding: 40px 0 20px 0; margin-top: 40px;">
+    <div class="container-lg">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-center" style="gap: 20px;">
+        <p class="footer-copy-text text-center text-md-start" style="margin: 0; font-size: 13px;">
+          &copy; {{ frappe.utils.nowdate()[:4] }} Azim Premji Foundation. All rights reserved.
+        </p>
+        <a href="https://careers.azimpremjifoundation.org" target="_blank" rel="noopener"
+          style="display:inline-block; flex-shrink:0;">
+          <img src="https://careers.azimpremjifoundation.org/apf/assets/powered-by-zwayam"
+            alt="Powered by Zwayam" style="height:40px; width:auto; display:block;"
+            onerror="this.parentElement.innerHTML='<span style=&quot;color:rgba(255,255,255,0.5);font-size:12px;&quot;>careers.azimpremjifoundation.org</span>'" />
+        </a>
+        <div class="footer-socials" style="display: flex; gap: 16px; align-items: center;">
+          <a href="https://www.facebook.com/azimpremjifoundation" target="_blank" rel="noopener" aria-label="Facebook">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+          </a>
+          <a href="https://x.com/azimpremjiuniv" target="_blank" rel="noopener" aria-label="X">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg>
+          </a>
+          <a href="https://www.instagram.com/azimpremjiuniv" target="_blank" rel="noopener" aria-label="Instagram">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+          </a>
+          <a href="https://www.linkedin.com/school/azim-premji-university" target="_blank" rel="noopener" aria-label="LinkedIn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+          </a>
+          <a href="https://www.youtube.com/user/AzimPremjiUniversity" target="_blank" rel="noopener" aria-label="YouTube">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 576 512" fill="white"><path d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -552,16 +552,29 @@ def create_interview_event(event_title,
                    "round 4": "round four", "round4": "round four"}.get(_round_norm, _round_norm)
 
     # --- Department-based lookup (primary) ---
-    # department field on cloud stores the department name directly
-    # (e.g. "Associate Resource Person", "Education", "Livelihood", "Health")
     _dept_raw  = str(department or "").strip().lower()
     _role_raw2 = str(Applicants_Role or "").strip().lower()
 
     from urllib.parse import quote as _fq
 
+    # Determine bucket — Health/Livelihood BEFORE Education so that roles like
+    # "Resource Person-Health" or "Resource Person-Livelihoods" are not
+    # incorrectly caught by the Education "resource person" keyword fallback.
+    _is_arp        = "associate resource person" in _dept_raw or "associate resource person" in _role_raw2
+    _is_health     = (not _is_arp) and ("health" in _dept_raw or "health" in _role_raw2)
+    _is_livelihood = (not _is_arp) and (
+        any(k in _dept_raw for k in ("livelihood", "livelihoods")) or
+        any(k in _role_raw2 for k in ("livelihood", "livelihoods", "cluster", "market research"))
+    )
+    # Education: role-based fallback only applies when not already Health/Livelihood
+    _is_education  = (not _is_arp and not _is_health and not _is_livelihood) and (
+        "education" in _dept_raw or
+        any(k in _role_raw2 for k in ("school teacher", "resource person"))
+    )
+
     feedback_url = ""
 
-    if _dept_raw == "associate resource person" or "associate resource person" in _role_raw2:
+    if _is_arp:
         if _round_norm in ("recruiter round",):
             feedback_url = (
                 "https://careers.frappe.cloud/recruiter-assessment-form-feed-back-form/new"
@@ -581,19 +594,15 @@ def create_interview_event(event_title,
                 f"&applicant_name={_fq(str(Applicants_name or ''), safe='')}"
             )
 
-    elif _dept_raw in ("education", "Education".lower()) or any(
-        k in _role_raw2 for k in ("school teacher", "resource person")
-    ):
-        _tmpl = _EDUCATION_FEEDBACK_URLS.get((_role_raw2, _round_norm), "")
+    elif _is_health:
+        _tmpl = _HEALTH_FEEDBACK_URLS.get(_round_norm, "")
         if _tmpl:
             feedback_url = _tmpl.format(
                 app_id=_fq(str(application_id or ""), safe=""),
                 applicant_name=_fq(str(Applicants_name or ""), safe="")
             )
 
-    elif _dept_raw == "livelihood" or any(
-        k in _role_raw2 for k in ("livelihood", "cluster", "market research")
-    ):
+    elif _is_livelihood:
         _tmpl = _LIVELIHOOD_FEEDBACK_URLS.get(_round_norm, "")
         if _tmpl:
             feedback_url = _tmpl.format(
@@ -601,8 +610,8 @@ def create_interview_event(event_title,
                 applicant_name=_fq(str(Applicants_name or ""), safe="")
             )
 
-    elif _dept_raw == "health" or "health" in _role_raw2:
-        _tmpl = _HEALTH_FEEDBACK_URLS.get(_round_norm, "")
+    elif _is_education:
+        _tmpl = _EDUCATION_FEEDBACK_URLS.get((_role_raw2, _round_norm), "")
         if _tmpl:
             feedback_url = _tmpl.format(
                 app_id=_fq(str(application_id or ""), safe=""),
@@ -615,9 +624,10 @@ def create_interview_event(event_title,
 
     # Debug log
     try:
+        _bucket = "arp" if _is_arp else "health" if _is_health else "livelihood" if _is_livelihood else "education" if _is_education else "none"
         frappe.log_error(
             title="Feedback URL Debug",
-            message=f"dept={repr(_dept_raw)} | role={repr(_role_raw2)} | round={repr(_round_norm)} | url={'SET' if feedback_url else 'EMPTY'}"
+            message=f"dept={repr(_dept_raw)} | role={repr(_role_raw2)} | round={repr(_round_norm)} | bucket={_bucket} | url={'SET' if feedback_url else 'EMPTY'}"
         )
     except Exception:
         pass
@@ -1377,7 +1387,27 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
         )
 
     else:
-        final_body = initial_body
+        # Recruiter Round (and any other rounds not handled above).
+        # Rebuild from the template now that meeting_html is available,
+        # so the Teams link appears in the calendar invite body.
+        final_body = round2_interviewer_template.format(
+            Applicants_name=Applicants_name,
+            Applicants_Role=Applicants_Role,
+            total_exp=total_exp,
+            current_ctc=current_ctc,
+            expected_ctc=expected_ctc,
+            interview_date_str=interview_date_str,
+            display_mode=display_mode,
+            round_label=round_label,
+            interview_time_str=interview_time_str,
+            end_time_str=end_time_str,
+            InterviewersName=InterviewersName,
+            meeting_info=meeting_html,
+            phone_info=phone_info_html,
+            Map_html=interviewer_location_html,
+            feedback_html_block=feedback_html_block,
+            Note_to_interviewer_html=note_to_interviewer_html
+        )
 
     # ── PATCH 1: update body silently (no email yet) 
     # Set the final body (with Teams link / venue info) BEFORE adding
