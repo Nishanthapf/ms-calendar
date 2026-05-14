@@ -1,8 +1,8 @@
-
 import frappe
 from frappe import _
+from frappe.utils import getdate
 from frappe.model.naming import set_name_from_naming_options
-from frappe.utils import get_link_to_form, getdate, pretty_date
+from frappe.utils.data import pretty_date
 from frappe.website.website_generator import WebsiteGenerator
 
 
@@ -52,9 +52,10 @@ class JobOpening(WebsiteGenerator):
 
     # Maps unit_lower → careers.frappe.cloud form slug
     _UNIT_FORM_MAP = {
-        "field":   "field-registration-form",
-        "grantee": "philanthropy-registration-form",
-        "grants":  "philanthropy-registration-form",
+        "field":                    "field-registration-form",
+        "grantee":                  "philanthropy-registration-form",
+        "grants":                   "philanthropy-registration-form",
+        "azim premji scholarship":  "scholarship-recruitment-form",
     }
 
     def _auto_set_job_application_route(self):

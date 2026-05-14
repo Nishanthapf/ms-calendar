@@ -1005,7 +1005,7 @@ as per the details below:</p>
   </tr>
   <tr>
     <td style="padding:4px 12px 4px 0;"><b>Time:</b></td>
-    <td style="padding:4px 0;">{interview_time_str}</td>
+    <td style="padding:4px 0;">{interview_time_str} – {end_time_str}</td>
   </tr>
   <tr>
     <td style="padding:4px 12px 4px 0;"><b>Interview Mode:</b></td>
@@ -1409,31 +1409,52 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
             Note_to_interviewer_html=note_to_interviewer_html
         )
 
-    # ── PATCH 1: update body silently (no email yet) 
+    # Headers for PATCH calls — "If-Match: *" bypasses Graph's ETag precondition
+    # check (412 Precondition Failed) which can occur when the event's changeKey
+    # is updated server-side between creation and the first PATCH.
+    patch_headers = {**headers, "If-Match": "*"}
+
+    # ── PATCH 1: update body silently (no email yet)
     # Set the final body (with Teams link / venue info) BEFORE adding
     # attendees so that when the invite lands in their inbox, it already
     # contains the complete content. Using sendUpdates=none means no
     # notification is fired for this body change.
-    requests.patch(
-        event_fetch_url + "?sendUpdates=none",
-        headers=headers,
-        json={
-            "body":   {"contentType": "HTML", "content": final_body},
-            "showAs": "busy"
-        }
-    ).raise_for_status()
+    try:
+        p1_res = requests.patch(
+            event_fetch_url + "?sendUpdates=none",
+            headers=patch_headers,
+            json={
+                "body":   {"contentType": "HTML", "content": final_body},
+                "showAs": "busy"
+            },
+            timeout=60
+        )
+        p1_res.raise_for_status()
+    except requests.exceptions.HTTPError as p1_err:
+        if p1_res.status_code in (412, 502, 503, 504):
+            frappe.log_error(
+                title="Body PATCH error",
+                message=f"{p1_err} — event {event_id} body may not reflect final content."
+            )
+        else:
+            raise
 
-    # ── PATCH 2: add attendees silently (no Outlook calendar invite email) ──
-    # sendUpdates=none → attendees are added to the event (it appears in their
-    # calendar) but the automatic Outlook invite notification email is blocked.
-    # Custom emails are sent below instead.
-    # MS Graph can return 504 Gateway Timeout — the event is already created,
+    # ── PATCH 2: add attendees + body together in one call ──────────────────
+    # Combining body + attendees in a single PATCH avoids a second round-trip
+    # and prevents a second 412 on the attendees update.
+    # sendUpdates=none → calendar entry appears in their calendar without an
+    # automatic Outlook notification (we send custom emails below).
+    # MS Graph can return 504 Gateway Timeout — event is already created,
     # so we log and continue.
     try:
         patch2_res = requests.patch(
             event_fetch_url + "?sendUpdates=none",
-            headers=headers,
-            json={"attendees": attendees},
+            headers=patch_headers,
+            json={
+                "body":      {"contentType": "HTML", "content": final_body},
+                "attendees": attendees,
+                "showAs":    "busy"
+            },
             timeout=60
         )
         patch2_res.raise_for_status()
@@ -1443,7 +1464,7 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
             message=f"504/timeout patching attendees for event {event_id}. Event was created; invites may still arrive."
         )
     except requests.exceptions.HTTPError as patch_err:
-        if patch2_res.status_code in (502, 503, 504):
+        if patch2_res.status_code in (412, 502, 503, 504):
             frappe.log_error(
                 title="Attendees PATCH gateway error",
                 message=f"{patch_err} — event {event_id} created; invites may still arrive."
@@ -1456,13 +1477,11 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
     # ----------------------------------------
     # Only sent when demo checkbox is checked AND demo_feedback_interviewers_email is filled.
     # These interviewers receive ONLY the demo feedback form link (not the regular feedback).
-    # Exclude anyone already in interviewer_list (calendar invite already delivered to them).
-    _already_emailed = set(interviewer_list)
-    _demo_interviewer_list = [
+    _demo_interviewer_list = list(dict.fromkeys(
         e.strip()
         for e in (demo_feedback_interviewers_email or "").split(",")
-        if e.strip() and e.strip() not in _already_emailed
-    ]
+        if e.strip()
+    ))
 
     if demo_feedback_url and _demo_interviewer_list:
         _demo_subject = (

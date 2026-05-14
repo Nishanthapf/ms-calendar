@@ -8,6 +8,13 @@ app_license = "mit"
 # Apps
 # ------------------
 
+
+doc_events = {
+    "Field Offline Result": {
+        "after_insert": "ms_calendar.events.after_insert"
+    }
+}
+ 
 # required_apps = []
 
 # Each item in the list will be shown as an app in the apps page
