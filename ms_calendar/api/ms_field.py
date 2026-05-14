@@ -560,7 +560,11 @@ def create_interview_event(event_title,
     # Determine bucket — Health/Livelihood BEFORE Education so that roles like
     # "Resource Person-Health" or "Resource Person-Livelihoods" are not
     # incorrectly caught by the Education "resource person" keyword fallback.
-    _is_arp        = "associate resource person" in _dept_raw or "associate resource person" in _role_raw2
+    _is_arp        = (
+        "associate resource person" in _dept_raw or
+        "associate resource person" in _role_raw2 or
+        _role_raw2.startswith("assoc")   # catches "associate", "assocate" (typo), etc.
+    )
     _is_health     = (not _is_arp) and ("health" in _dept_raw or "health" in _role_raw2)
     _is_livelihood = (not _is_arp) and (
         any(k in _dept_raw for k in ("livelihood", "livelihoods")) or
@@ -1431,7 +1435,7 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
         )
         p1_res.raise_for_status()
     except requests.exceptions.HTTPError as p1_err:
-        if p1_res.status_code in (412, 502, 503, 504):
+        if p1_res.status_code in (412, 500, 502, 503, 504):
             frappe.log_error(
                 title="Body PATCH error",
                 message=f"{p1_err} — event {event_id} body may not reflect final content."
@@ -1464,13 +1468,64 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
             message=f"504/timeout patching attendees for event {event_id}. Event was created; invites may still arrive."
         )
     except requests.exceptions.HTTPError as patch_err:
-        if patch2_res.status_code in (412, 502, 503, 504):
+        if patch2_res.status_code in (412, 500, 502, 503, 504):
             frappe.log_error(
                 title="Attendees PATCH gateway error",
                 message=f"{patch_err} — event {event_id} created; invites may still arrive."
             )
         else:
             raise
+
+    # ----------------------------------------
+    # EMAIL TO INTERVIEWER(S)
+    # ----------------------------------------
+    interviewer_email_subject = (
+        f"Interview Scheduled – {round_label} for {Applicants_Role} {candidate_phone}"
+    )
+    _i_send_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/sendMail"
+
+    for _imail in interviewer_list:
+        _i_payload = {
+            "message": {
+                "subject": interviewer_email_subject,
+                "body": {"contentType": "HTML", "content": final_body},
+                "toRecipients": [{"emailAddress": {"address": _imail}}],
+                "ccRecipients": [{"emailAddress": {"address": Organizer_email}}]
+            },
+            "saveToSentItems": True
+        }
+        _i_graph_sent = False
+        try:
+            _i_res = requests.post(_i_send_url, headers=headers, json=_i_payload, timeout=30)
+            _i_res.raise_for_status()
+            _i_graph_sent = True
+        except Exception as _i_err:
+            try:
+                frappe.log_error(
+                    title="Interviewer Email Graph Error",
+                    message=f"Could not send via Graph to {_imail}: {str(_i_err)[:2000]}"
+                )
+            except Exception:
+                pass
+
+        if not _i_graph_sent:
+            try:
+                frappe.sendmail(
+                    recipients=[_imail],
+                    cc=[Organizer_email],
+                    sender=Organizer_email,
+                    subject=interviewer_email_subject,
+                    message=final_body,
+                    delayed=False
+                )
+            except Exception as _i_fallback_err:
+                try:
+                    frappe.log_error(
+                        title="Interviewer Email Fallback Error",
+                        message=f"Fallback also failed for {_imail}: {str(_i_fallback_err)[:2000]}"
+                    )
+                except Exception:
+                    pass
 
     # ----------------------------------------
     # EMAIL TO DEMO FEEDBACK INTERVIEWER(S)
