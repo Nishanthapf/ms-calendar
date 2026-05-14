@@ -92,6 +92,8 @@ doc_events = {
 # Installation
 # ------------
 
+before_migrate = ["ms_calendar.patches.fix_pkg_resources.execute"]
+
 # before_install = "ms_calendar.install.before_install"
 # after_install = "ms_calendar.install.after_install"
 
