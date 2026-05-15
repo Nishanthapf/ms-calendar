@@ -888,24 +888,30 @@ def create_interview_event(event_title,
                     "round_tree_feedback_form",
                 ]
             elif is_recruiter_round:
-                auto_attach_fields = ["application_forms"]
+                auto_attach_fields = ["resume_upload", "application_forms"]
             elif is_round1:
-                auto_attach_fields = ["recruiter_round_feedback_form", "application_forms"]
+                auto_attach_fields = [
+                    "resume_upload",
+                    "recruiter_round_feedback_form",
+                    "application_forms",
+                ]
             elif is_round2:
                 auto_attach_fields = [
+                    "resume_upload",
                     "recruiter_round_feedback_form",
                     "round_one_feedback_from",
-                    "application_forms"
+                    "application_forms",
                 ]
             elif is_round3:
                 auto_attach_fields = [
+                    "resume_upload",
                     "recruiter_round_feedback_form",
                     "round_one_feedback_from",
                     "round_two_feedback_form",
-                    "application_forms"
+                    "application_forms",
                 ]
             else:
-                auto_attach_fields = ["application_forms"]
+                auto_attach_fields = ["resume_upload", "application_forms"]
 
             # Track filenames already added (from manual attachments) to avoid duplicates
             _already_added = {fname.lower() for fname, _ in final_files}
@@ -1095,7 +1101,7 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
     # INITIAL EVENT BODY
     # ------------------------------------
     if is_calibration_arp:
-        calendar_subject = f"Calibration Process – {Applicants_Role} | {candidate_phone}"
+        calendar_subject = f"Calibration Process – {Applicants_name} | {Applicants_Role} | {candidate_phone}"
         initial_body = calibration_arp_interviewer_template.format(
             Applicants_name=Applicants_name,
             Applicants_Role=Applicants_Role,
@@ -1112,7 +1118,7 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
             Note_to_interviewer_html=note_to_interviewer_html
         )
     elif is_round1:
-        calendar_subject = f"Interview Scheduled – {round_label} for {Applicants_Role} {candidate_phone}"
+        calendar_subject = f"Interview Scheduled – {Applicants_name} | {round_label} for {Applicants_Role} {candidate_phone}"
         # initial_body = round1_interviewer_template.format(
         #     Interviewer_name=InterviewersName,
         #     when_str=when_str,
@@ -1138,7 +1144,7 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
         )
 
     else:
-        calendar_subject = f"Interview Scheduled – {round_label} for {Applicants_Role} {candidate_phone}"
+        calendar_subject = f"Interview Scheduled – {Applicants_name} | {round_label} for {Applicants_Role} {candidate_phone}"
         initial_body = round2_interviewer_template.format(
             Applicants_name=Applicants_name,
             Applicants_Role=Applicants_Role,
@@ -1480,7 +1486,7 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
     # EMAIL TO INTERVIEWER(S)
     # ----------------------------------------
     interviewer_email_subject = (
-        f"Interview Scheduled – {round_label} for {Applicants_Role} {candidate_phone}"
+        f"Interview Scheduled – {Applicants_name} | {round_label} for {Applicants_Role} {candidate_phone}"
     )
     _i_send_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/sendMail"
 
@@ -1490,7 +1496,15 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
                 "subject": interviewer_email_subject,
                 "body": {"contentType": "HTML", "content": final_body},
                 "toRecipients": [{"emailAddress": {"address": _imail}}],
-                "ccRecipients": [{"emailAddress": {"address": Organizer_email}}]
+                "ccRecipients": [{"emailAddress": {"address": Organizer_email}}],
+                "attachments": [
+                    {
+                        "@odata.type": "#microsoft.graph.fileAttachment",
+                        "name": fname,
+                        "contentBytes": fb64
+                    }
+                    for fname, fb64 in final_files
+                ]
             },
             "saveToSentItems": True
         }
@@ -1516,6 +1530,10 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
                     sender=Organizer_email,
                     subject=interviewer_email_subject,
                     message=final_body,
+                    attachments=[
+                        {"fname": fname, "fcontent": base64.b64decode(fb64)}
+                        for fname, fb64 in final_files
+                    ],
                     delayed=False
                 )
             except Exception as _i_fallback_err:
@@ -1540,7 +1558,7 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
 
     if demo_feedback_url and _demo_interviewer_list:
         _demo_subject = (
-            f"Interview Scheduled \u2013 {round_label} for {Applicants_Role} {candidate_phone}"
+            f"Interview Scheduled \u2013 {Applicants_name} | {round_label} for {Applicants_Role} {candidate_phone}"
         )
         _demo_link_html = _link_block(demo_feedback_url, "Demo Lesson Observation Feedback Form")
         _demo_body = (
@@ -1603,7 +1621,7 @@ with <b>{Applicants_name}</b> for the role of <b>{Applicants_Role}</b>.</p>
     # (only the interviewer receives an email in that scenario)
     # ----------------------------------------
     if not is_calibration_arp:
-        candidate_email_subject = f"Interview Scheduled \u2013 {round_label} for {Applicants_Role} {candidate_phone}"
+        candidate_email_subject = f"Interview Scheduled \u2013 {Applicants_name} | {round_label} for {Applicants_Role} {candidate_phone}"
 
         candidate_email_body = candidate_template.format(
             Applicants_name=Applicants_name,
