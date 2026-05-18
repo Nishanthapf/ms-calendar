@@ -81,9 +81,10 @@ class JobOpening(WebsiteGenerator):
 
     def validate(self):
         if not self.route:
-            slug = frappe.scrub(self.job_title).replace("_", "-")
+            slug = frappe.scrub(self.job_title or "job").replace("_", "-")
             doc_id = (self.name or "").lower().replace("/", "-")
-            self.route = f"jobs/{frappe.scrub(self.unit)}/{slug}-{doc_id}"
+            unit_slug = frappe.scrub(self.unit) if self.unit else "general"
+            self.route = f"jobs/{unit_slug}/{slug}-{doc_id}"
         self._auto_set_job_application_route()
         self.update_closing_date()
         self.validate_dates()
