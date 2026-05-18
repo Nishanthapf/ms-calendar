@@ -53,7 +53,6 @@ class JobOpening(WebsiteGenerator):
     # Maps unit_lower → careers.frappe.cloud form slug
     _UNIT_FORM_MAP = {
         "field":                    "field-registration-form",
-        "grantee":                  "philanthropy-registration-form",
         "grants":                   "philanthropy-registration-form",
         "azim premji scholarship":  "scholarship-recruitment-form",
     }

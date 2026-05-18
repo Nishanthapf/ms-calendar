@@ -6,7 +6,7 @@
 {% block head_include %}
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link
-  href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&family=Merriweather:wght@700;900&display=swap"
+  href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap"
   rel="stylesheet">
 <style>
   :root {
@@ -271,7 +271,7 @@
     .apf-breadcrumb { font-size:13px; color:#333; font-weight:400; margin-bottom:14px; line-height:1; }
     .apf-breadcrumb a { color:#333; text-decoration:none; }
     .apf-breadcrumb a:hover { text-decoration:underline; }
-    .apf-hero-text h1 { font-family:'Merriweather',serif; font-size:clamp(30px,3.5vw,46px); font-weight:900; color:#1a1a1a; line-height:1.2; margin:0; }
+    .apf-hero-text h1 { font-family:'Roboto',sans-serif; font-size:clamp(30px,3.5vw,46px); font-weight:700; color:#1a1a1a; line-height:1.2; margin:0; }
     .apf-hero-img { flex-shrink:0; align-self:flex-end; line-height:0; }
     .apf-hero-img img { width:clamp(220px,28vw,420px); height:auto; object-fit:contain; display:block; vertical-align:bottom; } */
 
@@ -281,25 +281,19 @@
     background: #F6BA5C;
     padding: 0;
     margin: 0;
-  }
-
-  .apf-hero-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 48px clamp(2rem, 5vw, 80px) 0;
-    max-width: 100%;
-    margin: 0 auto;
-    gap: 32px;
-    min-height: 300px;
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    margin-left: -50vw;
   }
 
   .apf-hero-text {
-    flex: 1;
-    padding-bottom: 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
-  /* Breadcrumb (matched) */
+  /* Breadcrumb */
   .apf-breadcrumb {
     font-family: 'Roboto', sans-serif;
     font-size: 14px;
@@ -319,9 +313,9 @@
     color: var(--primary);
   }
 
-  /* Heading (matched) */
+  /* Heading */
   .apf-hero-text h1 {
-    font-family: 'Merriweather', serif;
+    font-family: 'Roboto', sans-serif;
     font-size: clamp(26px, 4vw, 48px);
     font-weight: 700;
     color: #242424;
@@ -329,13 +323,7 @@
     margin-top: -12px;
   }
 
-  /* Image (matched) */
-  .apf-hero-img {
-    flex-shrink: 0;
-    align-self: flex-end;
-    line-height: 0;
-  }
-
+  /* Image column — no right gutter, image fills column, sits at bottom */
   .apf-hero-img img {
     width: 100%;
     max-width: 400px;
@@ -370,9 +358,7 @@
     padding: 40px 0 60px;
   }
 
-  .apf-content-inner {
-    padding: 0 clamp(1rem, 2vw, 2rem);
-  }
+  /* Bootstrap .container-lg inside .apf-content is NOT affected by our main.container reset */
 
   /* ── ACTION BAR ── */
   .apf-action-bar {
@@ -472,14 +458,14 @@
 
   /* ── JOB CARD ── */
   .apf-job-card {
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 28px 32px;
+    border: 1px solid rgba(0, 0, 0, .25);
+    border-radius: 10px;
+    padding: 24px 28px;
     margin-bottom: 40px;
   }
 
   .apf-job-card h2 {
-    font-family: 'Merriweather', serif;
+    font-family: 'Roboto', sans-serif;
     font-size: clamp(20px, 2.5vw, 28px);
     font-weight: 700;
     color: #1a1a1a;
@@ -553,7 +539,7 @@
   }
 
   .apf-jd-header h3 {
-    font-family: 'Merriweather', serif;
+    font-family: 'Roboto', sans-serif;
     font-size: 22px;
     font-weight: 700;
     color: #1a1a1a;
@@ -605,10 +591,13 @@
 
   /* ── FOOTER ── */
   .footer-banner {
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    margin-left: -50vw;
     background: #1b3f77;
     display: flex;
     flex-direction: column;
-    margin: 0;
     padding: 0;
     line-height: 0;
     font-size: 0;
@@ -617,6 +606,7 @@
 
   .footer-banner img {
     width: 100%;
+    height: auto;
     display: block;
     flex-shrink: 0;
     margin: 0;
@@ -624,9 +614,12 @@
   }
 
   .footer-bottom {
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    margin-left: -50vw;
     background: #1b3f77;
     padding: 40px 0 24px 0 !important;
-    margin: 0 !important;
   }
 
   .footer-copy-text {
@@ -677,10 +670,6 @@
 
   /* ── Desktop / large laptop (1200–1399px) ── */
   @media (min-width:1200px) and (max-width:1399.98px) {
-    .apf-content-inner {
-      padding: 0 2rem;
-    }
-
     .footer-bottom .container-lg {
       padding: 0 2rem;
     }
@@ -688,19 +677,6 @@
 
   /* ── Laptop (992–1199px) ── */
   @media (min-width:992px) and (max-width:1199.98px) {
-    .apf-hero-inner {
-      padding: 40px clamp(1.5rem, 4vw, 3rem) 0;
-      min-height: 260px;
-    }
-
-    .apf-hero-img img {
-      max-width: 320px;
-    }
-
-    .apf-content-inner {
-      padding: 0 1.5rem;
-    }
-
     .footer-bottom .container-lg {
       padding: 0 1.5rem;
     }
@@ -723,20 +699,6 @@
     .logo img {
       height: 75px !important;
       max-height: 75px !important;
-    }
-
-    .apf-hero-inner {
-      padding: 32px 1.5rem 0;
-      min-height: 220px;
-      gap: 20px;
-    }
-
-    .apf-hero-img img {
-      max-width: 260px;
-    }
-
-    .apf-content-inner {
-      padding: 0 1.25rem;
     }
 
     .footer-bottom .container-lg {
@@ -768,29 +730,9 @@
       max-height: 65px !important;
     }
 
-    .apf-hero-inner {
-      flex-direction: row;
-      flex-wrap: wrap;
-      padding: 24px 1rem 0;
-      min-height: 180px;
-      gap: 16px;
-    }
-
-    .apf-hero-text {
-      flex: 1 1 55%;
-      padding-bottom: 24px;
-    }
-
-    .apf-hero-img {
-      flex: 0 0 auto;
-    }
-
-    .apf-hero-img img {
-      max-width: 180px;
-    }
-
-    .apf-content-inner {
-      padding: 0 1rem;
+    .apf-hero .container-lg {
+      padding-left: 12px;
+      padding-right: 12px;
     }
 
     .footer-bottom .container-lg {
@@ -861,17 +803,14 @@
     }
 
     /* hero stacks vertically */
-    .apf-hero-inner {
-      flex-direction: column;
-      padding: 20px 16px 0;
-      min-height: unset;
-      gap: 8px;
+    .apf-hero .container-lg {
+      padding-left: 12px;
+      padding-right: 12px;
     }
 
     .apf-hero-text {
-      flex: unset;
-      width: 100%;
-      padding-bottom: 16px;
+      padding-top: 16px;
+      padding-bottom: 8px;
     }
 
     .apf-hero-text h1 {
@@ -883,17 +822,6 @@
       font-size: 12px;
     }
 
-    .apf-hero-img {
-      width: 100%;
-      text-align: center;
-    }
-
-    .apf-hero-img img {
-      width: 140px;
-      max-width: 100%;
-      margin: 0 auto;
-    }
-
     /* frame strip */
     .apf-frame img {
       height: 28px;
@@ -902,10 +830,6 @@
     /* content */
     .apf-content {
       padding: 24px 0 40px;
-    }
-
-    .apf-content-inner {
-      padding: 0 16px;
     }
 
     /* action bar */
@@ -1018,20 +942,22 @@
 
 <!-- HERO -->
 <section class="apf-hero">
-  <div class="apf-hero-inner">
-    <div class="apf-hero-text">
-      <p class="apf-breadcrumb">
-        <a href="https://careers.azimpremjifoundation.org/apf/">Career Home</a>
-        &nbsp;»&nbsp;
-        <a href="/jobs">All Jobs</a>
-        &nbsp;»&nbsp;
-        {{ department }}
-      </p>
-      <h1>{{ job_title }}</h1>
-    </div>
-    <div class="apf-hero-img">
-      <img src="/files/Careers.png" alt="Careers banner"
-        onerror="this.src='https://careers.azimpremjifoundation.org/apf/assets/main-banner.webp'; this.onerror=function(){this.style.display='none'};">
+  <div class="container-lg py-4">
+    <div class="row align-items-center">
+      <div class="col-12 col-lg-8 apf-hero-text">
+        <p class="apf-breadcrumb">
+          <a href="https://careers.azimpremjifoundation.org/apf/">Career Home</a>
+          &nbsp;»&nbsp;
+          <a href="/jobs">All Jobs</a>
+          &nbsp;»&nbsp;
+          {{ department }}
+        </p>
+        <h1>{{ job_title }}</h1>
+      </div>
+      <div class="col-12 col-lg-4 text-center text-lg-end apf-hero-img">
+        <img src="/files/Careers.png" alt="Careers banner"
+          onerror="this.src='https://careers.azimpremjifoundation.org/apf/assets/main-banner.webp'; this.onerror=function(){this.style.display='none'};">
+      </div>
     </div>
   </div>
 </section>
@@ -1043,7 +969,7 @@
 
 <!-- CONTENT -->
 <section class="apf-content">
-  <div class="apf-content-inner">
+  <div class="container-lg">
 
     <!-- Back to Search + inline breadcrumb + Apply Now -->
     <div class="apf-action-bar">
@@ -1058,7 +984,7 @@
 
       </div>
       {%- if status == "Open" -%}
-      <a href="/{{ job_application_route if job_application_route else 'job_application' }}/new?job_title={{ name }}"
+      <a href="{% if job_application_route and job_application_route.startswith('http') %}{{ job_application_route }}{% else %}/{{ job_application_route if job_application_route else 'job_application' }}/new{% endif %}"
         class="apf-btn-apply">
         Apply Now
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -1234,7 +1160,7 @@
     <!-- Bottom Apply -->
     <div class="mt-5 text-end">
       {%- if status == "Open" -%}
-      <a href="/{{ job_application_route if job_application_route else 'job_application' }}/new?job_title={{ name }}"
+      <a href="{% if job_application_route and job_application_route.startswith('http') %}{{ job_application_route }}{% else %}/{{ job_application_route if job_application_route else 'job_application' }}/new{% endif %}"
         class="apf-btn-apply">
         Apply Now
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -1264,11 +1190,6 @@
         <a href="https://azimpremjifoundation.org/disclaimer/" target="_blank">Disclaimer</a>
         <a href="https://azimpremjifoundation.org/privacy-policy/" target="_blank">Privacy Policy</a>
       </p>
-      <a href="https://www.zwayam.com" target="_blank" rel="noopener" style="display:inline-block; flex-shrink:0;">
-        <img src="https://careers.azimpremjifoundation.org/apf/assets/powered-by-zwayam.svg" alt="Powered by Zwayam"
-          style="height:40px; width:auto; display:block;"
-          onerror="this.parentElement.innerHTML='<span style=&quot;color:rgba(255,255,255,0.6);font-size:12px;&quot;>Powered by Zwayam</span>'">
-      </a>
       <div class="footer-socials">
         <a href="https://www.facebook.com/azimpremjifoundation" target="_blank" rel="noopener" aria-label="Facebook">
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="33" viewBox="0 0 32 33" fill="none">

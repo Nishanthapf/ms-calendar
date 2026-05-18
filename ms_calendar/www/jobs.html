@@ -1,0 +1,1136 @@
+{% extends "templates/web.html" %}
+{% block header %}{% endblock %}
+{% block page_header %}{% endblock %}
+
+{% block head_include %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ── Reset Frappe chrome ── */
+  nav.navbar,.navbar,.navbar-expand-lg,nav[class*="navbar"],
+  .web-footer,.page-header,.frappe-navbar,.frappe-top-bar,
+  [class*="top-bar"],.page-head,.page-title,
+  .breadcrumb,.breadcrumb-container,.page-breadcrumbs,
+  .page-title-section,.page-header-wrapper,.page-footer { display:none !important; }
+
+  html,body {
+    margin:0 !important; padding:0 !important;
+    font-family:'Roboto',sans-serif;
+    background:#fff;
+    overflow-x:hidden;
+  }
+  body { padding-top:96px !important; }
+
+  .page-content-wrapper,.page-content,.web-page,.web-main,
+  .web-layout-main,.web-layout-main-section,.web-page-container,
+  .website-list-container,[id^="page-"],.frappe-card,#body_div,
+  main.container {
+    max-width:100% !important; width:100% !important;
+    padding:0 !important; margin:0 !important;
+  }
+
+  /* ── HEADER (identical to job_opening) ── */
+  header {
+    background:#fff;
+    height:96px;
+    display:flex !important;
+    align-items:center;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
+    position:fixed !important;
+    top:0 !important; left:0 !important; right:0 !important;
+    width:100% !important;
+    z-index:99999 !important;
+  }
+  .header-inner {
+    width:100%; max-width:100%; margin:0;
+    padding:0 clamp(1rem,0.769rem + 1.026vw,2rem);
+    display:flex !important;
+    justify-content:space-between;
+    align-items:center;
+    box-sizing:border-box;
+  }
+  .logo a { display:flex; align-items:center; height:85px; overflow:hidden; text-decoration:none !important; }
+  .logo img { height:85px; width:auto; max-height:85px; object-fit:contain; object-position:left center; display:block; }
+  .career-home-link,
+  .career-home-link:link,.career-home-link:visited,.career-home-link:hover,.career-home-link:active {
+    color:#000; font-size:14px; font-weight:400 !important; margin-right:25px;
+    letter-spacing:0.5px; text-decoration:none !important; border-bottom:none !important;
+  }
+  .candidate-login-btn,
+  .candidate-login-btn:link,.candidate-login-btn:visited,.candidate-login-btn:hover,.candidate-login-btn:active,
+  a.candidate-login-btn, header a.candidate-login-btn {
+    background:#E8B006 !important; color:#000 !important;
+    padding:10px 22px !important; border-radius:3px !important;
+    font-weight:600 !important; font-size:15px !important;
+    text-decoration:none !important; border:none !important;
+    display:inline-flex !important; align-items:center !important;
+    justify-content:center !important; line-height:1 !important;
+    letter-spacing:0.3px !important;
+  }
+  .candidate-login-btn:hover,a.candidate-login-btn:hover { background:#d39d05 !important; color:#000 !important; }
+
+  /* ── HERO ── */
+  .apf-hero { background:#F6BA5C; padding:0; margin:0; width:100vw; position:relative; left:50%; margin-left:-50vw; }
+  .apf-hero-text { display:flex; flex-direction:column; justify-content:center; }
+  .apf-breadcrumb { font-size:14px; color:#333; font-weight:500; margin-bottom:14px; line-height:1; }
+  .apf-breadcrumb a { color:inherit; text-decoration:none; }
+  .apf-breadcrumb a:hover { text-decoration:underline; }
+  .apf-hero-text h1 {
+    font-family:'Roboto',sans-serif;
+    font-size:clamp(26px,4vw,48px);
+    font-weight:700; color:#242424; line-height:1.2; margin-top:-12px;
+  }
+  .apf-hero-img img { width:100%; max-width:400px; height:auto; object-fit:contain; display:block; margin-left:auto; }
+
+  /* ── FRAME STRIP ── */
+  .apf-frame {
+    width:100vw; position:relative; left:50%; margin-left:-50vw;
+    line-height:0; font-size:0; display:block; overflow:hidden; background:#fff;
+  }
+  .apf-frame img { width:100%; display:block; height:auto; }
+
+  /* ── TOP BAR ── */
+  .filter-section { background:#fff; border-bottom:1px solid #e5e0d8; box-shadow:0 2px 8px rgba(0,0,0,0.05); }
+  .filter-main-row { padding:14px 0; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .filter-bar-left { display:flex; flex:1; gap:10px; align-items:center; flex-wrap:wrap; }
+  .search-wrap { position:relative; flex:1; min-width:200px; max-width:380px; }
+  .search-wrap svg { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#aaa; pointer-events:none; }
+  .search-wrap input {
+    width:100%; height:42px; padding:0 14px 0 40px;
+    border:1.5px solid #e5e7eb; border-radius:8px;
+    font-size:13.5px; font-family:'Roboto',sans-serif;
+    outline:none; color:#333; transition:border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-wrap input::placeholder { color:#bbb; }
+  .search-wrap input:focus { border-color:#1B3F77; box-shadow:0 0 0 3px rgba(27,63,119,0.08); }
+  .filter-select {
+    height:42px; padding:0 30px 0 12px;
+    border:1.5px solid #e5e7eb; border-radius:8px;
+    font-size:13px; font-family:'Roboto',sans-serif; color:#333; background:#fff;
+    cursor:pointer; outline:none; min-width:140px;
+    transition:border-color 0.2s; appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 10px center;
+  }
+  .filter-select:focus { border-color:#1B3F77; }
+  .filter-count-badge {
+    background:#1B3F77; color:#fff; border-radius:20px; padding:7px 20px;
+    font-size:13px; font-weight:700; white-space:nowrap; flex-shrink:0;
+  }
+  .btn-clear-filters {
+    display:none; align-items:center; gap:6px;
+    height:36px; border-radius:6px; padding:0 18px;
+    font-size:12.5px; font-weight:700; cursor:pointer;
+    font-family:'Roboto',sans-serif; letter-spacing:0.03em; transition:all 0.15s;
+    background:#1B3F77; border:1.5px solid #1B3F77; color:#fff; white-space:nowrap;
+  }
+  .btn-clear-filters:hover { background:#162d57; border-color:#162d57; }
+
+  /* ── MOBILE FILTER ── */
+  .mobile-filter-btn {
+    display:none; align-items:center; gap:7px; height:36px; border-radius:6px;
+    padding:0 18px; font-size:12.5px; font-weight:700; cursor:pointer;
+    font-family:'Roboto',sans-serif; background:#E8B006; border:1.5px solid #E8B006;
+    color:#000; letter-spacing:0.03em; transition:all 0.15s; white-space:nowrap;
+    position:relative;
+  }
+  .mobile-filter-btn:hover { background:#d39d05; }
+  .mobile-filter-btn.has-filters { background:#1B3F77; border-color:#1B3F77; color:#fff; }
+  .mobile-filter-btn.has-filters:hover { background:#162d57; }
+  .mobile-filter-btn.has-filters svg { stroke:#fff; }
+
+  /* ── ACTIVE FILTER CHIPS (mobile) ── */
+  .active-filters-row { display:none; gap:6px; flex-wrap:wrap; padding:0 0 12px; }
+  .active-filters-row.has-chips { display:flex; }
+  .filter-chip {
+    display:inline-flex; align-items:center; gap:4px;
+    background:#EEF2FF; border:1.5px solid #c7d2fe; border-radius:20px;
+    padding:4px 8px 4px 11px; font-size:11.5px; font-weight:600; color:#1B3F77;
+    max-width:180px; flex-shrink:0;
+  }
+  .filter-chip-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .filter-chip-remove {
+    width:16px; height:16px; display:flex; align-items:center; justify-content:center;
+    border:none; background:none; cursor:pointer; color:#1B3F77;
+    font-size:13px; flex-shrink:0; padding:0; border-radius:50; line-height:1;
+    transition:background 0.12s;
+  }
+  .filter-chip-remove:hover { background:rgba(27,63,119,0.12); border-radius:50%; }
+
+  .filter-active-badge {
+    display:none; position:absolute; top:-7px; right:-7px;
+    background:#dc2626; color:#fff; border-radius:50%;
+    width:18px; height:18px; font-size:10px; font-weight:800;
+    align-items:center; justify-content:center; line-height:1;
+    border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.2);
+  }
+  .filter-active-badge.visible { display:flex; }
+  .mobile-overlay {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45);
+    z-index:99997; opacity:0; transition:opacity 0.3s;
+    pointer-events:none;
+  }
+  .mobile-overlay.visible { opacity:1; pointer-events:all; }
+  .sidebar-mobile-header {
+    display:none; align-items:center; justify-content:space-between;
+    padding:16px 18px 14px; border-bottom:1px solid #f0ebe4; flex-shrink:0;
+  }
+  .sidebar-mobile-header h3 { font-size:16px; font-weight:700; margin:0; color:#1a1a1a; }
+  .sidebar-mobile-close {
+    width:32px; height:32px; display:flex; align-items:center; justify-content:center;
+    border:none; background:none; cursor:pointer; color:#666; border-radius:50%;
+    font-size:20px; line-height:1; transition:background 0.15s;
+  }
+  .sidebar-mobile-close:hover { background:#f0ebe4; }
+  .sidebar-mobile-footer {
+    display:none; gap:10px; padding:14px 18px 18px; border-top:1px solid #f0ebe4; flex-shrink:0;
+  }
+  .btn-show-jobs {
+    flex:1; height:42px; background:#E8B006; border:none; border-radius:8px;
+    font-size:13px; font-weight:700; cursor:pointer; font-family:'Roboto',sans-serif;
+    color:#000; transition:background 0.15s;
+  }
+  .btn-show-jobs:hover { background:#d39d05; }
+  .btn-clear-all-mobile {
+    flex:1; height:42px; background:#fff; border:1.5px solid #e5e7eb; border-radius:8px;
+    font-size:13px; font-weight:700; cursor:pointer; font-family:'Roboto',sans-serif;
+    color:#333; transition:all 0.15s;
+  }
+  .btn-clear-all-mobile:hover { border-color:#1B3F77; color:#1B3F77; }
+
+  /* ── CUSTOM DATE RANGE ── */
+  .custom-date-row { display:none; align-items:center; gap:8px; padding:8px 0 14px; flex-wrap:wrap; }
+  .custom-date-row.visible { display:flex; }
+  .custom-date-label { font-size:12px; color:#888; font-weight:500; flex-shrink:0; }
+  .custom-date-row input[type="date"] {
+    height:38px; padding:0 10px; border:1.5px solid #e5e7eb; border-radius:8px;
+    font-size:13px; font-family:'Roboto',sans-serif; color:#333;
+    outline:none; cursor:pointer; transition:border-color 0.2s;
+  }
+  .custom-date-row input[type="date"]:focus { border-color:#1B3F77; box-shadow:0 0 0 3px rgba(27,63,119,0.08); }
+  .custom-date-sep { font-size:13px; color:#bbb; flex-shrink:0; }
+  .btn-apply-date {
+    height:38px; padding:0 18px; background:#1B3F77; color:#fff;
+    border:none; border-radius:8px; font-size:13px; font-weight:600;
+    cursor:pointer; font-family:'Roboto',sans-serif; transition:background 0.15s; flex-shrink:0;
+  }
+  .btn-apply-date:hover { background:#162d57; }
+
+  /* ── CONTENT LAYOUT ── */
+  .jobs-content { background:#f7f2ec; min-height:60vh; padding:28px 0 64px; }
+  .jobs-layout { display:grid; grid-template-columns:250px 1fr; gap:24px; align-items:start; }
+
+  /* ── SIDEBAR ── */
+  .jobs-sidebar { background:#fff; border:1px solid #e8e3dc; border-radius:12px; position:sticky; top:108px; max-height:calc(100vh - 120px); overflow-y:auto; }
+  .jobs-sidebar::-webkit-scrollbar { width:4px; }
+  .jobs-sidebar::-webkit-scrollbar-thumb { background:#ddd; border-radius:4px; }
+  .sidebar-panel { border-bottom:1px solid #f0ebe4; }
+  .sidebar-panel:last-child { border-bottom:none; }
+  .panel-header {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:13px 16px; cursor:pointer;
+    font-size:13px; font-weight:600; color:#1a1a1a;
+    user-select:none; transition:background 0.15s;
+  }
+  .panel-header:hover { background:#faf9f7; }
+  .panel-chevron { transition:transform 0.22s; color:#aaa; flex-shrink:0; }
+  .panel-header.open .panel-chevron { transform:rotate(180deg); }
+  .panel-body { padding:4px 16px 16px; }
+  .panel-body.collapsed { display:none; }
+  .exp-range-grid { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; margin-bottom:12px; }
+  .exp-range-grid input {
+    width:100%; height:38px; padding:0 10px;
+    border:1.5px solid #e5e7eb; border-radius:8px;
+    font-size:13px; font-family:'Roboto',sans-serif; color:#333;
+    outline:none; transition:border-color 0.2s, box-shadow 0.2s;
+    -moz-appearance:textfield; appearance:textfield;
+  }
+  .exp-range-grid input::-webkit-outer-spin-button,
+  .exp-range-grid input::-webkit-inner-spin-button { -webkit-appearance:none; appearance:none; margin:0; }
+  .exp-range-grid input::placeholder { color:#ccc; font-size:11.5px; text-align:center; }
+  .exp-range-grid input:focus { border-color:#E8B006; box-shadow:0 0 0 3px rgba(232,176,6,0.12); }
+  .exp-range-sep { font-size:12px; color:#bbb; text-align:center; }
+  .exp-range-btns { display:flex; gap:8px; }
+  .exp-btn { flex:1; height:34px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; font-family:'Roboto',sans-serif; letter-spacing:0.03em; transition:all 0.15s; }
+  .exp-btn-reset { background:#fff; border:1.5px solid #e5e7eb; color:#666; }
+  .exp-btn-reset:hover { border-color:#E8B006; color:#333; background:#fffbf0; }
+  .exp-btn-apply { background:#E8B006; border:1.5px solid #E8B006; color:#000; }
+  .exp-btn-apply:hover { background:#d39d05; border-color:#d39d05; }
+  .sidebar-list { display:flex; flex-direction:column; gap:3px; }
+  .sidebar-see-more {
+    display:block; width:100%; text-align:left; background:none; border:none;
+    cursor:pointer; font-size:12px; font-weight:700; color:#E8B006;
+    padding:6px 4px 2px; margin-top:4px; font-family:'Roboto',sans-serif;
+    transition:color 0.15s; letter-spacing:0.01em;
+  }
+  .sidebar-see-more:hover { color:#d39d05; }
+  .sidebar-item { display:flex; align-items:center; gap:9px; cursor:pointer; font-size:12.5px; color:#555; padding:4px 4px; border-radius:6px; transition:background 0.12s, color 0.12s; }
+  .sidebar-item:hover { background:#faf9f7; color:#1B3F77; }
+  .sidebar-item input[type="checkbox"] { width:14px; height:14px; accent-color:#1B3F77; cursor:pointer; flex-shrink:0; }
+  .sidebar-item input[type="checkbox"]:checked + span { color:#1B3F77; font-weight:500; }
+
+  /* ── JOBS MAIN ── */
+  .jobs-main { min-width:0; }
+  .jobs-toolbar { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
+  .jobs-toolbar .result-text { font-size:13.5px; color:#888; }
+  .jobs-toolbar .result-text strong { color:#1a1a1a; font-weight:600; }
+  .filter-summary { display:none; font-size:12.5px; color:#888; margin-top:4px; line-height:1.5; }
+  .filter-summary.visible { display:block; }
+  .filter-summary-val { color:#1B3F77; font-weight:600; }
+  .no-jobs-msg { display:none; flex-direction:column; align-items:center; text-align:center; padding:70px 20px; color:#aaa; }
+  .no-jobs-msg svg { opacity:0.2; margin-bottom:14px; }
+  .no-jobs-msg h4 { font-size:1.05rem; color:#555; margin-bottom:6px; }
+
+  /* ── JOB CARDS ── */
+  .jobs-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+  .job-card {
+    background:#fff; border:1px solid #e8e3dc; border-top:4px solid #E8B006;
+    border-radius:12px; padding:20px 18px 16px;
+    display:flex; flex-direction:column;
+    text-decoration:none; color:inherit;
+    transition:box-shadow 0.22s, border-top-color 0.22s, transform 0.18s;
+    box-shadow:0 2px 6px rgba(0,0,0,0.05);
+  }
+  .job-card:hover { box-shadow:0 20px 50px rgba(0,0,0,0.22), 0 6px 16px rgba(0,0,0,0.12); border-top-color:#1B3F77; transform:translateY(-4px); }
+  .job-card,.job-card:hover,.job-card:focus,.job-card:visited { text-decoration:none !important; }
+  .job-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:12px; }
+  .job-unit { font-size:10.5px; font-weight:700; color:#1B3F77; text-transform:uppercase; letter-spacing:0.08em; background:#EEF2FF; border-radius:4px; padding:3px 8px; line-height:1.5; max-width:64%; word-break:break-word; }
+  .job-date { font-size:11px; color:#c0bbb5; white-space:nowrap; flex-shrink:0; padding-top:2px; }
+  .job-title { font-family:'Roboto',sans-serif; font-size:0.93rem; font-weight:700; color:#1a1a1a; line-height:1.45; margin:0 0 12px; flex-grow:1; }
+  .job-meta { display:flex; flex-direction:column; gap:5px; margin-bottom:12px; }
+  .job-meta-row { display:flex; align-items:center; gap:6px; font-size:12.5px; color:#666; }
+  .job-meta-row svg { flex-shrink:0; color:#bbb; }
+  .job-tags { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:12px; }
+  .job-tag { background:#f4f6ff; color:#1B3F77; border:1px solid #dde3f5; border-radius:4px; padding:2px 9px; font-size:11.5px; font-weight:500; }
+  .job-card-footer { display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding-top:12px; border-top:1px solid #f0ebe4; gap:8px; }
+  .job-location { font-size:12px; color:#999; display:flex; align-items:center; gap:4px; min-width:0; flex:1; overflow:hidden; }
+  .job-location span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .btn-view {
+    display:inline-flex; align-items:center; gap:5px;
+    background:#E8B006; color:#000 !important; border:none; border-radius:6px; padding:7px 16px;
+    font-size:12.5px; font-weight:600; text-decoration:none !important;
+    transition:background 0.2s, color 0.2s; white-space:nowrap; flex-shrink:0;
+  }
+  .job-card:hover .btn-view { background:#1B3F77; color:#fff !important; }
+
+  /* ── PAGINATION ── */
+  .apf-pagination { display:flex; align-items:center; justify-content:center; gap:6px; margin-top:32px; flex-wrap:wrap; }
+  .apf-page-btn {
+    height:36px; padding:0 16px; border-radius:6px; border:1.5px solid #ddd;
+    background:#fff; color:#333; font-size:13px; font-weight:600;
+    cursor:pointer; font-family:'Roboto',sans-serif; transition:all 0.15s;
+  }
+  .apf-page-btn:hover:not(:disabled) { border-color:#E8B006; color:#333; }
+  .apf-page-btn:disabled { opacity:0.4; cursor:default; }
+  .apf-page-num {
+    min-width:36px; height:36px; padding:0 10px; border-radius:6px;
+    border:1.5px solid #ddd; background:#fff; color:#333;
+    font-size:13px; font-weight:600; cursor:pointer;
+    font-family:'Roboto',sans-serif; transition:all 0.15s; display:inline-flex;
+    align-items:center; justify-content:center;
+  }
+  .apf-page-num:hover { border-color:#E8B006; }
+  .apf-page-num.active { background:#E8B006; border-color:#E8B006; color:#000; }
+  .apf-page-ellipsis { font-size:13px; color:#aaa; padding:0 4px; line-height:36px; }
+
+  /* ── FOOTER (identical to job_opening) ── */
+  .footer-banner {
+    width:100vw; position:relative; left:50%; margin-left:-50vw;
+    background:#1b3f77; display:flex; flex-direction:column;
+    padding:0; line-height:0; font-size:0; overflow:hidden;
+  }
+  .footer-banner img { width:100%; height:auto; display:block; flex-shrink:0; margin:0; padding:0; }
+  .footer-bottom {
+    width:100vw; position:relative; left:50%; margin-left:-50vw;
+    background:#1b3f77;
+    padding:40px 0 24px 0 !important;
+  }
+  .footer-bottom .container-lg {
+    padding-left:clamp(1rem,2vw,2rem);
+    padding-right:clamp(1rem,2vw,2rem);
+  }
+  .footer-copy-text { color:#fff; font-size:16px; margin:0; }
+  .footer-copy-text a { color:rgba(255,255,255,0.8); text-decoration:none; margin:0 10px; transition:color 0.2s; }
+  .footer-copy-text a:hover { color:#fff; }
+  .footer-socials { display:flex; gap:15px; }
+  .footer-socials a { width:24px; height:24px; display:flex; align-items:center; justify-content:center; text-decoration:none !important; transition:opacity 0.2s; }
+  .footer-socials a:hover { opacity:0.8; }
+
+  /* ── Responsive ── */
+  @media (max-width:1199.98px) {
+    .jobs-grid { grid-template-columns:repeat(2,1fr); }
+  }
+  @media (max-width:991.98px) {
+    .filter-main-row { flex-wrap:wrap; gap:8px; }
+    .filter-bar-left { flex-wrap:wrap; }
+    .filter-select { min-width:calc(50% - 5px); flex:1 1 calc(50% - 5px); }
+    .search-wrap { min-width:100%; max-width:100%; order:-1; }
+    .filter-count-badge { margin-left:auto; }
+    .jobs-layout { grid-template-columns:1fr; }
+    .jobs-sidebar { position:static; border-radius:8px; }
+    .jobs-grid { grid-template-columns:repeat(2,1fr); }
+  }
+  @media (max-width:767.98px) {
+    body { padding-top:72px !important; }
+    header { height:72px; }
+    .logo img { height:58px !important; max-height:58px !important; }
+    .candidate-login-btn { padding:8px 14px !important; font-size:13px !important; }
+    .apf-hero .container-lg { padding-left:12px; padding-right:12px; }
+    .apf-hero-text { padding-top:20px; padding-bottom:8px; }
+    .jobs-grid { grid-template-columns:1fr; }
+    .jobs-content { padding:20px 0 36px; }
+    /* Hide desktop filter dropdowns & clear btn on mobile */
+    .filter-bar-left .filter-select,
+    .filter-bar-left #clearFilters,
+    .custom-date-row { display:none !important; }
+    .search-wrap { max-width:100%; min-width:0; flex:1; }
+    /* Show mobile filter button */
+    .mobile-filter-btn { display:inline-flex !important; }
+    /* Sidebar becomes a fixed bottom-sheet drawer */
+    .jobs-sidebar {
+      position:fixed !important; bottom:0; left:0; right:0; top:auto !important;
+      z-index:99998; border-radius:16px 16px 0 0;
+      max-height:82vh; overflow-y:auto;
+      transform:translateY(110%);
+      transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);
+      display:flex !important; flex-direction:column;
+    }
+    .jobs-sidebar.mobile-open { transform:translateY(0); }
+    .sidebar-mobile-header { display:flex !important; }
+    .sidebar-mobile-footer { display:flex !important; }
+    .sidebar-panels-body { flex:1; overflow-y:auto; }
+    /* Overlay */
+    .mobile-overlay { display:block; }
+    .footer-bottom .d-flex { flex-direction:column !important; text-align:center; gap:16px !important; }
+    .footer-copy-text { font-size:13px; }
+    .footer-socials { justify-content:center; }
+  }
+</style>
+{% endblock %}
+
+{% block page_content %}
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <a href="https://azimpremjifoundation.org/" target="_blank">
+        <img src="/files/APF logo FINAL 2012_2319x1238px 1.jpg" alt="Azim Premji Foundation"
+          onerror="this.src='https://azimpremjifoundation.org/wp-content/themes/ap-foundation/images/logo.png'">
+      </a>
+    </div>
+    <div class="d-flex align-items-center header-right-wrap">
+      <a href="https://careers.frappe.cloud/career-landing" class="career-home-link d-none d-lg-inline">CAREER HOME</a>
+      <a href="https://careers.azimpremjifoundation.org/candidate/#!/login" class="candidate-login-btn" target="_blank" rel="noopener noreferrer">
+        <span class="d-none d-lg-inline">Candidate Login</span>
+        <span class="d-lg-none">Login</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="apf-hero">
+  <div class="container-lg py-4">
+    <div class="row align-items-center">
+      <div class="col-12 col-lg-8 apf-hero-text">
+        <p class="apf-breadcrumb">
+          <a href="https://careers.azimpremjifoundation.org/apf/">Career Home</a>
+          &nbsp;»&nbsp;
+          <span>All Jobs</span>
+        </p>
+        <h1>All Jobs</h1>
+      </div>
+      <div class="col-12 col-lg-4 text-center text-lg-end apf-hero-img">
+        <img src="/files/Careers.png" alt="Careers banner"
+          onerror="this.src='https://careers.azimpremjifoundation.org/apf/assets/main-banner.webp'; this.onerror=function(){this.style.display='none'};">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FRAME STRIP -->
+<div class="apf-frame">
+  <img src="https://careers.azimpremjifoundation.org/apf/assets/frame.svg" alt="" width="1835" height="64">
+</div>
+
+<!-- FILTER SECTION -->
+<div class="filter-section">
+  <div class="container-lg">
+
+    <!-- Row 1: search + unit + sub-unit + clear + count -->
+    <div class="filter-main-row">
+      <div class="filter-bar-left">
+        <div class="search-wrap">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input type="text" id="searchInput" placeholder="Search by title, location…">
+        </div>
+        {% if departments %}
+        <select class="filter-select" id="filter-department" onchange="applyFilters()">
+          <option value="">All Departments</option>
+          {% for d in departments %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
+        </select>
+        {% endif %}
+        <select class="filter-select" id="filter-posted" onchange="handleDateFilter(this)">
+          <option value="0">Posted: All Time</option>
+          <option value="7">Posted: This Week</option>
+          <option value="30">Posted: This Month</option>
+          <option value="90">Posted: Last 3 Months</option>
+          <option value="custom">Posted: Custom Range</option>
+        </select>
+        <button class="btn-clear-filters" id="clearFilters" onclick="clearAllFilters()">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Clear filters
+        </button>
+        <button class="mobile-filter-btn" id="mobileFilterBtn" onclick="openMobileFilters()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
+          Filters
+          <span class="filter-active-badge" id="filterActiveBadge"></span>
+        </button>
+      </div>
+      <span class="filter-count-badge" id="jobsCountBadge">{{ total }} Job{{ 's' if total != 1 else '' }}</span>
+    </div>
+
+    <!-- Active filter chips — mobile only -->
+    <div class="active-filters-row" id="activeFiltersRow"></div>
+
+    <!-- Custom date range row (shows when Custom Range selected) -->
+    <div class="custom-date-row" id="customDateRow">
+      <span class="custom-date-label">From</span>
+      <input type="date" id="dateFrom">
+      <span class="custom-date-sep">→</span>
+      <span class="custom-date-label">To</span>
+      <input type="date" id="dateTo">
+      <button class="btn-apply-date" onclick="applyCustomDateRange()">Apply</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- CONTENT -->
+<section class="jobs-content">
+  <div class="container-lg">
+    <div class="jobs-layout">
+
+      <!-- SIDEBAR -->
+      <aside class="jobs-sidebar">
+
+        <!-- Mobile-only header -->
+        <div class="sidebar-mobile-header">
+          <h3>Filters</h3>
+          <button class="sidebar-mobile-close" onclick="closeMobileFilters()">&#x2715;</button>
+        </div>
+
+        <!-- Panels (scrollable area on mobile) -->
+        <div class="sidebar-panels-body">
+
+        <!-- Experience Panel -->
+        <div class="sidebar-panel">
+          <div class="panel-header open" onclick="togglePanel(this)">
+            <span>By Experience (in Years)</span>
+            <svg class="panel-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="panel-body">
+            <div class="exp-range-grid">
+              <input type="number" id="expMin" placeholder="Min" min="0" max="50">
+              <span class="exp-range-sep">—</span>
+              <input type="number" id="expMax" placeholder="Max" min="0" max="50">
+            </div>
+            <div class="exp-range-btns">
+              <button class="exp-btn exp-btn-reset" onclick="resetExpRange()">RESET</button>
+              <button class="exp-btn exp-btn-apply" onclick="applyExpRange()">APPLY</button>
+            </div>
+          </div>
+        </div>
+
+        {% if locations %}
+        <div class="sidebar-panel">
+          <div class="panel-header open" onclick="togglePanel(this)">
+            <span>Location</span>
+            <svg class="panel-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="panel-body">
+            <div class="sidebar-list" id="sidebar-location">
+              {% for loc in locations %}
+              <label class="sidebar-item">
+                <input type="checkbox" value="{{ loc }}" onchange="applyFilters()">
+                <span>{{ loc }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if employment_types %}
+        <div class="sidebar-panel">
+          <div class="panel-header open" onclick="togglePanel(this)">
+            <span>Employment Type</span>
+            <svg class="panel-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="panel-body">
+            <div class="sidebar-list" id="sidebar-employment_type">
+              {% for et in employment_types %}
+              <label class="sidebar-item">
+                <input type="checkbox" value="{{ et }}" onchange="applyFilters()">
+                <span>{{ et }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+
+        {% if departments %}
+        <div class="sidebar-panel">
+          <div class="panel-header open" onclick="togglePanel(this)">
+            <span>Department</span>
+            <svg class="panel-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="panel-body">
+            <div class="sidebar-list" id="sidebar-department">
+              {% for d in departments %}
+              <label class="sidebar-item">
+                <input type="checkbox" value="{{ d }}" onchange="applyFilters()">
+                <span>{{ d }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        </div><!-- /sidebar-panels-body -->
+
+        <!-- Mobile-only footer -->
+        <div class="sidebar-mobile-footer">
+          <button class="btn-clear-all-mobile" onclick="clearAllFilters(); closeMobileFilters();">CLEAR ALL</button>
+          <button class="btn-show-jobs" onclick="closeMobileFilters()">SHOW JOBS</button>
+        </div>
+
+      </aside>
+
+      <!-- MAIN JOBS AREA -->
+      <div class="jobs-main">
+
+    <div class="jobs-toolbar">
+      <div>
+        <div class="result-text">
+          Showing <strong id="visibleCount">{{ total }}</strong> of {{ total }} job{{ 's' if total != 1 else '' }}
+        </div>
+        <div class="filter-summary" id="filterSummary"></div>
+      </div>
+    </div>
+
+    <div class="no-jobs-msg" id="noJobsMsg">
+      <svg width="56" height="56" fill="none" stroke="#1B3F77" stroke-width="1.5" viewBox="0 0 24 24">
+        <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+      </svg>
+      <h4>No jobs match your filters</h4>
+      <p style="font-size:0.87rem;color:#aaa;">Try clearing some filters</p>
+    </div>
+
+    <div class="jobs-grid" id="jobsGrid">
+      {% for job in jobs %}
+      <a class="job-card"
+         href="/{{ job.route }}"
+         data-unit="{{ job.unit or '' }}"
+         data-department="{{ job.department or '' }}"
+         data-location="{{ job.location or '' }}"
+         data-employment_type="{{ job.employment_type or '' }}"
+         data-designation="{{ job.designation or '' }}"
+         data-experience="{{ job.experience or '' }}"
+         data-posted="{{ job.posted_on or '' }}"
+         data-title="{{ job.job_title | lower }}">
+
+        <div class="job-card-head">
+          {% if job.unit %}<span class="job-unit">{{ job.unit }}</span>{% endif %}
+          <span class="job-date">{% if job.posted_on %}{{ frappe.utils.format_date(job.posted_on, "d MMM yyyy") }}{% endif %}</span>
+        </div>
+
+        <h3 class="job-title">{{ job.job_title }}</h3>
+
+        {% if job.experience or job.department %}
+        <div class="job-meta">
+          {% if job.experience %}
+          <div class="job-meta-row">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            {{ job.experience }}
+          </div>
+          {% endif %}
+          {% if job.department %}
+          <div class="job-meta-row">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+            {{ job.department }}
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {% if job.employment_type %}
+        <div class="job-tags">
+          <span class="job-tag">{{ job.employment_type }}</span>
+        </div>
+        {% endif %}
+
+        <div class="job-card-footer">
+          <span class="job-location">
+            {% if job.location %}
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            <span>{{ job.location }}</span>
+            {% endif %}
+          </span>
+          <span class="btn-view">
+            View
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </span>
+        </div>
+      </a>
+      {% else %}
+      <div style="grid-column:1/-1;text-align:center;padding:60px;color:#999;font-size:15px;">
+        No open positions at the moment. Check back soon!
+      </div>
+      {% endfor %}
+    </div><!-- /jobs-grid -->
+
+    <!-- PAGINATION -->
+    <div class="apf-pagination" id="paginationWrap">
+      <button class="apf-page-btn prev-btn" id="prevBtn" onclick="goPage(currentPage-1)">« Previous</button>
+      <div class="apf-page-numbers" id="pageNumbers"></div>
+      <button class="apf-page-btn next-btn" id="nextBtn" onclick="goPage(currentPage+1)">Next »</button>
+    </div>
+
+      </div><!-- /jobs-main -->
+    </div><!-- /jobs-layout -->
+  </div><!-- /container-lg -->
+</section>
+
+<!-- MOBILE OVERLAY -->
+<div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileFilters()"></div>
+
+<!-- FOOTER -->
+<div class="footer-banner">
+  <img src="https://careers.azimpremjifoundation.org/apf/assets/design.webp" alt="">
+  <img src="https://careers.azimpremjifoundation.org/apf/assets/footer-design-2.webp" alt="" style="margin-top:0;">
+</div>
+<div class="footer-bottom">
+  <div class="container-lg">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+      <p class="footer-copy-text text-center text-md-start">
+        ©2026 Azim Premji Foundation. All rights reserved.
+        <a href="https://azimpremjifoundation.org/disclaimer/" target="_blank">Disclaimer</a>
+        <a href="https://azimpremjifoundation.org/privacy-policy/" target="_blank">Privacy Policy</a>
+      </p>
+      <div class="footer-socials">
+        <a href="https://www.facebook.com/azimpremjifoundation" target="_blank" rel="noopener" aria-label="Facebook">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="33" viewBox="0 0 32 33" fill="none"><path d="M15.9809 0.418945C18.1931 0.418945 20.2718 0.838492 22.2169 1.67759C24.1621 2.51668 25.8594 3.6609 27.3087 5.11024C28.758 6.55959 29.9023 8.25049 30.7414 10.183C31.5805 12.1154 32 14.1877 32 16.3999C32 18.612 31.5805 20.6907 30.7414 22.6359C29.9023 24.581 28.758 26.2783 27.3087 27.7276C25.8594 29.177 24.1621 30.3212 22.2169 31.1603C20.2718 31.9994 18.1931 32.4189 15.9809 32.4189C13.7688 32.4189 11.6965 31.9994 9.764 31.1603C7.83155 30.3212 6.14064 29.177 4.6913 27.7276C3.24195 26.2783 2.09774 24.581 1.25864 22.6359C0.419547 20.6907 0 18.612 0 16.3999C0 14.1877 0.419547 12.1154 1.25864 10.183C2.09774 8.25049 3.24195 6.55959 4.6913 5.11024C6.14064 3.6609 7.83155 2.51668 9.764 1.67759C11.6965 0.838492 13.7688 0.418945 15.9809 0.418945ZM22.0072 7.39868H18.6126C17.9515 7.39868 17.3413 7.5131 16.7819 7.74195C16.2225 7.97079 15.733 8.27592 15.3135 8.65732C14.8939 9.03873 14.5697 9.47099 14.3409 9.95411C14.112 10.4372 13.9976 10.9203 13.9976 11.4035V13.4249H10.9845V17.3915H13.9976V25.4011H18.0024V17.3915H20.9774V13.4249H18.0024V12.3951C18.0024 12.09 18.1232 11.8484 18.3647 11.6704C18.6063 11.4924 18.8161 11.4035 18.994 11.4035H22.0072V7.39868Z" fill="white"/></svg>
+        </a>
+        <a href="https://x.com/azimpremjiuniv" target="_blank" rel="noopener" aria-label="X">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="33" viewBox="0 0 32 33" fill="none"><path d="M22.3192 23.7007H20.6505L9.75702 9.45885H11.5477L22.3192 23.7007Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M16 0.678711C7.16344 0.678711 0 7.84216 0 16.6787C0 25.5153 7.16344 32.6787 16 32.6787C24.8366 32.6787 32 25.5153 32 16.6787C32 7.84216 24.8366 0.678711 16 0.678711ZM24.719 7.75099H21.7075L16.745 13.4235L12.4544 7.75099H6.24025L13.6652 17.4601L6.62807 25.5032H9.6414L15.0727 19.2972L19.8194 25.5032H25.8797L18.1397 15.2707L24.719 7.75099Z" fill="white"/></svg>
+        </a>
+        <a href="https://www.instagram.com/azimpremjiuniv/" target="_blank" rel="noopener" aria-label="Instagram">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="33" viewBox="0 0 32 33" fill="none"><path d="M15.828 20.2152C15.3437 20.2152 14.8913 20.1259 14.4707 19.9475C14.0502 19.7691 13.6806 19.5206 13.362 19.202C13.0434 18.8834 12.7949 18.5075 12.6165 18.0742C12.4381 17.6409 12.3489 17.1821 12.3489 16.6978C12.3489 16.2136 12.4381 15.7611 12.6165 15.3406C12.7949 14.92 13.0434 14.5505 13.362 14.2319C13.6806 13.9133 14.0502 13.6648 14.4707 13.4864C14.8913 13.3079 15.3437 13.2187 15.828 13.2187C16.7965 13.2187 17.6185 13.5564 18.2939 14.2319C18.9693 14.9073 19.307 15.7293 19.307 16.6978C19.307 17.1821 19.2178 17.6409 19.0394 18.0742C18.861 18.5075 18.6125 18.8834 18.2939 19.202C17.9753 19.5206 17.6057 19.7691 17.1852 19.9475C16.7646 20.1259 16.3122 20.2152 15.828 20.2152ZM15.9809 0.678711C18.1983 0.678711 20.2756 1.09926 22.2127 1.94036C24.1497 2.78146 25.8447 3.92204 27.2975 5.3621C28.7503 6.80217 29.8973 8.49074 30.7383 10.4278C31.5794 12.3649 32 14.4422 32 16.6596C32 18.877 31.5794 20.9543 30.7383 22.8914C29.8973 24.8285 28.7503 26.5234 27.2975 27.9762C25.8447 29.429 24.1497 30.576 22.2127 31.4171C20.2756 32.2582 18.1983 32.6787 15.9809 32.6787C13.7634 32.6787 11.6862 32.2582 9.7491 31.4171C7.81203 30.576 6.12346 29.429 4.68339 27.9762C3.24333 26.5234 2.10275 24.8285 1.26165 22.8914C0.42055 20.9543 0 18.877 0 16.6596C0 14.4422 0.42055 12.3649 1.26165 10.4278C2.10275 8.49074 3.24333 6.80217 4.68339 5.3621C6.12346 3.92204 7.81203 2.78146 9.7491 1.94036C11.6862 1.09926 13.7634 0.678711 15.9809 0.678711ZM24.9271 9.70141C24.9271 9.11519 24.7232 8.61818 24.3154 8.21037C23.9076 7.80257 23.4106 7.59866 22.8244 7.59866H8.83154C8.24532 7.59866 7.74831 7.80257 7.3405 8.21037C6.9327 8.61818 6.72879 9.11519 6.72879 9.70141V23.6942C6.72879 24.2805 6.9327 24.7775 7.3405 25.1853C7.74831 25.5931 8.24532 25.797 8.83154 25.797H22.8244C23.4106 25.797 23.9076 25.5931 24.3154 25.1853C24.7232 24.7775 24.9271 24.2805 24.9271 23.6942V9.70141ZM22.1362 9.70141C22.3401 9.70141 22.5058 9.7715 22.6332 9.91169C22.7607 10.0519 22.8244 10.2239 22.8244 10.4278V12.5306C22.8244 12.7345 22.7607 12.9001 22.6332 13.0276C22.5058 13.155 22.3401 13.2187 22.1362 13.2187H20.0335C19.8295 13.2187 19.6575 13.155 19.5173 13.0276C19.3771 12.9001 19.307 12.7345 19.307 12.5306V10.4278C19.307 10.2239 19.3771 10.0519 19.5173 9.91169C19.6575 9.7715 19.8295 9.70141 20.0335 9.70141H22.1362Z" fill="white"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/school/azim-premji-university/" target="_blank" rel="noopener" aria-label="LinkedIn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="33" viewBox="0 0 32 33" fill="none"><path d="M15.9809 0.678711C18.1983 0.678711 20.2756 1.09926 22.2127 1.94036C24.1497 2.78146 25.8447 3.92204 27.2975 5.3621C28.7503 6.80217 29.8973 8.49074 30.7383 10.4278C31.5794 12.3649 32 14.4422 32 16.6596C32 18.877 31.5794 20.9543 30.7383 22.8914C29.8973 24.8285 28.7503 26.5234 27.2975 27.9762C25.8447 29.429 24.1497 30.576 22.2127 31.4171C20.2756 32.2582 18.1983 32.6787 15.9809 32.6787C13.7634 32.6787 11.6862 32.2582 9.7491 31.4171C7.81203 30.576 6.12346 29.429 4.68339 27.9762C3.24333 26.5234 2.10275 24.8285 1.26165 22.8914C0.42055 20.9543 0 18.877 0 16.6596C0 14.4422 0.42055 12.3649 1.26165 10.4278C2.10275 8.49074 3.24333 6.80217 4.68339 5.3621C6.12346 3.92204 7.81203 2.78146 9.7491 1.94036C11.6862 1.09926 13.7634 0.678711 15.9809 0.678711ZM11.0108 12.6835H6.99642V25.6823H11.0108V12.6835ZM8.98447 11.6512C9.5452 11.6512 10.0231 11.4601 10.4182 11.0778C10.8132 10.6954 11.0108 10.2239 11.0108 9.66318C11.0108 9.10245 10.8132 8.63092 10.4182 8.2486C10.0231 7.86629 9.5452 7.67513 8.98447 7.67513C8.42374 7.67513 7.95221 7.86629 7.56989 8.2486C7.18757 8.63092 6.99642 9.10245 6.99642 9.66318C6.99642 10.2239 7.18757 10.6954 7.56989 11.0778C7.95221 11.4601 8.42374 11.6512 8.98447 11.6512ZM25.0036 18.1506C25.0036 17.2331 24.7487 16.3346 24.2389 15.4553C23.7292 14.576 23.0665 13.9069 22.2509 13.4481C21.5117 13.0403 20.6515 12.8237 19.6702 12.7982C18.689 12.7727 17.7905 12.9384 16.9749 13.2952V12.6835H12.9988V25.6823H16.9749V17.7301L18.6571 16.9272C18.861 16.8253 19.135 16.7743 19.4791 16.7743C19.8232 16.7743 20.0972 16.838 20.3011 16.9654C20.454 17.0419 20.6069 17.2076 20.7599 17.4625C20.9128 17.7173 20.9892 17.9467 20.9892 18.1506V25.6823H25.0036V18.1506Z" fill="white"/></svg>
+        </a>
+        <a href="https://www.youtube.com/user/AzimPremjiUniversity" target="_blank" rel="noopener" aria-label="YouTube">
+          <svg viewBox="0 0 576 512" xmlns="http://www.w3.org/2000/svg" width="32" height="32"><path fill="#fff" d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const cards = Array.from(document.querySelectorAll('.job-card'));
+  const searchInput = document.getElementById('searchInput');
+  const visibleCount = document.getElementById('visibleCount');
+  const badge = document.getElementById('jobsCountBadge');
+  const noJobsMsg = document.getElementById('noJobsMsg');
+  const clearBtn = document.getElementById('clearFilters');
+
+  const dropdownIds = ['filter-department'];
+  const sidebarFields = ['location', 'employment_type', 'department'];
+  let activeDateDays = 0;
+  let customDateRange = { from: null, to: null };
+  let expFilter = { min: null, max: null };
+
+  const JOBS_PER_PAGE = 9;
+  let currentPage = 1;
+  let filteredCards = [];
+
+  function goPage(page) {
+    const totalPages = Math.ceil(filteredCards.length / JOBS_PER_PAGE);
+    if (page < 1 || page > totalPages) return;
+    currentPage = page;
+    renderPage();
+    window.scrollTo({ top: document.querySelector('.jobs-content').offsetTop - 110, behavior: 'smooth' });
+  }
+
+  function renderPage() {
+    const totalPages = Math.ceil(filteredCards.length / JOBS_PER_PAGE);
+    const start = (currentPage - 1) * JOBS_PER_PAGE;
+    const end = start + JOBS_PER_PAGE;
+
+    // Show/hide cards for current page
+    cards.forEach(c => c.style.display = 'none');
+    filteredCards.slice(start, end).forEach(c => c.style.display = '');
+
+    // Update count
+    visibleCount.textContent = filteredCards.length;
+    badge.textContent = filteredCards.length + (filteredCards.length === 1 ? ' Job' : ' Jobs');
+    noJobsMsg.style.display = filteredCards.length === 0 ? 'flex' : 'none';
+
+    // Pagination controls
+    const wrap = document.getElementById('paginationWrap');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const numWrap = document.getElementById('pageNumbers');
+    wrap.style.display = totalPages <= 1 ? 'none' : 'flex';
+    prevBtn.disabled = currentPage === 1;
+    nextBtn.disabled = currentPage === totalPages;
+
+    // Page number buttons (show max 10, with ellipsis)
+    numWrap.innerHTML = '';
+    const maxVisible = 10;
+    let startP = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let endP = Math.min(totalPages, startP + maxVisible - 1);
+    if (endP - startP < maxVisible - 1) startP = Math.max(1, endP - maxVisible + 1);
+
+    if (startP > 1) {
+      numWrap.insertAdjacentHTML('beforeend', '<span class="apf-page-num" onclick="goPage(1)">1</span>');
+      if (startP > 2) numWrap.insertAdjacentHTML('beforeend', '<span class="apf-page-ellipsis">…</span>');
+    }
+    for (let p = startP; p <= endP; p++) {
+      numWrap.insertAdjacentHTML('beforeend',
+        `<span class="apf-page-num${p === currentPage ? ' active' : ''}" onclick="goPage(${p})">${p}</span>`);
+    }
+    if (endP < totalPages) {
+      if (endP < totalPages - 1) numWrap.insertAdjacentHTML('beforeend', '<span class="apf-page-ellipsis">…</span>');
+      numWrap.insertAdjacentHTML('beforeend', `<span class="apf-page-num" onclick="goPage(${totalPages})">${totalPages}</span>`);
+    }
+  }
+
+  function handleDateFilter(select) {
+    const val = select.value;
+    const customRow = document.getElementById('customDateRow');
+    if (val === 'custom') {
+      customRow.classList.add('visible');
+      // wait for user to pick dates and click Apply
+    } else {
+      customRow.classList.remove('visible');
+      activeDateDays = parseInt(val, 10);
+      customDateRange = { from: null, to: null };
+      applyFilters();
+    }
+  }
+
+  function applyCustomDateRange() {
+    const fromVal = document.getElementById('dateFrom').value;
+    const toVal = document.getElementById('dateTo').value;
+    customDateRange.from = fromVal ? new Date(fromVal) : null;
+    customDateRange.to = toVal ? new Date(toVal) : null;
+    activeDateDays = -1; // signals custom mode
+    applyFilters();
+  }
+
+  function togglePanel(header) {
+    const body = header.nextElementSibling;
+    const closing = !body.classList.contains('collapsed');
+    body.classList.toggle('collapsed', closing);
+    header.classList.toggle('open', !closing);
+  }
+
+  function parseExpText(text) {
+    if (!text) return null;
+    const nums = (text.match(/\d+/g) || []).map(Number);
+    if (nums.length >= 2) return { min: nums[0], max: nums[1] };
+    if (nums.length === 1) return { min: nums[0], max: nums[0] };
+    return null;
+  }
+
+  function applyExpRange() {
+    const minVal = document.getElementById('expMin').value;
+    const maxVal = document.getElementById('expMax').value;
+    expFilter.min = minVal !== '' ? parseInt(minVal, 10) : null;
+    expFilter.max = maxVal !== '' ? parseInt(maxVal, 10) : null;
+    applyFilters();
+  }
+
+  function resetExpRange() {
+    document.getElementById('expMin').value = '';
+    document.getElementById('expMax').value = '';
+    expFilter = { min: null, max: null };
+    applyFilters();
+  }
+
+  function getChecked(fieldName) {
+    const container = document.getElementById('sidebar-' + fieldName);
+    if (!container) return [];
+    return Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
+      .map(cb => cb.value.toLowerCase());
+  }
+
+  function applyFilters() {
+    const q = searchInput.value.toLowerCase().trim();
+    const now = new Date();
+
+    filteredCards = cards.filter(card => {
+      let passes = true;
+
+      dropdownIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el || !el.value) return;
+        const field = id.replace('filter-', '');
+        if ((card.dataset[field] || '').toLowerCase() !== el.value.toLowerCase()) passes = false;
+      });
+
+      sidebarFields.forEach(field => {
+        const checked = getChecked(field);
+        if (!checked.length) return;
+        if (!checked.includes((card.dataset[field] || '').toLowerCase())) passes = false;
+      });
+
+      if (expFilter.min !== null || expFilter.max !== null) {
+        const parsed = parseExpText(card.dataset.experience || '');
+        if (!parsed) {
+          passes = false;
+        } else {
+          if (expFilter.min !== null && parsed.max < expFilter.min) passes = false;
+          if (expFilter.max !== null && parsed.min > expFilter.max) passes = false;
+        }
+      }
+
+      if (activeDateDays > 0) {
+        const posted = card.dataset.posted;
+        if (!posted) { passes = false; }
+        else {
+          const cutoff = new Date(now);
+          cutoff.setDate(cutoff.getDate() - activeDateDays);
+          if (new Date(posted) < cutoff) passes = false;
+        }
+      } else if (activeDateDays === -1) {
+        const postedDate = card.dataset.posted ? new Date(card.dataset.posted) : null;
+        if (!postedDate) { passes = false; }
+        else {
+          if (customDateRange.from && postedDate < customDateRange.from) passes = false;
+          if (customDateRange.to) {
+            const toEnd = new Date(customDateRange.to);
+            toEnd.setDate(toEnd.getDate() + 1);
+            if (postedDate >= toEnd) passes = false;
+          }
+        }
+      }
+
+      if (q && !card.dataset.title.includes(q) &&
+          !(card.dataset.location || '').toLowerCase().includes(q) &&
+          !(card.dataset.department || '').toLowerCase().includes(q) &&
+          !(card.dataset.unit || '').toLowerCase().includes(q)) {
+        passes = false;
+      }
+
+      return passes;
+    });
+
+    currentPage = 1;
+    renderPage();
+
+    const hasDropdown = dropdownIds.some(id => { const el = document.getElementById(id); return el && el.value; });
+    const postedEl = document.getElementById('filter-posted');
+    const hasDate = postedEl && postedEl.value !== '0';
+    const hasSidebar = sidebarFields.some(f => getChecked(f).length > 0);
+    const hasExp = expFilter.min !== null || expFilter.max !== null;
+    clearBtn.style.display = (hasDropdown || hasSidebar || hasExp || hasDate || q) ? 'inline-flex' : 'none';
+
+    updateActiveChips();
+    updateFilterSummary();
+
+    // Mobile filter button badge
+    let activeCount = 0;
+    dropdownIds.forEach(id => { const el = document.getElementById(id); if (el && el.value) activeCount++; });
+    if (hasDate) activeCount++;
+    sidebarFields.forEach(f => { if (getChecked(f).length > 0) activeCount++; });
+    if (hasExp) activeCount++;
+    if (q) activeCount++;
+    const mobileBtn = document.getElementById('mobileFilterBtn');
+    const activeBadge = document.getElementById('filterActiveBadge');
+    if (mobileBtn && activeBadge) {
+      if (activeCount > 0) {
+        mobileBtn.classList.add('has-filters');
+        activeBadge.textContent = activeCount;
+        activeBadge.classList.add('visible');
+      } else {
+        mobileBtn.classList.remove('has-filters');
+        activeBadge.classList.remove('visible');
+      }
+    }
+  }
+
+  function clearAllFilters() {
+    dropdownIds.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    searchInput.value = '';
+    document.querySelectorAll('.jobs-sidebar input[type="checkbox"]').forEach(cb => cb.checked = false);
+    document.getElementById('expMin').value = '';
+    document.getElementById('expMax').value = '';
+    expFilter = { min: null, max: null };
+    activeDateDays = 0;
+    customDateRange = { from: null, to: null };
+    const postedEl = document.getElementById('filter-posted');
+    if (postedEl) postedEl.value = '0';
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    document.getElementById('customDateRow').classList.remove('visible');
+    applyFilters();
+  }
+
+  searchInput.addEventListener('input', applyFilters);
+  initSidebarSeeMores();
+
+  // Initial render — show first page on load
+  filteredCards = cards.slice();
+  renderPage();
+
+  function updateFilterSummary() {
+    const el = document.getElementById('filterSummary');
+    if (!el) return;
+    const parts = [];
+
+    dropdownIds.forEach(id => {
+      const sel = document.getElementById(id);
+      if (sel && sel.value) parts.push(sel.options[sel.selectedIndex].text);
+    });
+
+    const postedEl = document.getElementById('filter-posted');
+    if (postedEl && postedEl.value !== '0') {
+      parts.push(postedEl.options[postedEl.selectedIndex].text.replace('Posted: ', ''));
+    }
+
+    if (expFilter.min !== null || expFilter.max !== null) {
+      const mn = expFilter.min !== null ? expFilter.min : '0';
+      const mx = expFilter.max !== null ? expFilter.max : '∞';
+      parts.push(`Exp: ${mn}–${mx} yrs`);
+    }
+
+    sidebarFields.forEach(field => {
+      getChecked(field).forEach(val => parts.push(val.charAt(0).toUpperCase() + val.slice(1)));
+    });
+
+    const q = searchInput.value.trim();
+    if (q) parts.push(`"${q}"`);
+
+    if (parts.length > 0) {
+      el.innerHTML = parts.map(p => `<span class="filter-summary-val">${p}</span>`).join(' <span style="color:#ccc">|</span> ');
+      el.classList.add('visible');
+    } else {
+      el.innerHTML = '';
+      el.classList.remove('visible');
+    }
+  }
+
+  function updateActiveChips() {
+    const row = document.getElementById('activeFiltersRow');
+    if (!row) return;
+    row.innerHTML = '';
+
+    function makeChip(label, onRemove) {
+      const chip = document.createElement('div');
+      chip.className = 'filter-chip';
+      chip.innerHTML = `<span class="filter-chip-label">${label}</span><button class="filter-chip-remove" title="Remove">&#x2715;</button>`;
+      chip.querySelector('.filter-chip-remove').addEventListener('click', e => { e.stopPropagation(); onRemove(); });
+      row.appendChild(chip);
+    }
+
+    // Top dropdowns
+    dropdownIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.value) {
+        const label = el.options[el.selectedIndex].text;
+        makeChip(label, () => { el.value = ''; applyFilters(); });
+      }
+    });
+
+    // Posted filter
+    const postedEl = document.getElementById('filter-posted');
+    if (postedEl && postedEl.value !== '0') {
+      const label = postedEl.options[postedEl.selectedIndex].text.replace('Posted: ', '');
+      makeChip(label, () => {
+        postedEl.value = '0'; activeDateDays = 0;
+        customDateRange = { from: null, to: null };
+        document.getElementById('customDateRow').classList.remove('visible');
+        applyFilters();
+      });
+    }
+
+    // Experience range
+    if (expFilter.min !== null || expFilter.max !== null) {
+      const min = expFilter.min !== null ? expFilter.min : '0';
+      const max = expFilter.max !== null ? expFilter.max : '∞';
+      makeChip(`Exp: ${min}–${max} yrs`, () => resetExpRange());
+    }
+
+    // Sidebar checkboxes
+    sidebarFields.forEach(field => {
+      getChecked(field).forEach(val => {
+        const displayVal = val.charAt(0).toUpperCase() + val.slice(1);
+        makeChip(displayVal, () => {
+          const container = document.getElementById('sidebar-' + field);
+          if (container) {
+            const cb = Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
+              .find(c => c.value.toLowerCase() === val);
+            if (cb) cb.checked = false;
+          }
+          applyFilters();
+        });
+      });
+    });
+
+    row.classList.toggle('has-chips', row.children.length > 0);
+  }
+
+  function initSidebarSeeMores() {
+    const LIMIT = 5;
+    document.querySelectorAll('.sidebar-list').forEach(list => {
+      const items = Array.from(list.querySelectorAll('.sidebar-item'));
+      if (items.length <= LIMIT) return;
+      items.slice(LIMIT).forEach(item => item.style.display = 'none');
+      const extra = items.length - LIMIT;
+      const btn = document.createElement('button');
+      btn.className = 'sidebar-see-more';
+      btn.dataset.expanded = 'false';
+      btn.textContent = `+ See more (${extra})`;
+      btn.addEventListener('click', () => {
+        const expanded = btn.dataset.expanded === 'true';
+        if (expanded) {
+          items.slice(LIMIT).forEach(item => item.style.display = 'none');
+          btn.textContent = `+ See more (${extra})`;
+          btn.dataset.expanded = 'false';
+        } else {
+          items.slice(LIMIT).forEach(item => item.style.display = '');
+          btn.textContent = 'See less';
+          btn.dataset.expanded = 'true';
+        }
+      });
+      list.appendChild(btn);
+    });
+  }
+
+  function openMobileFilters() {
+    document.querySelector('.jobs-sidebar').classList.add('mobile-open');
+    document.getElementById('mobileOverlay').classList.add('visible');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeMobileFilters() {
+    document.querySelector('.jobs-sidebar').classList.remove('mobile-open');
+    document.getElementById('mobileOverlay').classList.remove('visible');
+    document.body.style.overflow = '';
+  }
+</script>
+{% endblock %}
