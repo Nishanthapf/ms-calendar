@@ -29,3 +29,7 @@ def get_context(context):
     context.employment_types = sorted({j.employment_type for j in all_jobs if j.employment_type})
     context.designations = sorted({j.designation for j in all_jobs if j.designation})
     context.experiences = sorted({j.experience for j in all_jobs if j.experience})
+
+
+
+    # Testing
