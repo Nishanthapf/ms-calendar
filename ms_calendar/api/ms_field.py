@@ -560,7 +560,9 @@ def create_interview_event(
                 if not commands_to_candidate:
                     commands_to_candidate = _db_vals.get("message_for_canditate") or ""
                 if not commands_to_interviewer:
-                    commands_to_interviewer = _db_vals.get("message_for_the_interviewer") or ""
+                    commands_to_interviewer = (
+                        _db_vals.get("message_for_the_interviewer") or ""
+                    )
         except Exception:
             pass
 
@@ -1972,3 +1974,6 @@ def download_assessment_template():
 
     file_b64 = base64.b64encode(output.read()).decode("utf-8")
     return {"file_content": file_b64, "filename": "Assessment Upload Template.xlsx"}
+
+
+# testing

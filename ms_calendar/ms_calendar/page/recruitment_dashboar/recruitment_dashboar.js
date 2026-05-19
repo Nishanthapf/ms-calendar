@@ -834,3 +834,6 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 		return '<table class="rd-tbl"><thead><tr><th>#</th><th>ID</th>' + thHtml + '</tr></thead><tbody>' + trs + '</tbody></table>';
 	}
 };
+
+
+// Testing
