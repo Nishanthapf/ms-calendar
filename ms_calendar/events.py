@@ -1,40 +1,41 @@
 import frappe
 from frappe.utils import formatdate
- 
- 
+
+
 def after_insert(doc, method=None):
     if not doc.applicant_id:
         return
- 
+
     try:
         percentage = float(doc.percentage or 0)
     except (ValueError, TypeError):
         percentage = 0
- 
-    passed = percentage >= 50
+
+    passed = percentage >= 40
     status = "Test Select" if passed else "Test Reject"
- 
+
     # Update application status on the registration form
-    frappe.db.set_value("Field Registration Form", doc.applicant_id, "application_status", status)
- 
+    frappe.db.set_value(
+        "Field Registration Form", doc.applicant_id, "application_status", status
+    )
+
     # Use fields already on the Field Offline Result doc
     candidate_name = doc.applicant_name or "Candidate"
     candidate_email = doc.email_id
     job_title = doc.job_title or "Position"
     test_date = formatdate(doc.creation, "dd MMMM yyyy")
- 
+
     if not candidate_email:
         frappe.log_error(
-            f"No email found for applicant {doc.applicant_id}",
-            "Test Result Email"
+            f"No email found for applicant {doc.applicant_id}", "Test Result Email"
         )
         return
- 
+
     # ---------------- TEST SELECT MAIL ----------------
     if passed:
- 
+
         subject = f"Congratulations – Shortlisted for Next Round at Azim Premji Foundation {job_title} Position"
- 
+
         message = f"""
         <p>Dear {candidate_name},</p>
  
@@ -118,12 +119,14 @@ def after_insert(doc, method=None):
         Azim Premji Foundation
         </p>
         """
- 
+
     # ---------------- TEST REJECT MAIL ----------------
     else:
- 
-        subject = f"Result of Written Test for {job_title} Position – Azim Premji Foundation"
- 
+
+        subject = (
+            f"Result of Written Test for {job_title} Position – Azim Premji Foundation"
+        )
+
         message = f"""
         <p>Dear {candidate_name},</p>
  
@@ -155,10 +158,6 @@ def after_insert(doc, method=None):
         Azim Premji Foundation
         </p>
         """
- 
+
     # Send Email
-    frappe.sendmail(
-        recipients=[candidate_email],
-        subject=subject,
-        message=message
-    )
+    frappe.sendmail(recipients=[candidate_email], subject=subject, message=message)
