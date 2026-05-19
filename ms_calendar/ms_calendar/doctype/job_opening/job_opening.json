@@ -6,18 +6,16 @@
  "creation": "2026-05-12 11:13:39.610185",
  "default_view": "List",
  "description": "Description of a Job Opening",
- "custom": 1,
  "doctype": "DocType",
  "document_type": "Document",
  "engine": "InnoDB",
  "field_order": [
   "job_details_section",
   "job_title",
-  "column_break_5",
   "status",
+  "column_break_5",
   "posted_on",
   "closes_on",
-  "closed_on",
   "section_break_nngy",
   "unit",
   "department",
@@ -87,44 +85,39 @@
    "label": "Closes On"
   },
   {
-   "depends_on": "eval:doc.status == 'Closed'",
-   "fieldname": "closed_on",
-   "fieldtype": "Date",
-   "label": "Closed On"
-  },
-  {
    "fieldname": "section_break_nngy",
    "fieldtype": "Section Break",
    "label": "Company Details"
   },
   {
    "fieldname": "unit",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Unit",
    "options": "Recruitment Units"
   },
   {
    "fieldname": "department",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Sub Unit",
-   "options": "Department"
+   "options": "Recruitment Department"
   },
   {
    "fieldname": "designation",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Designation",
-   "options": "Designation",
-   "reqd": 1
+   "options": "Recruitment Designation"
   },
   {
    "fieldname": "theme",
-   "fieldtype": "Data",
-   "label": "Theme"
+   "fieldtype": "Link",
+   "label": "Theme",
+   "options": "Theme Master"
   },
   {
    "fieldname": "geo",
-   "fieldtype": "Data",
-   "label": "Geo"
+   "fieldtype": "Link",
+   "label": "Geo",
+   "options": "Geo Master"
   },
   {
    "fieldname": "column_break_dxpv",
@@ -132,9 +125,9 @@
   },
   {
    "fieldname": "location",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Location",
-   "options": "Job Location"
+   "options": "Recruitment Location"
   },
   {
    "fieldname": "experience",
@@ -275,7 +268,7 @@
  "icon": "fa fa-bookmark",
  "is_published_field": "publish",
  "links": [],
- "modified": "2026-05-18 17:11:54.012806",
+ "modified": "2026-05-19 15:15:33.404967",
  "modified_by": "Administrator",
  "module": "Ms Calendar",
  "name": "Job Opening",

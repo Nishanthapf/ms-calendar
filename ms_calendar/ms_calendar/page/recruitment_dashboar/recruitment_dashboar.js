@@ -2,25 +2,25 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 	frappe.ui.make_app_page({ parent: wrapper, title: 'Recruitment Dashboard', single_column: true });
 
 	// ── palette ────────────────────────────────────────────────────────────────
-	const BG   = '#f0f4ff';
-	const AC   = '#6366f1';
-	const ACG  = 'rgba(99,102,241,';
+	const BG = '#f0f4ff';
+	const AC = '#6366f1';
+	const ACG = 'rgba(99,102,241,';
 	const BORD = '#e5e9f0';
-	const T1   = '#1e293b';
-	const T2   = '#64748b';
+	const T1 = '#1e293b';
+	const T2 = '#64748b';
 
 	// single two-colour gradient used for all unit cards
 	const CARD_G1 = '#4f46e5';   // indigo-600
 	const CARD_G2 = '#6366f1';   // indigo-500
 
 	const DATE_FILTERS = [
-		{ label:'All',     key:'all' },
-		{ label:'Today',   key:'today' },
-		{ label:'Week',    key:'week' },
-		{ label:'Month',   key:'month' },
-		{ label:'Quarter', key:'quarter' },
-		{ label:'Year',    key:'year' },
-		{ label:'Custom',  key:'custom' },
+		{ label: 'All', key: 'all' },
+		{ label: 'Today', key: 'today' },
+		{ label: 'Week', key: 'week' },
+		{ label: 'Month', key: 'month' },
+		{ label: 'Quarter', key: 'quarter' },
+		{ label: 'Year', key: 'year' },
+		{ label: 'Custom', key: 'custom' },
 	];
 	let activeFilter = 'all';
 	let customFrom = '', customTo = '';
@@ -28,7 +28,7 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 	// ── unit config ────────────────────────────────────────────────────────────
 	const UNITS = [
 		{
-			doctype: 'Field Registration Form1',
+			doctype: 'Field Registration Form',
 			label: 'Field Recruitment', short: 'Field',
 			icon: `<svg fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24" width="22" height="22"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
 			desc: 'Ground-level field officers & educators',
@@ -36,36 +36,42 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 			nameField: 'full_name_aadhaar',
 			columns: [
 				{ label: 'Full Name', field: 'full_name_aadhaar' },
-				{ label: 'Email',     field: 'email_address' },
-				{ label: 'Phone',     field: 'phone_number' },
-				{ label: 'Role',      field: 'role' },
-				{ label: 'Location',  field: 'location' },
-				{ label: 'Gender',    field: 'gender' },
+				{ label: 'Email', field: 'email_address' },
+				{ label: 'Phone', field: 'phone_number' },
+				{ label: 'Role', field: 'role' },
+				{ label: 'Location', field: 'location' },
+				{ label: 'Gender', field: 'gender' },
 				{ label: 'Education', field: 'highest_education' },
 			],
-			statuses: ['New Applicant','On Hold','Blocklisted','CV Shortlist','CV Reject','Online Test','Offline Test','Test Process','Recruiter Round','Recruiter Reject','Round One','Round 1 Reject','Round Two','Round 2 Reject','Round Three','Round 3 Reject','Calibration Process','Document Collection','Offer'],
+			statuses: ['New Applicant', 'On Hold', 'Blocklisted', 'CV Shortlist', 'CV Reject', 'Online Test', 'Offline Test', 'Test Process', 'Recruiter Round', 'Recruiter Reject', 'Round One', 'Round 1 Reject', 'Round Two', 'Round 2 Reject', 'Round Three', 'Round 3 Reject', 'Calibration Process', 'Document Collection', 'Offer'],
 			offerStatuses: ['Offer'],
 			profileFields: [
-				{ section: 'Application', cols: [
-					{ label: 'Status', field: 'application_status' }, { label: 'Role', field: 'role' },
-					{ label: 'Location', field: 'location' }, { label: 'Department', field: 'department' },
-					{ label: 'Shortlist Reason', field: 'reasons_for_shortlist' }, { label: 'Reject Reason', field: 'reasons_for_reject' },
-					{ label: 'On Hold Reason', field: 'hold_reason' },
-				]},
-				{ section: 'Personal Details', cols: [
-					{ label: 'Full Name', field: 'full_name_aadhaar' }, { label: 'Email Address', field: 'email_address' },
-					{ label: 'Phone', field: 'phone_number' }, { label: 'Alternate Phone', field: 'alternate_no' },
-					{ label: 'Date of Birth', field: 'dob' }, { label: 'Age', field: 'age' },
-					{ label: 'Gender', field: 'gender' }, { label: 'Native State', field: 'native_state' },
-					{ label: 'Native District', field: 'native_district' },
-				]},
-				{ section: 'Education & Experience', cols: [
-					{ label: 'Highest Education', field: 'highest_education' },
-					{ label: 'Teaching Exp. (Yrs)', field: 'teaching_year' }, { label: 'Teaching Exp. (Mo)', field: 'teaching_month' },
-					{ label: 'Languages Known', field: 'languages_known' }, { label: 'Other Languages', field: 'other_languages' },
-					{ label: 'Former APF Employee?', field: 'former_employee' }, { label: 'Source', field: 'opportunity' },
-					{ label: 'Test Location', field: 'test_location' },
-				]},
+				{
+					section: 'Application', cols: [
+						{ label: 'Status', field: 'application_status' }, { label: 'Role', field: 'role' },
+						{ label: 'Location', field: 'location' }, { label: 'Department', field: 'department' },
+						{ label: 'Shortlist Reason', field: 'reasons_for_shortlist' }, { label: 'Reject Reason', field: 'reasons_for_reject' },
+						{ label: 'On Hold Reason', field: 'hold_reason' },
+					]
+				},
+				{
+					section: 'Personal Details', cols: [
+						{ label: 'Full Name', field: 'full_name_aadhaar' }, { label: 'Email Address', field: 'email_address' },
+						{ label: 'Phone', field: 'phone_number' }, { label: 'Alternate Phone', field: 'alternate_no' },
+						{ label: 'Date of Birth', field: 'dob' }, { label: 'Age', field: 'age' },
+						{ label: 'Gender', field: 'gender' }, { label: 'Native State', field: 'native_state' },
+						{ label: 'Native District', field: 'native_district' },
+					]
+				},
+				{
+					section: 'Education & Experience', cols: [
+						{ label: 'Highest Education', field: 'highest_education' },
+						{ label: 'Teaching Exp. (Yrs)', field: 'teaching_year' }, { label: 'Teaching Exp. (Mo)', field: 'teaching_month' },
+						{ label: 'Languages Known', field: 'languages_known' }, { label: 'Other Languages', field: 'other_languages' },
+						{ label: 'Former APF Employee?', field: 'former_employee' }, { label: 'Source', field: 'opportunity' },
+						{ label: 'Test Location', field: 'test_location' },
+					]
+				},
 			],
 		},
 		{
@@ -77,33 +83,41 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 			nameField: 'full_name_as_per_aadhar',
 			columns: [
 				{ label: 'Full Name', field: 'full_name_as_per_aadhar' },
-				{ label: 'Email',     field: 'email' },
-				{ label: 'Phone',     field: 'phone_number' },
-				{ label: 'Role',      field: 'role' },
-				{ label: 'State',     field: 'state_of_residence' },
-				{ label: 'Gender',    field: 'gender' },
+				{ label: 'Email', field: 'email' },
+				{ label: 'Phone', field: 'phone_number' },
+				{ label: 'Role', field: 'role' },
+				{ label: 'State', field: 'state_of_residence' },
+				{ label: 'Gender', field: 'gender' },
 				{ label: 'Education', field: 'highest_level_of_education' },
 			],
-			statuses: ['New Applicant','Application Reject','Test Process','Test Reject','Recruiter Round','Recruiter Reject','Round One','Round Two','Reject - Round 1','Reject - Round 2','Document Collection','Offer'],
+			statuses: ['New Applicant', 'Application Reject', 'Test Process', 'Test Reject', 'Recruiter Round', 'Recruiter Reject', 'Round One', 'Round Two', 'Reject - Round 1', 'Reject - Round 2', 'Document Collection', 'Offer'],
 			offerStatuses: ['Offer'],
 			profileFields: [
-				{ section: 'Application', cols: [
-					{ label: 'Status', field: 'application_status' }, { label: 'Role', field: 'role' },
-				]},
-				{ section: 'Personal Details', cols: [
-					{ label: 'Full Name', field: 'full_name_as_per_aadhar' }, { label: 'Email Address', field: 'email' },
-					{ label: 'Phone', field: 'phone_number' }, { label: 'Gender', field: 'gender' },
-					{ label: 'State of Residence', field: 'state_of_residence' },
-				]},
-				{ section: 'Experience & Compensation', cols: [
-					{ label: 'Total Experience (Yrs)', field: 'total_years_of_experience' },
-					{ label: 'Current CTC', field: 'current_ctc' }, { label: 'Expected CTC', field: 'expected_ctc' },
-					{ label: 'Willing to Relocate?', field: 'relocation' },
-				]},
-				{ section: 'Education', cols: [
-					{ label: 'Highest Education', field: 'highest_level_of_education' },
-					{ label: 'Year of Completion', field: 'year_completion' },
-				]},
+				{
+					section: 'Application', cols: [
+						{ label: 'Status', field: 'application_status' }, { label: 'Role', field: 'role' },
+					]
+				},
+				{
+					section: 'Personal Details', cols: [
+						{ label: 'Full Name', field: 'full_name_as_per_aadhar' }, { label: 'Email Address', field: 'email' },
+						{ label: 'Phone', field: 'phone_number' }, { label: 'Gender', field: 'gender' },
+						{ label: 'State of Residence', field: 'state_of_residence' },
+					]
+				},
+				{
+					section: 'Experience & Compensation', cols: [
+						{ label: 'Total Experience (Yrs)', field: 'total_years_of_experience' },
+						{ label: 'Current CTC', field: 'current_ctc' }, { label: 'Expected CTC', field: 'expected_ctc' },
+						{ label: 'Willing to Relocate?', field: 'relocation' },
+					]
+				},
+				{
+					section: 'Education', cols: [
+						{ label: 'Highest Education', field: 'highest_level_of_education' },
+						{ label: 'Year of Completion', field: 'year_completion' },
+					]
+				},
 			],
 		},
 		{
@@ -115,31 +129,37 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 			nameField: 'name1',
 			columns: [
 				{ label: 'Full Name', field: 'name1' },
-				{ label: 'Email',     field: 'email' },
-				{ label: 'Phone',     field: 'phone' },
-				{ label: 'Role',      field: 'role' },
-				{ label: 'Location',  field: 'location' },
-				{ label: 'Geo',       field: 'geo' },
+				{ label: 'Email', field: 'email' },
+				{ label: 'Phone', field: 'phone' },
+				{ label: 'Role', field: 'role' },
+				{ label: 'Location', field: 'location' },
+				{ label: 'Geo', field: 'geo' },
 				{ label: 'Education', field: 'highest_level_of_education' },
 			],
-			statuses: ['New Applicant','CV Shortlist','On Hold','CV Reject','Recruiter Round','Recruiter Reject','Round One','Round 1 Reject','Round Two','Round 2 Reject','Round Three','Round 3 Reject','Round Four','Round 4 Reject','Document Collection','Offer'],
+			statuses: ['New Applicant', 'CV Shortlist', 'On Hold', 'CV Reject', 'Recruiter Round', 'Recruiter Reject', 'Round One', 'Round 1 Reject', 'Round Two', 'Round 2 Reject', 'Round Three', 'Round 3 Reject', 'Round Four', 'Round 4 Reject', 'Document Collection', 'Offer'],
 			offerStatuses: ['Offer'],
 			profileFields: [
-				{ section: 'Application', cols: [
-					{ label: 'Status', field: 'application_status' }, { label: 'Role', field: 'role' },
-					{ label: 'Geo', field: 'geo' }, { label: 'Theme', field: 'themes' },
-					{ label: 'Position', field: 'position' }, { label: 'Location', field: 'location' },
-				]},
-				{ section: 'Personal Details', cols: [
-					{ label: 'Full Name', field: 'name1' }, { label: 'Email Address', field: 'email' },
-					{ label: 'Phone', field: 'phone' }, { label: 'Date of Birth', field: 'date_of_birth' },
-					{ label: 'Age', field: 'age' }, { label: 'Current Location', field: 'current_location' },
-				]},
-				{ section: 'Education & Experience', cols: [
-					{ label: 'Highest Education', field: 'highest_level_of_education' },
-					{ label: 'Completion Year', field: 'completion_year' },
-					{ label: 'Total Experience (Yrs)', field: 'total_experience' },
-				]},
+				{
+					section: 'Application', cols: [
+						{ label: 'Status', field: 'application_status' }, { label: 'Role', field: 'role' },
+						{ label: 'Geo', field: 'geo' }, { label: 'Theme', field: 'themes' },
+						{ label: 'Position', field: 'position' }, { label: 'Location', field: 'location' },
+					]
+				},
+				{
+					section: 'Personal Details', cols: [
+						{ label: 'Full Name', field: 'name1' }, { label: 'Email Address', field: 'email' },
+						{ label: 'Phone', field: 'phone' }, { label: 'Date of Birth', field: 'date_of_birth' },
+						{ label: 'Age', field: 'age' }, { label: 'Current Location', field: 'current_location' },
+					]
+				},
+				{
+					section: 'Education & Experience', cols: [
+						{ label: 'Highest Education', field: 'highest_level_of_education' },
+						{ label: 'Completion Year', field: 'completion_year' },
+						{ label: 'Total Experience (Yrs)', field: 'total_experience' },
+					]
+				},
 			],
 		},
 		{
@@ -150,37 +170,45 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 			status_field: 'application_status',
 			nameField: 'full_name',
 			columns: [
-				{ label: 'Full Name',     field: 'full_name' },
-				{ label: 'Email',         field: 'email_address' },
-				{ label: 'Phone',         field: 'phone_number' },
-				{ label: 'Education',     field: 'education_qualification' },
-				{ label: 'Experience',    field: 'mbbs_experience' },
+				{ label: 'Full Name', field: 'full_name' },
+				{ label: 'Email', field: 'email_address' },
+				{ label: 'Phone', field: 'phone_number' },
+				{ label: 'Education', field: 'education_qualification' },
+				{ label: 'Experience', field: 'mbbs_experience' },
 				{ label: 'State Council', field: 'state_medical_council' },
-				{ label: 'Former APF?',   field: 'foundation_selection' },
+				{ label: 'Former APF?', field: 'foundation_selection' },
 			],
-			statuses: ['New Applicant','Shortlist - CV','On hold - CV','Regret - CV','Shortlist - R1','On hold - R1','Regret - R1','Shortlist - R2','On hold - R2','Regret - R2','Offered','Offer accepted','Offer declined','Joined','Document Collection','Offer'],
+			statuses: ['New Applicant', 'Shortlist - CV', 'On hold - CV', 'Regret - CV', 'Shortlist - R1', 'On hold - R1', 'Regret - R1', 'Shortlist - R2', 'On hold - R2', 'Regret - R2', 'Offered', 'Offer accepted', 'Offer declined', 'Joined', 'Document Collection', 'Offer'],
 			offerStatuses: ['Offered', 'Offer accepted'],
 			profileFields: [
-				{ section: 'Application', cols: [
-					{ label: 'Status', field: 'application_status' },
-					{ label: 'Former APF?', field: 'foundation_selection' },
-				]},
-				{ section: 'Personal Details', cols: [
-					{ label: 'Full Name', field: 'full_name' }, { label: 'Email Address', field: 'email_address' },
-					{ label: 'Phone', field: 'phone_number' }, { label: 'Date of Birth', field: 'date_of_birth' },
-					{ label: 'Age', field: 'age' }, { label: 'State', field: 'state' },
-				]},
-				{ section: 'Medical Qualifications', cols: [
-					{ label: 'Education Qualification', field: 'education_qualification' },
-					{ label: 'MBBS Experience (Yrs)', field: 'mbbs_experience' },
-					{ label: 'State Medical Council', field: 'state_medical_council' },
-				]},
-				{ section: 'Preferences & Source', cols: [
-					{ label: 'Monthly Salary', field: 'monthly_salary' },
-					{ label: 'Preferred Location', field: 'first_prefered' },
-					{ label: 'Open to Travel?', field: 'are_you_open' },
-					{ label: 'Heard From', field: 'opportunity' },
-				]},
+				{
+					section: 'Application', cols: [
+						{ label: 'Status', field: 'application_status' },
+						{ label: 'Former APF?', field: 'foundation_selection' },
+					]
+				},
+				{
+					section: 'Personal Details', cols: [
+						{ label: 'Full Name', field: 'full_name' }, { label: 'Email Address', field: 'email_address' },
+						{ label: 'Phone', field: 'phone_number' }, { label: 'Date of Birth', field: 'date_of_birth' },
+						{ label: 'Age', field: 'age' }, { label: 'State', field: 'state' },
+					]
+				},
+				{
+					section: 'Medical Qualifications', cols: [
+						{ label: 'Education Qualification', field: 'education_qualification' },
+						{ label: 'MBBS Experience (Yrs)', field: 'mbbs_experience' },
+						{ label: 'State Medical Council', field: 'state_medical_council' },
+					]
+				},
+				{
+					section: 'Preferences & Source', cols: [
+						{ label: 'Monthly Salary', field: 'monthly_salary' },
+						{ label: 'Preferred Location', field: 'first_prefered' },
+						{ label: 'Open to Travel?', field: 'are_you_open' },
+						{ label: 'Heard From', field: 'opportunity' },
+					]
+				},
 			],
 		},
 	];
@@ -433,14 +461,14 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 		</div>
 	`);
 
-	const $front   = $('#rd-front');
-	const $detail  = $('#rd-detail');
+	const $front = $('#rd-front');
+	const $detail = $('#rd-detail');
 	const $records = $('#rd-records');
 	const $profile = $('#rd-profile');
-	const store    = {};
+	const store = {};
 
 	function fmtDate() {
-		return new Date().toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+		return new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 	}
 
 	// ── date filter helpers ───────────────────────────────────────────────────
@@ -451,8 +479,8 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 		if (key === 'custom') {
 			if (!customFrom && !customTo) return rows;
 			start = customFrom ? new Date(customFrom) : null;
-			end   = customTo   ? new Date(customTo + 'T23:59:59') : null;
-			return rows.filter(function(r) {
+			end = customTo ? new Date(customTo + 'T23:59:59') : null;
+			return rows.filter(function (r) {
 				if (!r.creation) return false;
 				const d = new Date(r.creation);
 				return (!start || d >= start) && (!end || d <= end);
@@ -469,14 +497,14 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 		} else {
 			start = new Date(now.getFullYear(), 0, 1);
 		}
-		return rows.filter(function(r) { return r.creation && new Date(r.creation) >= start; });
+		return rows.filter(function (r) { return r.creation && new Date(r.creation) >= start; });
 	}
 
 	function getFilteredData(ui) {
 		if (!store[ui]) return { rows: [], counts: {} };
 		const rows = filterByDate(store[ui].rows, activeFilter);
 		const counts = {};
-		rows.forEach(function(row) {
+		rows.forEach(function (row) {
 			const s = row[UNITS[ui].status_field] || 'New Applicant';
 			counts[s] = (counts[s] || 0) + 1;
 		});
@@ -485,12 +513,12 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 
 	function updateFrontStats() {
 		let total = 0, offers = 0;
-		UNITS.forEach(function(unit, ui) {
+		UNITS.forEach(function (unit, ui) {
 			if (!store[ui]) return;
 			const { rows, counts } = getFilteredData(ui);
 			$('#unum-' + ui).text(rows.length);
-			total  += rows.length;
-			offers += unit.offerStatuses.reduce(function(s, st) { return s + (counts[st] || 0); }, 0);
+			total += rows.length;
+			offers += unit.offerStatuses.reduce(function (s, st) { return s + (counts[st] || 0); }, 0);
 		});
 		$('#gs-total').text(total);
 		$('#gs-offers').text(offers);
@@ -511,9 +539,9 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 				<div class="rd-hstat"><span class="rd-hstat-v">4</span><span class="rd-hstat-k">Active Units</span></div>
 			</div>
 			<div class="rd-filter-row">
-				${DATE_FILTERS.map(function(f) {
-					return '<button class="rd-filter-btn' + (f.key === 'all' ? ' active' : '') + '" data-key="' + f.key + '">' + f.label + '</button>';
-				}).join('')}
+				${DATE_FILTERS.map(function (f) {
+		return '<button class="rd-filter-btn' + (f.key === 'all' ? ' active' : '') + '" data-key="' + f.key + '">' + f.label + '</button>';
+	}).join('')}
 			</div>
 			<div class="rd-custom-row" id="rd-custom-row">
 				<span class="rd-custom-label">From</span>
@@ -525,14 +553,14 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 		</div>
 		<div class="rd-section-label" style="margin-top:8px">Recruitment Units</div>
 		<div class="rd-units">
-			${UNITS.map(function(u, i) {
-				return '<div class="rd-ucard" data-ui="' + i + '" style="background:linear-gradient(135deg,' + CARD_G1 + ' 0%,' + CARD_G2 + ' 100%)">' +
-					'<div class="rd-ucard-top"><div class="rd-ucard-icon">' + u.icon + '</div><div class="rd-ucard-num" id="unum-' + i + '">—</div></div>' +
-					'<div class="rd-ucard-label">' + u.label + '</div>' +
-					'<div class="rd-ucard-desc">' + u.desc + '</div>' +
-					'<div class="rd-ucard-foot"><span class="rd-ucard-pill">View Pipeline</span><span class="rd-ucard-arrow">&#8594;</span></div>' +
-					'</div>';
-			}).join('')}
+			${UNITS.map(function (u, i) {
+		return '<div class="rd-ucard" data-ui="' + i + '" style="background:linear-gradient(135deg,' + CARD_G1 + ' 0%,' + CARD_G2 + ' 100%)">' +
+			'<div class="rd-ucard-top"><div class="rd-ucard-icon">' + u.icon + '</div><div class="rd-ucard-num" id="unum-' + i + '">—</div></div>' +
+			'<div class="rd-ucard-label">' + u.label + '</div>' +
+			'<div class="rd-ucard-desc">' + u.desc + '</div>' +
+			'<div class="rd-ucard-foot"><span class="rd-ucard-pill">View Pipeline</span><span class="rd-ucard-arrow">&#8594;</span></div>' +
+			'</div>';
+	}).join('')}
 		</div>
 	`);
 
@@ -555,16 +583,16 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 
 	$front.on('click', '#rd-apply-custom', function () {
 		customFrom = $('#rd-from-date').val();
-		customTo   = $('#rd-to-date').val();
+		customTo = $('#rd-to-date').val();
 		updateFrontStats();
 	});
 
 	// ── fetch all units (include creation for date filter) ────────────────────
 	UNITS.forEach(function (unit, ui) {
-		const fields = ['name', 'creation', unit.status_field].concat(unit.columns.map(function(c) { return c.field; }));
+		const fields = ['name', 'creation', unit.status_field].concat(unit.columns.map(function (c) { return c.field; }));
 		frappe.call({
 			method: 'frappe.client.get_list',
-			args: { doctype: unit.doctype, fields: fields, filters: [['name','!=','']], limit_page_length: 0 },
+			args: { doctype: unit.doctype, fields: fields, filters: [['name', '!=', '']], limit_page_length: 0 },
 			callback: function (r) {
 				store[ui] = { rows: r && r.message ? r.message : [] };
 				updateFrontStats();
@@ -577,12 +605,12 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 		const unit = UNITS[ui];
 		if (!store[ui]) { frappe.msgprint('Data still loading, please wait.'); return; }
 		const { rows, counts } = getFilteredData(ui);
-		const total    = rows.length;
-		const RW       = ['reject','blocklist','regret'];
-		const offered  = unit.offerStatuses.reduce(function(s, st) { return s + (counts[st] || 0); }, 0);
-		const docColl  = counts['Document Collection'] || 0;
-		let   rejected = 0;
-		Object.keys(counts).forEach(function(s) { if (RW.some(function(w) { return s.toLowerCase().includes(w); })) rejected += counts[s]; });
+		const total = rows.length;
+		const RW = ['reject', 'blocklist', 'regret'];
+		const offered = unit.offerStatuses.reduce(function (s, st) { return s + (counts[st] || 0); }, 0);
+		const docColl = counts['Document Collection'] || 0;
+		let rejected = 0;
+		Object.keys(counts).forEach(function (s) { if (RW.some(function (w) { return s.toLowerCase().includes(w); })) rejected += counts[s]; });
 		const pipeline = Math.max(0, total - offered - docColl - rejected);
 
 		$front.hide();
@@ -631,11 +659,11 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 			</div>
 			<div class="rd-section-label" style="margin-top:0">Status Breakdown — click a card to view records</div>
 			<div class="rd-dgrid" id="rd-dgrid">
-				${unit.statuses.map(function(s) {
-					return '<div class="rd-dcard' + ((counts[s] || 0) === 0 ? ' zero' : '') + '" data-status="' + s + '">' +
-						'<div class="dl">' + s + '</div>' +
-						'<div class="dn pop">' + (counts[s] || 0) + '</div></div>';
-				}).join('')}
+				${unit.statuses.map(function (s) {
+			return '<div class="rd-dcard' + ((counts[s] || 0) === 0 ? ' zero' : '') + '" data-status="' + s + '">' +
+				'<div class="dl">' + s + '</div>' +
+				'<div class="dn pop">' + (counts[s] || 0) + '</div></div>';
+		}).join('')}
 			</div>
 		`);
 
@@ -652,8 +680,8 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 
 	// ── records page ──────────────────────────────────────────────────────────
 	function showRecords(unit, allRows, status) {
-		const isAll      = status === null;
-		const filtered   = isAll ? allRows : allRows.filter(function(r) { return (r[unit.status_field] || 'New Applicant') === status; });
+		const isAll = status === null;
+		const filtered = isAll ? allRows : allRows.filter(function (r) { return (r[unit.status_field] || 'New Applicant') === status; });
 		const titleLabel = isAll ? 'All Applicants' : status;
 
 		$detail.hide();
@@ -686,10 +714,10 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 				</div>
 			</div>
 		`);
-		$records.find('#rp-back').on('click', function () { $records.hide(); $detail.show(); window.scrollTo({ top:0, behavior:'smooth' }); });
+		$records.find('#rp-back').on('click', function () { $records.hide(); $detail.show(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
 		$records.find('#rp-srch').on('input', function () {
 			const q = $(this).val().toLowerCase().trim();
-			const f = q ? filtered.filter(function(r) { return unit.columns.some(function(c) { return (r[c.field]||'').toLowerCase().includes(q); }); }) : filtered;
+			const f = q ? filtered.filter(function (r) { return unit.columns.some(function (c) { return (r[c.field] || '').toLowerCase().includes(q); }); }) : filtered;
 			$records.find('#rp-body').html(buildTable(unit, f));
 			$records.find('#rp-cnt').text(f.length + ' applicants');
 			$records.find('#rp-foot').text('Showing ' + f.length + ' of ' + filtered.length + ' records');
@@ -715,26 +743,26 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 			</div>
 			<div class="rdp-loading">Loading applicant data…</div>
 		`);
-		$profile.find('#rpp-back').on('click', function () { $profile.hide(); $records.show(); window.scrollTo({ top:0, behavior:'smooth' }); });
+		$profile.find('#rpp-back').on('click', function () { $profile.hide(); $records.show(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
 
 		frappe.call({
 			method: 'frappe.client.get',
 			args: { doctype: unit.doctype, name: docName },
 			callback: function (r) {
 				if (!r || !r.message) { $profile.find('.rdp-loading').text('Could not load data.'); return; }
-				const doc         = r.message;
+				const doc = r.message;
 				const displayName = doc[unit.nameField] || docName;
-				const initial     = (displayName || '?').trim()[0].toUpperCase();
-				const RW          = ['reject','blocklist','regret'];
-				const isOffer     = unit.offerStatuses.includes(status);
-				const isReject    = RW.some(function(w) { return status.toLowerCase().includes(w); });
-				const isHold      = status.toLowerCase().includes('hold');
-				const badgeBg     = isOffer ? 'rgba(34,197,94,.15)'  : isReject ? 'rgba(239,68,68,.15)'  : isHold ? 'rgba(245,158,11,.15)' : ACG+'.12)';
-				const badgeClr    = isOffer ? '#16a34a' : isReject ? '#dc2626' : isHold ? '#d97706' : AC;
-				const badgeBd     = isOffer ? 'rgba(34,197,94,.3)'   : isReject ? 'rgba(239,68,68,.3)'   : isHold ? 'rgba(245,158,11,.3)'  : ACG+'.25)';
+				const initial = (displayName || '?').trim()[0].toUpperCase();
+				const RW = ['reject', 'blocklist', 'regret'];
+				const isOffer = unit.offerStatuses.includes(status);
+				const isReject = RW.some(function (w) { return status.toLowerCase().includes(w); });
+				const isHold = status.toLowerCase().includes('hold');
+				const badgeBg = isOffer ? 'rgba(34,197,94,.15)' : isReject ? 'rgba(239,68,68,.15)' : isHold ? 'rgba(245,158,11,.15)' : ACG + '.12)';
+				const badgeClr = isOffer ? '#16a34a' : isReject ? '#dc2626' : isHold ? '#d97706' : AC;
+				const badgeBd = isOffer ? 'rgba(34,197,94,.3)' : isReject ? 'rgba(239,68,68,.3)' : isHold ? 'rgba(245,158,11,.3)' : ACG + '.25)';
 
-				const sectionsHtml = unit.profileFields.map(function(sec) {
-					const fh = sec.cols.map(function(f) {
+				const sectionsHtml = unit.profileFields.map(function (sec) {
+					const fh = sec.cols.map(function (f) {
 						const v = doc[f.field];
 						if (v === null || v === undefined || v === '') return '';
 						return '<div class="rdp-field"><div class="rdp-field-label">' + f.label + '</div><div class="rdp-field-value">' + v + '</div></div>';
@@ -766,7 +794,7 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 					</div>
 					<div class="rdp-body">${sectionsHtml || '<div class="rdp-nodata">No additional data available.</div>'}</div>
 				`);
-				$profile.find('#rpp-back2').on('click', function () { $profile.hide(); $records.show(); window.scrollTo({ top:0, behavior:'smooth' }); });
+				$profile.find('#rpp-back2').on('click', function () { $profile.hide(); $records.show(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
 				window.scrollTo({ top: 0, behavior: 'smooth' });
 			}
 		});
@@ -774,34 +802,34 @@ frappe.pages['recruitment-dashboar'].on_page_load = function (wrapper) {
 
 	// ── bar chart ─────────────────────────────────────────────────────────────
 	function drawCharts(unit, counts, allRows) {
-		const labels = unit.statuses.filter(function(s) { return (counts[s] || 0) > 0; });
-		const values = labels.map(function(s) { return counts[s]; });
-		const barEl  = document.getElementById('rd-bar');
+		const labels = unit.statuses.filter(function (s) { return (counts[s] || 0) > 0; });
+		const values = labels.map(function (s) { return counts[s]; });
+		const barEl = document.getElementById('rd-bar');
 		if (!barEl || !labels.length) return;
 		try {
 			new frappe.Chart(barEl, {
 				type: 'bar', height: 240, colors: [AC],
 				data: { labels: labels, datasets: [{ name: 'Applicants', values: values }] },
 				barOptions: { spaceRatio: 0.3 },
-				tooltipOptions: { formatTooltipY: function(d) { return d + ' applicants'; } }
+				tooltipOptions: { formatTooltipY: function (d) { return d + ' applicants'; } }
 			});
 			barEl.addEventListener('data-select', function (e) {
 				const lbl = e.label || (e.detail && e.detail.label);
 				if (lbl) showRecords(unit, allRows, lbl);
 			});
-		} catch(err) {}
+		} catch (err) { }
 	}
 
 	// ── table builder ─────────────────────────────────────────────────────────
 	function buildTable(unit, rows) {
 		if (!rows.length) return '<div class="rd-nodata">No records found.</div>';
-		const thHtml = unit.columns.map(function(c) { return '<th>' + c.label + '</th>'; }).join('');
-		const trs = rows.map(function(r, i) {
-			const tds = unit.columns.map(function(c, ci) {
+		const thHtml = unit.columns.map(function (c) { return '<th>' + c.label + '</th>'; }).join('');
+		const trs = rows.map(function (r, i) {
+			const tds = unit.columns.map(function (c, ci) {
 				const v = r[c.field] || '—';
 				return ci === 0 ? '<td class="rd-tname" title="' + v + '">' + v + '</td>' : '<td title="' + v + '">' + v + '</td>';
 			}).join('');
-			return '<tr data-name="' + (r.name||'') + '"><td class="tsno">' + (i+1) + '</td><td class="tid">' + (r.name||'') + '</td>' + tds + '</tr>';
+			return '<tr data-name="' + (r.name || '') + '"><td class="tsno">' + (i + 1) + '</td><td class="tid">' + (r.name || '') + '</td>' + tds + '</tr>';
 		}).join('');
 		return '<table class="rd-tbl"><thead><tr><th>#</th><th>ID</th>' + thHtml + '</tr></thead><tbody>' + trs + '</tbody></table>';
 	}

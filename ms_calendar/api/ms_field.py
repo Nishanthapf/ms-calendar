@@ -545,6 +545,25 @@ def create_interview_event(
     commands_to_candidate = commands_to_candidate or ""
     commands_to_interviewer = commands_to_interviewer or ""
 
+    # If either message was not passed by JS, read it directly from the saved record.
+    # This handles cases where the DocType fields are in the DB but not yet rendered
+    # in the form (e.g. missing from the JS or not yet deployed to the cloud).
+    if doc_name and (not commands_to_candidate or not commands_to_interviewer):
+        try:
+            _db_vals = frappe.db.get_value(
+                "Field Interview Schedule",
+                doc_name,
+                ["message_for_canditate", "message_for_the_interviewer"],
+                as_dict=True,
+            )
+            if _db_vals:
+                if not commands_to_candidate:
+                    commands_to_candidate = _db_vals.get("message_for_canditate") or ""
+                if not commands_to_interviewer:
+                    commands_to_interviewer = _db_vals.get("message_for_the_interviewer") or ""
+        except Exception:
+            pass
+
     # Validate organizer email — must be a Microsoft 365 account (not Gmail/Yahoo etc.)
     _invalid_domains = (
         "gmail.com",
