@@ -1556,131 +1556,60 @@ comments/recommendations for the calibration process and final selection decisio
             Note_to_interviewer_html=note_to_interviewer_html,
         )
 
-    # Headers for PATCH calls — "If-Match: *" bypasses Graph's ETag precondition
-    # check (412 Precondition Failed) which can occur when the event's changeKey
-    # is updated server-side between creation and the first PATCH.
-    patch_headers = {**headers, "If-Match": "*"}
-
-    # ── PATCH 1: update body silently (no email yet)
-    # Set the final body (with Teams link / venue info) BEFORE adding
-    # attendees so that when the invite lands in their inbox, it already
-    # contains the complete content. Using sendUpdates=none means no
-    # notification is fired for this body change.
-    try:
-        p1_res = requests.patch(
-            event_fetch_url + "?sendUpdates=none",
-            headers=patch_headers,
-            json={
-                "body": {"contentType": "HTML", "content": final_body},
-                "showAs": "busy",
-            },
-            timeout=60,
-        )
-        p1_res.raise_for_status()
-    except requests.exceptions.HTTPError as p1_err:
-        if p1_res.status_code in (412, 500, 502, 503, 504):
-            frappe.log_error(
-                title="Body PATCH error",
-                message=f"{p1_err} — event {event_id} body may not reflect final content.",
-            )
-        else:
-            raise
-
-    # ── PATCH 2: add attendees + body together in one call ──────────────────
-    # Combining body + attendees in a single PATCH avoids a second round-trip
-    # and prevents a second 412 on the attendees update.
-    # sendUpdates=none → calendar entry appears in their calendar without an
-    # automatic Outlook notification (we send custom emails below).
-    # MS Graph can return 504 Gateway Timeout — event is already created,
-    # so we log and continue.
-    try:
-        patch2_res = requests.patch(
-            event_fetch_url + "?sendUpdates=none",
-            headers=patch_headers,
-            json={
-                "body": {"contentType": "HTML", "content": final_body},
-                "attendees": attendees,
-                "showAs": "busy",
-            },
-            timeout=60,
-        )
-        patch2_res.raise_for_status()
-    except requests.exceptions.Timeout:
-        frappe.log_error(
-            title="Attendees PATCH timeout",
-            message=f"504/timeout patching attendees for event {event_id}. Event was created; invites may still arrive.",
-        )
-    except requests.exceptions.HTTPError as patch_err:
-        if patch2_res.status_code in (412, 500, 502, 503, 504):
-            frappe.log_error(
-                title="Attendees PATCH gateway error",
-                message=f"{patch_err} — event {event_id} created; invites may still arrive.",
-            )
-        else:
-            raise
-
-    # ----------------------------------------
-    # EMAIL TO INTERVIEWER(S)
-    # ----------------------------------------
-    if is_calibration_arp:
-        interviewer_email_subject = f"Calibration Process – for Associate Resource Person {Applicants_name} | {candidate_phone}"
-    else:
-        interviewer_email_subject = f"Interview Scheduled – {Applicants_name} | {round_label} for {Applicants_Role} {candidate_phone}"
-    _i_send_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/sendMail"
-
-    for _imail in interviewer_list:
-        _i_payload = {
-            "message": {
-                "subject": interviewer_email_subject,
-                "body": {"contentType": "HTML", "content": final_body},
-                "toRecipients": [{"emailAddress": {"address": _imail}}],
-                "ccRecipients": [{"emailAddress": {"address": Organizer_email}}],
-                "attachments": [
-                    {
-                        "@odata.type": "#microsoft.graph.fileAttachment",
-                        "name": fname,
-                        "contentBytes": fb64,
-                    }
-                    for fname, fb64 in final_files
-                ],
-            },
-            "saveToSentItems": True,
-        }
-        _i_graph_sent = False
+    # ── Single PATCH: add attendees + final body, sendUpdates=all forces Graph
+    # to send the proper meeting-request email (Accept / Decline / Follow
+    # buttons) to every attendee. Body and attendees are set in one request
+    # so the invite email already contains the Teams link / venue details.
+    _patch_ok = False
+    for _patch_attempt in range(3):
         try:
-            _i_res = requests.post(
-                _i_send_url, headers=headers, json=_i_payload, timeout=30
+            patch_res = requests.patch(
+                event_fetch_url + "?sendUpdates=all",
+                headers=headers,
+                json={
+                    "body": {"contentType": "HTML", "content": final_body},
+                    "attendees": attendees,
+                    "showAs": "busy",
+                },
+                timeout=60,
             )
-            _i_res.raise_for_status()
-            _i_graph_sent = True
-        except Exception as _i_err:
+            patch_res.raise_for_status()
+            _patch_ok = True
+            break
+        except Exception as patch_err:
+            if _patch_attempt < 2:
+                time.sleep(2)
+                continue
             try:
-                frappe.log_error(
-                    title="Interviewer Email Graph Error",
-                    message=f"Could not send via Graph to {_imail}: {str(_i_err)[:2000]}",
-                )
+                _patch_detail = patch_res.text if hasattr(patch_res, "text") else str(patch_err)
             except Exception:
-                pass
+                _patch_detail = str(patch_err)
+            frappe.log_error(
+                title="Attendees PATCH error",
+                message=f"{patch_err} — event {event_id} — response: {_patch_detail[:2000]}",
+            )
 
-        if not _i_graph_sent:
+    # If PATCH failed, fall back to sending individual emails to each interviewer
+    if not _patch_ok and interviewer_list:
+        _iv_send_url = f"https://graph.microsoft.com/v1.0/users/{Organizer_email}/sendMail"
+        for _iv_email in interviewer_list:
+            _iv_payload = {
+                "message": {
+                    "subject": calendar_subject,
+                    "body": {"contentType": "HTML", "content": final_body},
+                    "toRecipients": [{"emailAddress": {"address": _iv_email}}],
+                },
+                "saveToSentItems": True,
+            }
             try:
-                frappe.sendmail(
-                    recipients=[_imail],
-                    cc=[Organizer_email],
-                    sender=Organizer_email,
-                    subject=interviewer_email_subject,
-                    message=final_body,
-                    attachments=[
-                        {"fname": fname, "fcontent": base64.b64decode(fb64)}
-                        for fname, fb64 in final_files
-                    ],
-                    delayed=False,
-                )
-            except Exception as _i_fallback_err:
+                requests.post(_iv_send_url, headers=headers, json=_iv_payload, timeout=30).raise_for_status()
+            except Exception:
                 try:
-                    frappe.log_error(
-                        title="Interviewer Email Fallback Error",
-                        message=f"Fallback also failed for {_imail}: {str(_i_fallback_err)[:2000]}",
+                    frappe.sendmail(
+                        recipients=[_iv_email],
+                        subject=calendar_subject,
+                        message=final_body,
+                        delayed=False,
                     )
                 except Exception:
                     pass
